@@ -23,7 +23,7 @@ async def response_generator_agent(
         
         if state.database_query_results:
             sql_query_result = state.database_query_results
-            user_query = state.input_request.user_query
+            user_query = state.context_builder_response.user_query
             # final_prompt = prompt.format(
             #                         sql_query_result=sql_query_result,
             #                         user_question= user_query

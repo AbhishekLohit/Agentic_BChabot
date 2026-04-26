@@ -88,11 +88,11 @@ def get_vectordb_data(
 
     vectordb_data  = {}
     queries = {
-        "order_item_name": app_settings.order_item_name_query,
-        "restaurant_name": app_settings.restaurant_name_query,
-        "restaurant_city": app_settings.restaurant_city_query,
-        "restaurant_type": app_settings.restaurant_type_query,
-        "restaurant_cuisine": app_settings.restaurant_cuisine_query,
+        "merchant_name": app_settings.merchant_name_query,
+        "merchant_category1": app_settings.merchant_category1_query,
+        "merchant_category2": app_settings.merchant_category2_query,
+        "transaction_country": app_settings.transaction_country_query,
+        "transaction_channel": app_settings.transaction_channel_query,
     }
     # queries = {
     #     "restaurant_type": app_settings.restaurant_type_query,

@@ -41,7 +41,7 @@ async def text2sql_generator_agent(
     logger.info("Executing text2sql generator agent.")
     # Render the final prompt string using .format()
     try:
-        input_query = state.foodsql_queries
+        input_query = state.banksql_queries
         logger.info(f"Input query for Text2SQL Generator: {input_query}")
         logger.info(f"Customer ID for Text2SQL Generator: {state.input_request.customer_id}")
         # final_prompt = prompt.format(

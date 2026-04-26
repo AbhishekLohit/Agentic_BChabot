@@ -70,16 +70,16 @@ async def suprivisor_agent(
         state.agent_metrics["suprivisor"] = metric_metadata
 
         # Update the state with classified queries
-        foodsql_queries = []
+        banksql_queries = []
         out_of_scope = []
 
         for sub in state.suprivisor_response.classified_sub_queries:
-            if sub.class_label == "FoodSQL":
-                foodsql_queries.append(sub.sub_query)
+            if sub.class_label == "BankSQL":
+                banksql_queries.append(sub.sub_query)
             else:
                 out_of_scope.append(sub.sub_query)
 
-        state.foodsql_queries = foodsql_queries
+        state.banksql_queries = banksql_queries
         state.out_of_scope_queries = out_of_scope
         
 

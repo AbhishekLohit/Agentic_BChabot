@@ -67,20 +67,6 @@ async def sql_correction(
         # )
         state.agent_metrics["sql_correction"] = metric_metadata
 
-        # Update the state with classified queries
-        foodsql_queries = []
-        out_of_scope = []
-
-        for sub in state.suprivisor_response.classified_sub_queries:
-            if sub.class_label == "FoodSQL":
-                foodsql_queries.append(sub.sub_query)
-            else:
-                out_of_scope.append(sub.sub_query)
-
-        state.foodsql_queries = foodsql_queries
-        state.out_of_scope_queries = out_of_scope
-        
-
     except Exception as e:
         logger.exception(f"Error in supervisor agent: {str(e)}")
         fallback_response = FallbackResponse(

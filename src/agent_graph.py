@@ -15,8 +15,8 @@ from logging import Logger
 from agent_subraph import Agent_SubGraph
 
 class Agent_Graph:
-    def __init__(self, 
-                 openai_llm:ChatOpenAI, 
+    def __init__(self,
+                 openai_llm:ChatOpenAI,
                  prompts:Prompts,
                  logger: Logger,
                  agent_subgraph: Agent_SubGraph
@@ -57,7 +57,7 @@ class Agent_Graph:
                 END: END,
             }
         )
-        # FoodSQL pipeline    
+        # BankSQL pipeline
         builder.add_edge("sql_generation", "join")
         builder.add_edge("fallback", "join")
         builder.add_edge("join", "response_generator")
@@ -96,10 +96,10 @@ class Agent_Graph:
     def _supervisor_router(self, state: Graph_State) -> list[str]:
         routes = []
 
-        if len(state.foodsql_queries) == 1:
+        if len(state.banksql_queries) == 1:
             routes.append("sql_generation")
 
-        if len(state.out_of_scope_queries) > 0 or len(state.foodsql_queries) > 1:
+        if len(state.out_of_scope_queries) > 0 or len(state.banksql_queries) > 1:
             routes.append("fallback")
 
         if not routes:

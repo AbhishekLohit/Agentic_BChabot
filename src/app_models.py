@@ -31,7 +31,7 @@ class ContextBuilderResponse(BaseModel):
 
 class ClassifiedSubQuery(BaseModel):
     sub_query: str
-    class_label: Literal["FoodSQL","Out_of_scope"]
+    class_label: Literal["BankSQL","Out_of_scope"]
 
 class SuprivisorResponse(BaseModel):
     classified_sub_queries : list[ClassifiedSubQuery]
@@ -86,11 +86,11 @@ class UIUserRequestDebug(BaseModel):
 
 class EntityExtraction(BaseModel):
     user_query: str
-    order_items: list[str]
-    restaurant_city: list[str]
-    restaurant_name: list[str]
-    cuisines: list[str]
-    restaurant_types: list[str]
+    merchant_names: list[str]
+    merchant_categories: list[str]
+    countries: list[str]
+    channels: list[str]
+    card_types: list[str]
 
 
 class Text2SqlEntityExtractionResponse(BaseModel):
@@ -137,7 +137,7 @@ class Graph_State(BaseModel):
     text2sql_generator_response: Text2SqlGeneratorResponse | None
     database_query_results: list[str] | None
     sql_query_correction: bool = False
-    foodsql_queries: list[str] | None
+    banksql_queries: list[str] | None
     out_of_scope_queries: list[str] | None
     fallback_response: FallbackResponse | None
     response_generation_response: ResponseGeneratorResponse | None
@@ -148,7 +148,7 @@ class SubGraph_State(BaseModel):
     database_query_results: list[str] | None
     sql_query_correction: bool = False
     fallback_response: FallbackResponse | None
-    foodsql_queries: list[str] | None
+    banksql_queries: list[str] | None
     input_request: UIUserRequest | None
     agent_metrics: dict[str, Metrics]  | None
 

@@ -16,7 +16,7 @@ FALLBACK_MESSAGES = {
     "out_of_scope_only": (
         "I’m not able to help with the following request(s):\n\n"
         "{invalid_items}\n\n"
-        "You can ask me about food orders, spending, order history, or delivery details."
+        "You can ask me about your transactions, spending by category, merchant history, or card usage."
     ),
 
     "mixed_valid_invalid": (
@@ -37,7 +37,7 @@ async def fallback_agent(
     logger.info("Executing fallback agent.")
     # Render the final prompt string using .format()
     try:
-        valid = state.foodsql_queries
+        valid = state.banksql_queries
         invalid = state.out_of_scope_queries
 
         # 1️⃣ Exception
