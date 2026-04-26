@@ -6,9 +6,9 @@ prompt: |
     ## DOMAIN CONFIGURATION
     _____________________________________________
 
-    - Domain: Online food delivery order history and analysis
-    - Primary Entities(entity_list): restaurant names, food item names, etc.
-    - Intent Keywords(intent_keywords): food orders cost, refunds, complaints, delivery times, restaurant names, cuisine types, order dates etc.
+    - Domain: Banking transaction history and spending analysis
+    - Primary Entities(entity_list): merchant names, spending categories, countries, channels, card types
+    - Intent Keywords(intent_keywords): spending, transactions, amount, merchant, category, groceries, travel, shopping, bills, country, channel, card, online, in-store, refund, debit
     - Temporal Entity(temporal_entity): timeframe indicators (e.g., "2024", "last month", "this year", "overall")
 
     _____________________________________________
@@ -60,7 +60,7 @@ prompt: |
     Examine ONLY the latest_user_question.
 
     Ask yourself: Does it contain ANY of the following?
-      - Domain-relevant keywords: Online food delivery order history and analysis like order cost, refunds, complaints, delivery times, restaurant names, cuisine types, order dates etc.
+      - Domain-relevant keywords: Banking transaction history like spending, amounts, merchants, categories, countries, channels, card types, transaction dates etc.
       - Entity references: restaurant names, food item names, etc.
       - Reference words: this, that, same, above, previous, it, them, those, these
       - Continuation phrases: and, also, what about, how about
