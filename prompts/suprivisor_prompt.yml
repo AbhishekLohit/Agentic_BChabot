@@ -142,41 +142,41 @@ prompt: |
     User: "Did I spend more on travel or entertainment in 2024?"
 
     Output:
-    {
+    {{
       "sub_queries": [
-        {
+        {{
           "query": "Did I spend more on travel or entertainment in 2024?",
           "classification": "BankSQL"
-        }
+        }}
       ]
-    }
+    }}
 
     # Example 7
     User: "Which merchant did I spend the most at overall?"
 
     Output:
-    {
+    {{
       "sub_queries": [
-        {
+        {{
           "query": "Which merchant did I spend the most at overall?",
           "classification": "BankSQL"
-        }
+        }}
       ]
-    }
+    }}
 
     # Example 8
     User: "Show my last transaction and explain what cryptocurrency is"
 
     Output:
-    {
+    {{
       "sub_queries": [
-        {
+        {{
           "query": "Show my last transaction.",
           "classification": "BankSQL"
-        },
-        {
+        }},
+        {{
           "query": "Explain what cryptocurrency is.",
           "classification": "Out_of_scope"
-        }
+        }}
       ]
-    }
+    }}

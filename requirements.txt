@@ -38,6 +38,7 @@ kubernetes==35.0.0
 langchain==1.2.10
 langchain-chroma==1.1.0
 langchain-core==1.2.13
+langchain-anthropic
 langchain-openai==1.1.10
 langgraph==1.0.8
 langgraph-checkpoint==4.0.0

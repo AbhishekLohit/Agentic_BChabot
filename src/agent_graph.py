@@ -9,14 +9,14 @@ from agents.sql_execution import execute_query
 from agents.response_generator import response_generator_agent 
 from agents.fallback import fallback_agent
 from agents.sql_correction import sql_correction
-from langchain_openai import ChatOpenAI,OpenAIEmbeddings
+from typing import Any as LLMType
 from app_models import Prompts
 from logging import Logger
 from agent_subraph import Agent_SubGraph
 
 class Agent_Graph:
     def __init__(self,
-                 openai_llm:ChatOpenAI,
+                 openai_llm:LLMType,
                  prompts:Prompts,
                  logger: Logger,
                  agent_subgraph: Agent_SubGraph

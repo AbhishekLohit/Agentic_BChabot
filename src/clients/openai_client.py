@@ -1,9 +1,8 @@
 # llm_connection.py
-from langchain_openai import ChatOpenAI
-from langchain.chat_models import init_chat_model
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_anthropic import ChatAnthropic
 import os
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings,ChatOpenAI
 # Load the .env file
 load_dotenv()
 
@@ -31,6 +30,19 @@ def get_openai_llm(
         temperature=temperature,
     )
     return llm
+
+def get_claude_llm(
+    model: str = "claude-haiku-4-5-20251001",
+    temperature: float = 0.0,
+) -> ChatAnthropic:
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY not found. Please set it in your environment.")
+    return ChatAnthropic(
+        model=model,
+        api_key=api_key,
+        temperature=temperature,
+    )
 
 def get_openai_embeddings(model: str = "text-embedding-3-small"):
     api_key = os.getenv("OPENAI_API_KEY")

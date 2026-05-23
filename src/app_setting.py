@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 
 class AppSettings(BaseSettings):
     OPENAI_API_KEY : str = "your-openai-api-key"
+    ANTHROPIC_API_KEY: str = "your-anthropic-api-key"
     MODEL_NAME : str = "gpt-4"
     TEMPERATURE : float = 0.7
     MAX_TOKENS : int = 1500

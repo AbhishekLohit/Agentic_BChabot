@@ -106,6 +106,7 @@ class Metrics(BaseModel):
     output_tokens: int
     total_tokens: int
     cached_tokens: int
+    cache_creation_tokens: int = 0
     latency: float
     model_cost_without_cache: float
     model_cost_with_cache: float

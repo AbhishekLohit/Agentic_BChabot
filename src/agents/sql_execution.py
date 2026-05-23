@@ -1,6 +1,5 @@
 from logging import Logger
 from app_models import Graph_State,Text2SqlGeneratorResponse
-from langchain_openai import ChatOpenAI
 import sqlite3
 
 async def execute_query(

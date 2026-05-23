@@ -2,7 +2,7 @@ from email import message
 from logging import Logger
 import time
 from app_models import AgentMetrics, FallbackResponse, Graph_State, SubGraph_State,Text2SqlGeneratorResponse
-from langchain_openai import ChatOpenAI
+from typing import Any
 import sqlite3
 
 from utils import agent_utils
@@ -34,7 +34,7 @@ def execute_query(
 
 async def text2sql_generator_agent(
     state: SubGraph_State,
-    llm: ChatOpenAI,
+    llm: Any,
     prompt: str,
     logger: Logger,
 )-> SubGraph_State:
@@ -49,7 +49,7 @@ async def text2sql_generator_agent(
         #                         customer_id=state.input_request.customer_id
         # )
         messages = [
-            {"role": "system", "content": prompt.template},
+            {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
             {"role": "user", "content": f"""
                                 input_query: {input_query}
                                 customer_id: {state.input_request.customer_id}"""}
@@ -57,13 +57,7 @@ async def text2sql_generator_agent(
         structured_llm = llm.with_structured_output(Text2SqlGeneratorResponse,include_raw=True)
         # Send the prompt to the model directly (no chain)
         start_time = time.time()
-        # response_raw = await structured_llm.ainvoke(
-        #     final_prompt
-        # )
-        response_raw = await structured_llm.ainvoke(
-            messages,
-            prompt_cache_key="text2sql-generator-v2"
-        )
+        response_raw = await structured_llm.ainvoke(messages)
         end_time = time.time()
         latency = end_time - start_time
         sql_generator = response_raw["parsed"]
@@ -83,7 +77,8 @@ async def text2sql_generator_agent(
                         Input Tokens: {metric_metadata.input_tokens},
                         Output Tokens: {metric_metadata.output_tokens},
                         Total Tokens: {metric_metadata.total_tokens},
-                        Cached Tokens: {metric_metadata.cached_tokens}""")
+                        Cached Tokens (read): {metric_metadata.cached_tokens},
+                        Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
 
         # ✅ Update state
         # state.agent_metrics = AgentMetrics(

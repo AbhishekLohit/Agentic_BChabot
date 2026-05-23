@@ -1,6 +1,6 @@
 from fastapi import Depends, FastAPI
 from contextlib import asynccontextmanager
-from clients.openai_client import get_openai_llm,get_openai_embeddings
+from clients.openai_client import get_claude_llm, get_openai_embeddings
 from app_models import (
                 UIUserRequest,
                 Graph_State,
@@ -29,7 +29,7 @@ from typing import Annotated
 from logging_setup import setup_logging
 from app_models import Prompts
 from logging import Logger
-from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 import uvicorn
 import redis
 import sqlite3
@@ -38,7 +38,7 @@ import sqlite3
 async def lifespan(app: FastAPI):
 
     app_settings = AppSettings()
-    llm = get_openai_llm(model="gpt-4.1-mini",temperature=0.0)
+    llm = get_claude_llm(model="claude-sonnet-4-5-20250929", temperature=0.0)
     llm_embeddings = get_openai_embeddings(model="text-embedding-3-small")
     prompts = get_all_prompts(app_settings)
     logger = setup_logging()
@@ -76,7 +76,7 @@ app = FastAPI(title="Banking chatbot", lifespan=lifespan)
 @app.post("/process")
 async def process(
     input_request : UIUserRequest,
-    openai_llm : Annotated[ChatOpenAI,Depends(get_llm)], # type: ignore
+    openai_llm : Annotated[ChatAnthropic,Depends(get_llm)], # type: ignore
     prompts : Annotated[Prompts,Depends(get_prompts)], # type: ignore
     logger: Annotated[Logger,Depends(get_logging)], # type: ignore
     redis_client: Annotated[any,Depends(get_redis_client)], # type: ignore
@@ -146,7 +146,7 @@ async def process(
 @app.post("/process-debug")
 async def process_debug(
     input_request: UIUserRequestDebug,
-    openai_llm: Annotated[ChatOpenAI, Depends(get_llm)],  # type: ignore
+    openai_llm: Annotated[ChatAnthropic, Depends(get_llm)],  # type: ignore
     prompts: Annotated[Prompts, Depends(get_prompts)],  # type: ignore
     logger: Annotated[Logger, Depends(get_logging)],  # type: ignore
     db_conn: Annotated[any, Depends(get_db_conn)],  # type: ignore

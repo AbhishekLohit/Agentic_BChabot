@@ -1,8 +1,6 @@
 from typing import Any
 from logging import Logger
-from clients.openai_client import get_openai_llm
 from app_models import AgentMetrics, FallbackResponse, Graph_State,ResponseGeneratorResponse
-from langchain_openai import ChatOpenAI
 from datetime import datetime
 import time
 
@@ -10,7 +8,7 @@ from utils import agent_utils
 
 async def response_generator_agent(
     state: Graph_State,
-    llm: ChatOpenAI,
+    llm: Any,
     prompt: str,
     logger: Logger
 )-> Graph_State:
@@ -29,7 +27,7 @@ async def response_generator_agent(
             #                         user_question= user_query
             # )
             messages = [
-                {"role": "system", "content": prompt.template},
+                {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
                 {"role": "user", "content": f"""
                                     sql_query_result: {sql_query_result}
                                     user_question: {user_query}"""}
@@ -37,13 +35,10 @@ async def response_generator_agent(
 
             # Send the prompt to the model directly (no chain)
             structured_llm = llm.with_structured_output(ResponseGeneratorResponse,include_raw=True)
-            
+
             # ✅ START TIME
             start_time = time.time()
-            response_raw = await structured_llm.ainvoke(
-                messages,
-                prompt_cache_key="response-generator-v2"
-            )
+            response_raw = await structured_llm.ainvoke(messages)
             # response_raw = await structured_llm.ainvoke(final_prompt)
              # ✅ END TIME
             end_time = time.time()
@@ -64,7 +59,8 @@ async def response_generator_agent(
                             Input Tokens: {metric_metadata.input_tokens},
                             Output Tokens: {metric_metadata.output_tokens},
                             Total Tokens: {metric_metadata.total_tokens},
-                            Cached Tokens: {metric_metadata.cached_tokens}""")
+                            Cached Tokens (read): {metric_metadata.cached_tokens},
+                        Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
 
             # ✅ Update state
             # state.agent_metrics = AgentMetrics(

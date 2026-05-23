@@ -1,16 +1,14 @@
 import time
 from typing import Any
 from logging import Logger
-from clients.openai_client import get_openai_llm
 from app_models import AgentMetrics, FallbackResponse, Graph_State,SqlCorrectionResponse, SubGraph_State
-from langchain_openai import ChatOpenAI
 
 from utils import agent_utils
 
 
 async def sql_correction(
     state: SubGraph_State,
-    llm: ChatOpenAI,
+    llm: Any,
     prompt: str,
     logger: Logger
 )-> SubGraph_State  :
@@ -22,7 +20,7 @@ async def sql_correction(
         #                         sql_query=sql_query
         #                     )
         messages = [
-                {"role": "system", "content": prompt.template},
+                {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
                 {"role": "user", "content": f"""
                                     sql_query: {sql_query}"""}
             ]
@@ -30,11 +28,7 @@ async def sql_correction(
         structured_llm = llm.with_structured_output(SqlCorrectionResponse,include_raw=True)
         # ✅ START TIME
         start_time = time.time()
-        # response_raw = await structured_llm.ainvoke(final_prompt)
-        response_raw = await structured_llm.ainvoke(
-                messages,
-                prompt_cache_key="sql-correction-v2"
-        )
+        response_raw = await structured_llm.ainvoke(messages)
         # ✅ END TIME
         end_time = time.time()
         latency = end_time - start_time
@@ -54,7 +48,8 @@ async def sql_correction(
                         Input Tokens: {metric_metadata.input_tokens},
                         Output Tokens: {metric_metadata.output_tokens},
                         Total Tokens: {metric_metadata.total_tokens},
-                        Cached Tokens: {metric_metadata.cached_tokens}""")
+                        Cached Tokens (read): {metric_metadata.cached_tokens},
+                        Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
 
         # ✅ Update state
         # state.agent_metrics = AgentMetrics(
