@@ -32,10 +32,12 @@ from logging_setup import setup_logging
 from app_models import Prompts
 from logging import Logger
 from datetime import datetime
+from pydantic import BaseModel
 import uvicorn
 import redis
 import sqlite3
 import re
+import hmac
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -89,6 +91,11 @@ TECHNICAL_FALLBACK_MESSAGE = (
     "I'm sorry, but I'm currently unable to process your request due to a "
     "technical issue. Please try again later."
 )
+
+
+class LoginRequest(BaseModel):
+    user_id: str
+    password: str
 
 
 def _rows_as_strings(cursor: sqlite3.Cursor, rows: list[tuple]) -> list[str]:
@@ -249,6 +256,24 @@ async def read_index():
     index_path = os.path.join(base_dir, "index.html")
     with open(index_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read(), status_code=200)
+
+
+@app.post("/login")
+async def login(req: LoginRequest):
+    allowed_users = {
+        user.strip()
+        for user in os.getenv("DASHBOARD_USER_IDS", "Cust_0410,Cust_0411,Cust_0100").split(",")
+        if user.strip()
+    }
+    expected_password = os.getenv("DASHBOARD_PASSWORD", "bbot@123")
+
+    user_ok = req.user_id in allowed_users
+    password_ok = hmac.compare_digest(req.password, expected_password)
+
+    if not user_ok or not password_ok:
+        return {"status": "error", "message": "Invalid user ID or password."}
+
+    return {"status": "success", "user_id": req.user_id}
 
 
 @app.post("/process")
