@@ -114,13 +114,41 @@ def _local_transaction_fallback(
                 "",
             )
 
+        spend_words = ["spend", "spending", "spent", "suspended", "spended"]
+        asks_for_total = any(word in query_lower for word in ["total", "final", "amount", "how much"])
+        asks_about_spend = any(word in query_lower for word in spend_words)
+
+        if asks_for_total and asks_about_spend and "last month" in query_lower:
+            today = datetime.now()
+            last_month_year = today.year
+            last_month = today.month - 1
+            if last_month == 0:
+                last_month = 12
+                last_month_year -= 1
+
+            sql_query = """
+                SELECT SUM(amount_usd) AS total_spent
+                FROM transactions
+                WHERE customer_id = ?
+                  AND year = ?
+                  AND month = ?
+            """
+            cursor.execute(sql_query, (customer_id, last_month_year, last_month))
+            total = cursor.fetchone()[0] or 0.0
+            month_name = datetime(last_month_year, last_month, 1).strftime("%B %Y")
+            return (
+                f"You spent a total of ${total:,.2f} last month ({month_name}).",
+                [str({"total_spent": total, "year": last_month_year, "month": last_month})],
+                sql_query,
+            )
+
         category = None
         for candidate in AppSettings().MERCHANT_CATEGORIES:
             if candidate.lower() in query_lower:
                 category = candidate
                 break
 
-        if category and any(word in query_lower for word in ["spend", "spending", "spent"]):
+        if category and asks_about_spend:
             sql_query = """
                 SELECT SUM(amount_usd) AS total_spent
                 FROM transactions
