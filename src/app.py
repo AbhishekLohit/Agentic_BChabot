@@ -6,7 +6,9 @@ from app_models import (
                 Graph_State,
                 ResponseGeneratorResponse,
                 ChatMessage,
-                UIUserRequestDebug
+                UIUserRequestDebug,
+                Text2SqlGeneratorResponse,
+                FallbackResponse,
                 )
 from app_setting import AppSettings
 from utils.file_utils import (
@@ -29,10 +31,11 @@ from typing import Annotated, Any
 from logging_setup import setup_logging
 from app_models import Prompts
 from logging import Logger
-from langchain_anthropic import ChatAnthropic
+from datetime import datetime
 import uvicorn
 import redis
 import sqlite3
+import re
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,10 +47,18 @@ async def lifespan(app: FastAPI):
     logger = setup_logging()
     
     redis_client = redis.Redis(
-        host='localhost', port=6379, db=0, decode_responses=True
+        host='localhost',
+        port=6379,
+        db=0,
+        decode_responses=True,
+        socket_connect_timeout=0.5,
+        socket_timeout=0.5,
     )
     # Path to your SQLite database
     DB_PATH = app_settings.db_path
+    if not os.path.isabs(DB_PATH):
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        DB_PATH = os.path.join(project_root, DB_PATH)
 
     # Connect to the database
     db_conn = sqlite3.connect(DB_PATH)
@@ -73,6 +84,129 @@ app = FastAPI(title="Banking chatbot", lifespan=lifespan)
 
 from fastapi.responses import HTMLResponse
 import os
+
+TECHNICAL_FALLBACK_MESSAGE = (
+    "I'm sorry, but I'm currently unable to process your request due to a "
+    "technical issue. Please try again later."
+)
+
+
+def _rows_as_strings(cursor: sqlite3.Cursor, rows: list[tuple]) -> list[str]:
+    columns = [col[0] for col in cursor.description or []]
+    return [str(dict(zip(columns, row))) for row in rows]
+
+
+def _local_transaction_fallback(
+    input_request: UIUserRequest,
+    db_conn: sqlite3.Connection,
+) -> tuple[str, list[str], str] | None:
+    """Answer common dashboard prompts directly from SQLite when the LLM provider is unavailable."""
+    query_text = input_request.user_query.strip()
+    query_lower = query_text.lower()
+    customer_id = input_request.customer_id
+    cursor = db_conn.cursor()
+
+    try:
+        category = None
+        for candidate in AppSettings().MERCHANT_CATEGORIES:
+            if candidate.lower() in query_lower:
+                category = candidate
+                break
+
+        if category and any(word in query_lower for word in ["spend", "spending", "spent"]):
+            sql_query = """
+                SELECT SUM(amount_usd) AS total_spent
+                FROM transactions
+                WHERE customer_id = ?
+                  AND LOWER(merchant_system_category1_name) = LOWER(?)
+            """
+            cursor.execute(sql_query, (customer_id, category))
+            total = cursor.fetchone()[0] or 0.0
+            return (
+                f"You spent a total of ${total:,.2f} on {category}.",
+                [str({"total_spent": total})],
+                sql_query,
+            )
+
+        if "highest" in query_lower and "transaction" in query_lower:
+            sql_query = """
+                SELECT transaction_id, transaction_date, amount_usd, merchant_brand_name,
+                       merchant_system_category1_name
+                FROM transactions
+                WHERE customer_id = ? AND year = ?
+                ORDER BY amount_usd DESC
+                LIMIT 1
+            """
+            cursor.execute(sql_query, (customer_id, datetime.now().year))
+            rows = cursor.fetchall()
+            if rows:
+                row = dict(zip([col[0] for col in cursor.description], rows[0]))
+                return (
+                    f"Your highest transaction this year was ${row['amount_usd']:,.2f} at {row['merchant_brand_name']} on {row['transaction_date']}.",
+                    [str(row)],
+                    sql_query,
+                )
+
+        if "premium debit" in query_lower:
+            sql_query = """
+                SELECT transaction_id, transaction_date, amount_usd, merchant_brand_name,
+                       merchant_system_category1_name, country, channel, card_type
+                FROM transactions
+                WHERE customer_id = ? AND LOWER(card_type) = 'premium debit'
+                ORDER BY transaction_date DESC
+                LIMIT 50
+            """
+            cursor.execute(sql_query, (customer_id,))
+            rows = cursor.fetchall()
+            result_rows = _rows_as_strings(cursor, rows)
+            total = sum((dict_row.get("amount_usd") or 0.0) for dict_row in [dict(zip([col[0] for col in cursor.description], row)) for row in rows])
+            return (
+                f"I found {len(rows)} recent Premium Debit transactions totaling ${total:,.2f}.",
+                result_rows,
+                sql_query,
+            )
+
+        country_match = re.search(r"\bin\s+([a-zA-Z ]+)\??$", query_text)
+        if country_match and "transaction" in query_lower:
+            country = country_match.group(1).strip()
+            sql_query = """
+                SELECT transaction_id, transaction_date, amount_usd, merchant_brand_name,
+                       merchant_system_category1_name, country, channel, card_type
+                FROM transactions
+                WHERE customer_id = ? AND LOWER(country) = LOWER(?)
+                ORDER BY transaction_date DESC
+                LIMIT 50
+            """
+            cursor.execute(sql_query, (customer_id, country))
+            rows = cursor.fetchall()
+            return (
+                f"I found {len(rows)} recent transactions in {country}.",
+                _rows_as_strings(cursor, rows),
+                sql_query,
+            )
+
+        if category and "transaction" in query_lower:
+            sql_query = """
+                SELECT transaction_id, transaction_date, amount_usd, merchant_brand_name,
+                       merchant_system_category1_name, country, channel, card_type
+                FROM transactions
+                WHERE customer_id = ?
+                  AND LOWER(merchant_system_category1_name) = LOWER(?)
+                ORDER BY transaction_date DESC
+                LIMIT 50
+            """
+            cursor.execute(sql_query, (customer_id, category))
+            rows = cursor.fetchall()
+            return (
+                f"I found {len(rows)} recent {category} transactions.",
+                _rows_as_strings(cursor, rows),
+                sql_query,
+            )
+
+    finally:
+        cursor.close()
+
+    return None
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
@@ -153,6 +287,10 @@ async def process(
         #                       generated_response = str(response.response_generation_response.generated_response)
         #                     )
         final_chat_response = response["response_generation_response"].generated_response
+        if final_chat_response == TECHNICAL_FALLBACK_MESSAGE:
+            local_response = _local_transaction_fallback(input_request, db_conn)
+            if local_response:
+                final_chat_response, _, _ = local_response
         default_ai_response = "I'm sorry, I couldn't process your request at the moment."
         save_chat_history(redis_client, 
                           input_request.customer_id, 
@@ -221,6 +359,27 @@ async def process_debug(
         logger.info("[DEBUG] Invoking agent graph")
 
         response = await agent_graph.app.ainvoke(graph_state)
+
+        response_gen = response.get("response_generation_response")
+        generated_response = getattr(response_gen, "generated_response", None)
+        if generated_response == TECHNICAL_FALLBACK_MESSAGE:
+            local_response = _local_transaction_fallback(input_request_debug, db_conn)
+            if local_response:
+                answer, rows, sql_query = local_response
+                response["database_query_results"] = rows
+                response["text2sql_generator_response"] = Text2SqlGeneratorResponse(
+                    user_query=input_request.user_query,
+                    sql_query=sql_query.strip()
+                )
+                response["response_generation_response"] = ResponseGeneratorResponse(
+                    generated_response=answer
+                )
+                response["fallback_response"] = FallbackResponse(
+                    fallback_flag=False,
+                    fallback_node="local_sql_fallback",
+                    fallback_reason="llm_unavailable",
+                    fallback_message=None
+                )
 
         return response
 

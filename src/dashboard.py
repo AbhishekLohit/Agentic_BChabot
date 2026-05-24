@@ -4,6 +4,7 @@ import requests
 import ast
 import re
 import sqlite3
+import os
 import html as html_lib
 import plotly.express as px
 import plotly.graph_objects as go
@@ -533,7 +534,8 @@ def load_visual_transaction_rows(latest_debug, selected_customer_id):
 
     query += " ORDER BY transaction_date DESC LIMIT 250"
     try:
-        with sqlite3.connect("transactions.db") as conn:
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "transactions.db")
+        with sqlite3.connect(db_path) as conn:
             return pd.read_sql_query(query, conn, params=params)
     except Exception:
         return pd.DataFrame()
