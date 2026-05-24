@@ -14,7 +14,7 @@ sys.path.insert(0, str(SRC_DIR))
 # Imports
 # -------------------------------------------------
 
-from clients.openai_client import get_openai_llm
+from clients.llm_client import get_configured_llm
 from app_models import Test_Data_Generation_Response
 from langchain_openai import ChatOpenAI
 from utils.file_utils import get_all_prompts
@@ -217,7 +217,8 @@ def main():
 
     print("\nStarting FULL scenario-based dataset generation...\n")
 
-    llm = get_openai_llm(
+    llm = get_configured_llm(
+        provider="openai",
         model="gpt-4.1-mini",
         temperature=0.7   # lower = more consistent
     )

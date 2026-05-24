@@ -1,55 +1,29 @@
-# llm_connection.py
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_anthropic import ChatAnthropic
-import os
-from dotenv import load_dotenv
-# Load the .env file
-load_dotenv()
+# Legacy bridge file forwarding calls to the unified llm_client.py
+from clients.llm_client import get_configured_llm, get_openai_embeddings as get_new_embeddings
+from typing import Any
 
 def get_openai_llm(
     model: str = "gpt-4o-mini",
     temperature: float = 0.2,
-    
-)-> ChatOpenAI:
-    """
-    Returns a configured LangChain OpenAI LLM instance.
-    The API key is read from environment variable OPENAI_API_KEY.
-    """
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
-
-    # llm = init_chat_model(
-    #     temperature=temperature,
-    #     model=model,
-    #     openai_api_key=api_key
-    # )
-    llm = ChatOpenAI(
+) -> Any:
+    """Legacy wrapper forwarding to the unified get_configured_llm."""
+    return get_configured_llm(
+        provider="openai",
         model=model,
-        api_key=api_key,
-        temperature=temperature,
+        temperature=temperature
     )
-    return llm
 
 def get_claude_llm(
     model: str = "claude-haiku-4-5-20251001",
     temperature: float = 0.0,
-) -> ChatAnthropic:
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY not found. Please set it in your environment.")
-    return ChatAnthropic(
+) -> Any:
+    """Legacy wrapper forwarding to the unified get_configured_llm."""
+    return get_configured_llm(
+        provider="anthropic",
         model=model,
-        api_key=api_key,
-        temperature=temperature,
+        temperature=temperature
     )
 
-def get_openai_embeddings(model: str = "text-embedding-3-small"):
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
-    
-    return OpenAIEmbeddings(
-        model=model,
-        openai_api_key=api_key
-    )
+def get_openai_embeddings(model: str = "text-embedding-3-small") -> Any:
+    """Legacy wrapper forwarding to the unified get_openai_embeddings."""
+    return get_new_embeddings(model=model)

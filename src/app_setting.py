@@ -1,11 +1,17 @@
 from pydantic_settings import BaseSettings
 
 class AppSettings(BaseSettings):
-    OPENAI_API_KEY : str = "your-openai-api-key"
-    ANTHROPIC_API_KEY: str = "your-anthropic-api-key"
-    MODEL_NAME : str = "gpt-4"
-    TEMPERATURE : float = 0.7
-    MAX_TOKENS : int = 1500
+    LLM_PROVIDER: str = "openai"
+    OPENAI_API_KEY: str | None = None
+    GEMINI_API_KEY: str | None = None
+    GROQ_API_KEY: str | None = None
+    ANTHROPIC_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GROQ_MODEL: str = "llama3-70b-8192"
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-latest"
+    TEMPERATURE: float = 0.2
+    MAX_TOKENS: int = 1500
     context_builder_prompt_path: str = "context_builder_prompt.yml"
     text2sql_entity_extractor_prompt_path: str = "text2sql_entity_extractor_prompt.yml"
     text2sql_generator_prompt_path: str = "text2sql_generator.yml"

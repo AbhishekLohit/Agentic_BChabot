@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 import numpy as np
 import faiss
-from src.clients.openai_client import get_openai_embeddings
+from src.clients.llm_client import get_openai_embeddings
 from src.app_setting import AppSettings
 from langchain_openai import OpenAIEmbeddings
 from sqlite3 import Connection 

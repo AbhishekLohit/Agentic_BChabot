@@ -78,6 +78,7 @@ prompt: |
       - Always scope queries to the current customer_id.
       - Use aggregation functions only when required.
       - Include GROUP BY for all non-aggregated columns in SELECT when using aggregates.
+      - Unless the user explicitly requests otherwise, for any SELECT query that returns detailed lists of individual transactions (not aggregate sums, counts, or averages), always order results by recency using `ORDER BY transaction_date DESC` and apply a default limit of 50 using `LIMIT 50`.
       - Return ONLY the SQL query.
       - Do NOT include explanations, comments, or markdown.
 

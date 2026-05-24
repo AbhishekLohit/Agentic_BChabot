@@ -5,7 +5,7 @@ from typing import List, Dict
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 
-from src.clients.openai_client import get_openai_embeddings
+from src.clients.llm_client import get_openai_embeddings
 from src.app_setting import AppSettings
 import time 
 
