@@ -649,7 +649,20 @@
                 })
             });
 
-            const reply = await response.json();
+            const payload = await response.json();
+            let reply = "";
+            if (typeof payload === "string") {
+                reply = payload;
+            } else if (payload && payload.details) {
+                reply = `Backend error: ${payload.details}`;
+            } else if (payload && payload.error) {
+                reply = `Backend error: ${payload.error}`;
+            } else {
+                reply = JSON.stringify(payload);
+            }
+            if (!response.ok) {
+                throw new Error(reply || `HTTP ${response.status}`);
+            }
             
             // Remove typing bubble
             const typingBubble = document.getElementById(typingId);
@@ -685,7 +698,7 @@
             const typingBubble = document.getElementById(typingId);
             if (typingBubble) typingBubble.remove();
             
-            chatBoard.innerHTML += `<div class="message assistant">Sorry, I encountered an error communicating with the banking gateway. Please try again.</div>`;
+            chatBoard.innerHTML += `<div class="message assistant">${escapeHtml(error.message || "Sorry, I encountered an error communicating with the banking gateway. Please try again.")}</div>`;
             chatBoard.scrollTop = chatBoard.scrollHeight;
         }
     }

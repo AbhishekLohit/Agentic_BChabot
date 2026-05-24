@@ -56,7 +56,10 @@ def save_chat_history(
     chat_history.append(ChatMessage(role="assistant", content=ai_response))
     logger.info(f"Saving chat history to Redis key: {chat_history}")
     serialized = json.dumps([msg.dict() for msg in chat_history])
-    redis_client.set(key, serialized, ex=ttl_seconds)
+    try:
+        redis_client.set(key, serialized, ex=ttl_seconds)
+    except Exception as exc:
+        logger.warning("Redis unavailable while saving chat history; continuing without persistence: %s", exc)
 
 def get_chat_history(
         redis_client:any, 
@@ -69,10 +72,13 @@ def get_chat_history(
     """
     history : list[ChatMessage] =  []
     key = _get_redis_key(user_id, session_id)
-    history_json = redis_client.get(key)
-    if history_json:
-        data = json.loads(history_json)
-        history =  [ChatMessage(**msg) for msg in data]  # Convert dicts back to ChatMessage objects
+    try:
+        history_json = redis_client.get(key)
+        if history_json:
+            data = json.loads(history_json)
+            history =  [ChatMessage(**msg) for msg in data]  # Convert dicts back to ChatMessage objects
+    except Exception:
+        history = []
     history.append(ChatMessage(role="user", content=user_latest_message))
     return history
 

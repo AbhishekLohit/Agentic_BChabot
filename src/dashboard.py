@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import requests
 import ast
+import re
+import sqlite3
 import html as html_lib
 import plotly.express as px
 import plotly.graph_objects as go
@@ -477,6 +479,65 @@ def build_api_chat_history():
         messages.append({"role": role, "content": msg["content"]})
     return messages
 
+def _extract_sql_filter(sql_query, column_name):
+    """Pull a simple equality or LIKE value from generated SQL for dashboard drilldowns."""
+    if not sql_query:
+        return None
+    patterns = [
+        rf"{column_name}\s*=\s*'([^']+)'",
+        rf"{column_name}\s+LIKE\s+'%?([^'%]+)%?'",
+        rf"LOWER\({column_name}\)\s+LIKE\s+LOWER\('%([^']+)%'\)"
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, sql_query, flags=re.IGNORECASE)
+        if match:
+            return match.group(1)
+    return None
+
+def load_visual_transaction_rows(latest_debug, selected_customer_id):
+    """
+    Agent answers often return one aggregate row, such as total_spent.
+    For charts, fetch matching transaction rows locally using safe parameterized filters.
+    """
+    if not latest_debug:
+        return pd.DataFrame()
+
+    sql_query = ((latest_debug.get("text2sql_generator_response") or {}).get("sql_query") or "")
+    query = """
+        SELECT transaction_date, amount_usd, merchant_brand_name,
+               merchant_system_category1_name, merchant_system_category2_name,
+               country, channel, card_type
+        FROM transactions
+        WHERE customer_id = ?
+    """
+    params = [selected_customer_id]
+
+    for column in [
+        "merchant_system_category1_name",
+        "merchant_system_category2_name",
+        "merchant_brand_name",
+        "country",
+        "channel",
+        "card_type"
+    ]:
+        value = _extract_sql_filter(sql_query, column)
+        if value:
+            query += f" AND LOWER({column}) LIKE LOWER(?)"
+            params.append(f"%{value}%")
+
+    year_match = re.search(r"\byear\s*=\s*(?:strftime\('%Y',\s*'now'\)|'?(\d{4})'?)", sql_query, flags=re.IGNORECASE)
+    if year_match:
+        year_value = year_match.group(1) or datetime.now().strftime("%Y")
+        query += " AND year = ?"
+        params.append(int(year_value))
+
+    query += " ORDER BY transaction_date DESC LIMIT 250"
+    try:
+        with sqlite3.connect("transactions.db") as conn:
+            return pd.read_sql_query(query, conn, params=params)
+    except Exception:
+        return pd.DataFrame()
+
 # Helper to execute user request
 def submit_query(query_text):
     if not query_text.strip():
@@ -637,7 +698,13 @@ with tab_analytics:
     st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
     
     if db_rows:
-        df = pd.DataFrame(db_rows)
+        query_summary_df = pd.DataFrame(db_rows)
+        df = query_summary_df.copy()
+
+        if "amount_usd" not in df.columns:
+            visual_df = load_visual_transaction_rows(latest_debug, customer_id)
+            if not visual_df.empty:
+                df = visual_df
         
         # Standardize Types
         if "amount_usd" in df.columns:
@@ -650,6 +717,10 @@ with tab_analytics:
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
         
         total_spending = df["amount_usd"].sum() if "amount_usd" in df.columns else 0.0
+        if "total_spent" in query_summary_df.columns:
+            total_spending = pd.to_numeric(query_summary_df["total_spent"], errors="coerce").fillna(0.0).sum()
+        elif "highest_transaction" in query_summary_df.columns:
+            total_spending = pd.to_numeric(query_summary_df["highest_transaction"], errors="coerce").fillna(0.0).max()
         tx_count = len(df)
         avg_value = df["amount_usd"].mean() if "amount_usd" in df.columns and tx_count > 0 else 0.0
         
@@ -753,6 +824,10 @@ with tab_analytics:
 
         # 3. Raw Structured Tabular records
         st.markdown("<h4 style='color:#ffffff; font-family:\"Orbitron\",sans-serif; text-transform:uppercase; font-size:1.1rem; margin-top:30px; margin-bottom:20px; letter-spacing:0.8px;'>Structured Ledger records</h4>", unsafe_allow_html=True)
+        if not query_summary_df.equals(df):
+            st.markdown("<h6 style='color:rgba(255,255,255,0.55); font-family:\"Orbitron\",sans-serif; text-transform:uppercase; font-size:0.78rem; letter-spacing:0.7px;'>Query Summary</h6>", unsafe_allow_html=True)
+            st.dataframe(query_summary_df, width='stretch')
+            st.markdown("<h6 style='color:rgba(255,255,255,0.55); font-family:\"Orbitron\",sans-serif; text-transform:uppercase; font-size:0.78rem; letter-spacing:0.7px;'>Visualized Transaction Rows</h6>", unsafe_allow_html=True)
         st.dataframe(df, width='stretch')
 
         # CSV Download utility
