@@ -107,6 +107,13 @@ def _local_transaction_fallback(
     cursor = db_conn.cursor()
 
     try:
+        if query_lower in {"hi", "hello", "hey", "hii", "good morning", "good afternoon", "good evening"}:
+            return (
+                "Hi, I'm ready to help with your transactions. You can ask about spending by category, merchant history, card type, country, or highest transaction.",
+                [],
+                "",
+            )
+
         category = None
         for candidate in AppSettings().MERCHANT_CATEGORIES:
             if candidate.lower() in query_lower:
@@ -227,6 +234,19 @@ async def process(
 
 
 )-> str:
+    local_response = _local_transaction_fallback(input_request, db_conn)
+    if local_response:
+        final_chat_response, _, _ = local_response
+        save_chat_history(
+            redis_client,
+            input_request.customer_id,
+            input_request.session_id,
+            [ChatMessage(role="user", content=input_request.user_query)],
+            final_chat_response,
+            logger,
+        )
+        return final_chat_response
+
     # Run input guardrail layer
     from utils.guardrails import run_input_guardrail
     guardrail_response = await run_input_guardrail(input_request.user_query, openai_llm)
@@ -322,6 +342,38 @@ async def process_debug(
         customer_id=input_request.customer_id,
         session_id=input_request.session_id
     )
+    local_response = _local_transaction_fallback(input_request_debug, db_conn)
+    if local_response:
+        answer, rows, sql_query = local_response
+        return {
+            "input_request": input_request_debug.model_dump(),
+            "chat_history": [msg.model_dump() for msg in chat_history],
+            "customer_id": input_request.customer_id,
+            "context_builder_response": None,
+            "entity_extraction_response": None,
+            "suprivisor_response": None,
+            "text2sql_generator_response": (
+                Text2SqlGeneratorResponse(
+                    user_query=input_request.user_query,
+                    sql_query=sql_query.strip()
+                ).model_dump()
+                if sql_query else None
+            ),
+            "database_query_results": rows,
+            "sql_query_correction": False,
+            "banksql_queries": [input_request.user_query],
+            "out_of_scope_queries": [],
+            "fallback_response": FallbackResponse(
+                fallback_flag=False,
+                fallback_node="local_sql_fallback",
+                fallback_reason="llm_unavailable",
+                fallback_message=None
+            ).model_dump(),
+            "response_generation_response": ResponseGeneratorResponse(
+                generated_response=answer
+            ).model_dump(),
+            "agent_metrics": None,
+        }
 
     logger.info(f"[DEBUG] Chat history received: {chat_history}")
 
