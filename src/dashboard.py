@@ -612,11 +612,26 @@ def load_visual_transaction_rows(latest_debug, selected_customer_id):
             query += f" AND LOWER({column}) LIKE LOWER(?)"
             params.append(f"%{value}%")
 
-    year_match = re.search(r"\byear\s*=\s*(?:strftime\('%Y',\s*'now'\)|'?(\d{4})'?)", sql_query, flags=re.IGNORECASE)
-    if year_match:
-        year_value = year_match.group(1) or datetime.now().strftime("%Y")
+    year_num_match = re.search(r"\byear\s*=\s*'?(\d{4})'?", sql_query, flags=re.IGNORECASE)
+    if year_num_match:
+        year_value = int(year_num_match.group(1))
         query += " AND year = ?"
-        params.append(int(year_value))
+        params.append(year_value)
+    else:
+        strftime_match = re.search(r"\byear\s*=\s*strftime\('%Y',\s*'now'\)(?:\s*([-+])\s*(\d+))?", sql_query, flags=re.IGNORECASE)
+        if strftime_match:
+            current_year = datetime.now().year
+            offset_sign = strftime_match.group(1)
+            offset_val = strftime_match.group(2)
+            if offset_sign and offset_val:
+                if offset_sign == "-":
+                    year_value = current_year - int(offset_val)
+                else:
+                    year_value = current_year + int(offset_val)
+            else:
+                year_value = current_year
+            query += " AND year = ?"
+            params.append(year_value)
 
     query += " ORDER BY transaction_date DESC LIMIT 250"
     try:
