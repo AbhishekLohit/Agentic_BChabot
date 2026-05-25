@@ -122,10 +122,9 @@ def _local_transaction_fallback(
             )
 
         spend_words = ["spend", "spending", "spent", "suspended", "spended"]
-        asks_for_total = any(word in query_lower for word in ["total", "final", "amount", "how much"])
         asks_about_spend = any(word in query_lower for word in spend_words)
 
-        if asks_for_total and asks_about_spend and "last month" in query_lower:
+        if asks_about_spend and "last month" in query_lower:
             today = datetime.now()
             last_month_year = today.year
             last_month = today.month - 1
@@ -287,7 +286,13 @@ async def process(
 
 
 )-> str:
-    local_response = _local_transaction_fallback(input_request, db_conn)
+    # Bypass local fallback for voice queries to ensure they trigger the full, real SQL pipeline
+    is_voice = input_request.session_id and input_request.session_id.startswith("sess_voice")
+    
+    local_response = None
+    if not is_voice:
+        local_response = _local_transaction_fallback(input_request, db_conn)
+        
     if local_response:
         final_chat_response, _, _ = local_response
         save_chat_history(
@@ -299,24 +304,6 @@ async def process(
             logger,
         )
         return final_chat_response
-
-    # Run input guardrail layer
-    from utils.guardrails import run_input_guardrail
-    guardrail_response = await run_input_guardrail(input_request.user_query, openai_llm)
-    if guardrail_response.guardrail_invoked:
-        logger.warning(f"Guardrail triggered. Category: {guardrail_response.guardrail_invoked}, Reason: {guardrail_response.guardrail_reason}")
-        reason = guardrail_response.guardrail_invoked
-        if reason == "OUT_OF_SCOPE":
-            return "I am configured only to assist with banking transactions, transaction history, and general account inquiries. Please ask a banking-related question."
-        elif reason == "SYSTEM_VIOLATION":
-            return "I'm sorry, but I cannot fulfill this request as it violates system instructions."
-        elif reason == "SQL_VIOLATION":
-            return "Security Alert: Direct database queries or SQL injection attempts are not permitted. Please ask a standard natural language banking question."
-        elif reason == "PII_VIOLATION":
-            return "Security Alert: Processing or revealing highly sensitive credentials (such as PINs, full card numbers, CVVs, or bank passwords) is strictly prohibited. Please rephrase your banking request without sensitive credentials."
-        else:
-            return "I am configured only to assist with banking transactions."
-
     chat_history = get_chat_history(
                 redis_client, 
                 input_request.customer_id, 

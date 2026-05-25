@@ -85,7 +85,7 @@ async def suprivisor_agent(
             fallback_flag=True,
             fallback_node="supervisor",
             fallback_reason="exception",
-            fallback_message="exception in supervisor agent"
+            fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         state.fallback_response = fallback_response
     

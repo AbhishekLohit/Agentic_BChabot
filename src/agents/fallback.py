@@ -35,10 +35,16 @@ async def fallback_agent(
     logger: Logger
 )-> Graph_State:
     logger.info("Executing fallback agent.")
+    
+    # If a specific fallback response was already set by a previous node (like guardrail) and it's not an exception, preserve it.
+    if state.fallback_response and state.fallback_response.fallback_node == "guardrail" and state.fallback_response.fallback_reason != "exception":
+        logger.info("Preserving existing guardrail fallback response.")
+        return state
+
     # Render the final prompt string using .format()
     try:
-        valid = state.banksql_queries
-        invalid = state.out_of_scope_queries
+        valid = getattr(state, "banksql_queries", []) or []
+        invalid = getattr(state, "out_of_scope_queries", []) or []
 
         # 1️⃣ Exception
         if state.fallback_response and state.fallback_response.fallback_reason == "exception":

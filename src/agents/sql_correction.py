@@ -63,12 +63,12 @@ async def sql_correction(
         state.agent_metrics["sql_correction"] = metric_metadata
 
     except Exception as e:
-        logger.exception(f"Error in supervisor agent: {str(e)}")
+        logger.exception(f"Error in sql correction agent: {str(e)}")
         fallback_response = FallbackResponse(
             fallback_flag=True,
             fallback_node="sql_correction",
             fallback_reason="exception",
-            fallback_message="exception in sql correction agent"
+            fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         state.fallback_response = fallback_response
     

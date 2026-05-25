@@ -212,8 +212,9 @@ st.markdown("""
 # -------------------------------------------------------------
 # 🌐 API Configuration Constants
 # -------------------------------------------------------------
-API_URL_PROCESS = "http://localhost:8000/process-debug"
-API_URL_SETTINGS = "http://localhost:8000/update-settings"
+API_URL_PROCESS = "http://127.0.0.1:8000/process"
+API_URL_PROCESS_DEBUG = "http://127.0.0.1:8000/process-debug"
+API_URL_SETTINGS = "http://127.0.0.1:8000/update-settings"
 
 # Initialize Session State
 if "chat_history" not in st.session_state:
@@ -633,37 +634,54 @@ def submit_query(query_text):
     # Append user message
     st.session_state.chat_history.append({"role": "user", "content": query_text})
     
-    # Query FastAPI Backend Process Debug Endpoint
-    payload = {
-        "user_query": query_text,
+    # 1. Setup API Requests to /process
+    payload_process = {
         "customer_id": customer_id,
         "session_id": session_id,
-        "chat_history": build_api_chat_history()[:-1]
+        "user_query": query_text
     }
     
     with st.spinner("B-Bot processing query through LangGraph agents..."):
         try:
-            res = requests.post(API_URL_PROCESS, json=payload)
-            if res.status_code == 200:
-                raw_state = res.json()
-                st.session_state.latest_debug_data = raw_state
+            # Perform a real HTTP POST request to the FastAPI backend /process endpoint
+            res_process = requests.post(API_URL_PROCESS, json=payload_process)
+            
+            if res_process.status_code == 200:
+                # Render the text response received from /process inside the Streamlit chat layout
+                try:
+                    assistant_answer = res_process.json()
+                except Exception:
+                    assistant_answer = res_process.text
                 
-                # Extract chatbot answer
-                ans_obj = raw_state.get("response_generation_response") or {}
-                assistant_answer = ans_obj.get("generated_response")
+                # Check for backend error dict
+                if isinstance(assistant_answer, dict) and "error" in assistant_answer:
+                    st.error(f"Error from banking core server: {assistant_answer.get('details')}")
+                    return
+
+                # 2. Get the actual database results to update visual state (metrics, charts, dataframes)
+                # Parse the output of /process-debug to get the actual database results
+                payload_debug = {
+                    "user_query": query_text,
+                    "customer_id": customer_id,
+                    "session_id": session_id,
+                    "chat_history": build_api_chat_history()[:-1]
+                }
                 
-                if not assistant_answer:
-                    fallback = raw_state.get("fallback_response") or {}
-                    assistant_answer = fallback.get("fallback_message") or "I'm sorry, I could not process that request."
+                res_debug = requests.post(API_URL_PROCESS_DEBUG, json=payload_debug)
                 
-                # Append assistant reply
+                raw_state = None
+                if res_debug.status_code == 200:
+                    raw_state = res_debug.json()
+                    st.session_state.latest_debug_data = raw_state
+                
+                # Append assistant reply containing the chat text response and the debug database results
                 st.session_state.chat_history.append({
                     "role": "assistant", 
                     "content": assistant_answer,
                     "debug": raw_state
                 })
             else:
-                st.error(f"Error from banking core server (Code {res.status_code}): {res.text}")
+                st.error(f"Error from banking core server (Code {res_process.status_code}): {res_process.text}")
         except Exception as e:
             st.error(f"Failed to submit query to API backend. Please ensure the FastAPI server is running on port 8000. Error: {e}")
 

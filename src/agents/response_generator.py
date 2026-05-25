@@ -19,7 +19,7 @@ async def response_generator_agent(
         if state.fallback_response:
             final_message.append(state.fallback_response.fallback_message)
         
-        if state.database_query_results:
+        if state.database_query_results is not None:
             sql_query_result = state.database_query_results
             user_query = state.context_builder_response.user_query
             # final_prompt = prompt.format(
@@ -84,7 +84,7 @@ async def response_generator_agent(
             fallback_flag=True,
             fallback_node="response_generator",
             fallback_reason="exception",
-            fallback_message="exception in response generator agent"
+            fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         state.fallback_response = fallback_response
     return state 

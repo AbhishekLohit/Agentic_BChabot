@@ -9,6 +9,7 @@ from agents.sql_execution import execute_query
 from agents.response_generator import response_generator_agent 
 from agents.fallback import fallback_agent
 from agents.sql_correction import sql_correction
+from agents.guardrails import input_guardrail_node
 from typing import Any as LLMType
 from app_models import Prompts
 from logging import Logger
@@ -30,6 +31,7 @@ class Agent_Graph:
     def _workflow(self):
         builder = StateGraph(Graph_State)
 
+        builder.add_node("guardrail", self._guardrail)
         builder.add_node("context_builder", self._context_builder)
         builder.add_node("suprivisor", self._suprivisor_agent)
         builder.add_node("sql_generation", self.agent_subgraph.app)
@@ -38,7 +40,15 @@ class Agent_Graph:
         builder.add_node("join", self._join)
 
         # FLOW---------------------------------
-        builder.add_edge(START, "context_builder")
+        builder.add_edge(START, "guardrail")
+        builder.add_conditional_edges(
+            "guardrail",
+            self._guardrail_router,
+            {
+                "fallback": "fallback",
+                "context_builder": "context_builder",
+            }
+        )
         builder.add_conditional_edges(
             "context_builder",
             self._context_builder_router,
@@ -65,6 +75,15 @@ class Agent_Graph:
 
         app = builder.compile()
         return app
+
+    async def _guardrail(self, state: Graph_State) -> Graph_State:
+        await input_guardrail_node(state, self.llm, self.logger)
+        return state
+
+    def _guardrail_router(self, state: Graph_State) -> str:
+        if state.fallback_response and state.fallback_response.fallback_flag:
+            return "fallback"  # Jump straight to fallback response generation
+        return "context_builder"  # Proceed with normal conversational extraction
 
     async def _context_builder(self, state: Graph_State) -> Graph_State:
         """

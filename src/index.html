@@ -15,8 +15,8 @@
         }
 
         body {
-            background: radial-gradient(circle at 50% 50%, #171126 0%, #08040d 100%);
-            color: #f1f1f1;
+            background: radial-gradient(circle at 50% 50%, #f0f9ff 0%, #dbeafe 100%);
+            color: #1e293b;
             height: 100vh;
             display: flex;
             justify-content: center;
@@ -28,12 +28,12 @@
             width: 90%;
             max-width: 1000px;
             height: 85vh;
-            background: rgba(20, 12, 33, 0.45);
+            background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(191, 219, 254, 0.6);
             border-radius: 28px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), inset 0 0 2px rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 45px rgba(37, 99, 235, 0.06), inset 0 0 2px rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -43,11 +43,11 @@
         /* Top Header */
         .dashboard-header {
             padding: 20px 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            border-bottom: 1px solid #cbd5e1;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(255, 255, 255, 0.01);
+            background: rgba(240, 249, 255, 0.95);
         }
 
         .header-left {
@@ -72,8 +72,8 @@
         }
 
         .status-dot.speaking {
-            background: #06b6d4;
-            box-shadow: 0 0 15px #06b6d4;
+            background: #2563eb;
+            box-shadow: 0 0 15px #2563eb;
             animation: pulse-dot 1.2s infinite;
         }
 
@@ -85,14 +85,14 @@
 
         .header-title h2 {
             font-size: 1.25rem;
-            font-weight: 500;
+            font-weight: 700;
             letter-spacing: 0.5px;
-            color: #ffffff;
+            color: #0c4a6e;
         }
 
         .header-title p {
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.45);
+            color: #0369a1;
         }
 
         .header-right {
@@ -107,7 +107,7 @@
             align-items: center;
             gap: 8px;
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.6);
+            color: #0369a1;
             cursor: pointer;
             user-select: none;
         }
@@ -116,7 +116,7 @@
             appearance: none;
             width: 38px;
             height: 20px;
-            background: rgba(255, 255, 255, 0.1);
+            background: #cbd5e1;
             border-radius: 20px;
             position: relative;
             outline: none;
@@ -125,7 +125,7 @@
         }
 
         .voice-toggle-checkbox:checked {
-            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         }
 
         .voice-toggle-checkbox::before {
@@ -153,6 +153,8 @@
             flex-direction: column;
             gap: 20px;
             scroll-behavior: smooth;
+            background: #ffffff;
+            box-shadow: inset 0 2px 8px rgba(3, 105, 161, 0.04);
         }
 
         .chat-board::-webkit-scrollbar {
@@ -164,12 +166,12 @@
         }
 
         .chat-board::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(3, 105, 161, 0.15);
             border-radius: 4px;
         }
 
         .chat-board::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(3, 105, 161, 0.25);
         }
 
         .message {
@@ -189,19 +191,19 @@
 
         .message.user {
             align-self: flex-end;
-            background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             border-radius: 20px 20px 4px 20px;
-            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.25);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.15);
             color: #ffffff;
         }
 
         .message.assistant {
             align-self: flex-start;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
             border-radius: 20px 20px 20px 4px;
-            color: #e5e5e5;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            color: #0c4a6e;
+            box-shadow: 0 4px 15px rgba(3, 105, 161, 0.04);
         }
 
         .system-note {
@@ -220,7 +222,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(8, 4, 13, 0.85);
+            background: rgba(240, 249, 255, 0.95);
             backdrop-filter: blur(15px);
             z-index: 10;
             display: flex;
@@ -240,12 +242,12 @@
 
         .listening-overlay h3 {
             font-size: 1.5rem;
-            font-weight: 400;
-            color: #ffffff;
+            font-weight: 600;
+            color: #0c4a6e;
         }
 
         .listening-overlay p {
-            color: rgba(255, 255, 255, 0.4);
+            color: #0369a1;
             font-size: 0.9rem;
             height: 20px;
         }
@@ -260,7 +262,7 @@
         .wave-bar {
             width: 5px;
             height: 15px;
-            background: linear-gradient(to top, #7c3aed, #ef476f);
+            background: linear-gradient(to top, #2563eb, #ef476f);
             border-radius: 10px;
             animation: quiet 1.2s ease-in-out infinite;
         }
@@ -288,18 +290,18 @@
         /* Chat Input Section */
         .chat-input-area {
             padding: 25px 30px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            border-top: 1px solid #cbd5e1;
             display: flex;
             align-items: center;
             gap: 15px;
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(240, 249, 255, 0.9);
         }
 
         .input-box-wrapper {
             flex: 1;
             position: relative;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
             border-radius: 16px;
             display: flex;
             align-items: center;
@@ -308,9 +310,9 @@
         }
 
         .input-box-wrapper:focus-within {
-            border-color: rgba(124, 58, 237, 0.5);
-            box-shadow: 0 0 15px rgba(124, 58, 237, 0.15);
-            background: rgba(255, 255, 255, 0.05);
+            border-color: #2563eb;
+            box-shadow: 0 0 12px rgba(37, 99, 235, 0.12);
+            background: #ffffff;
         }
 
         .input-box-wrapper input {
@@ -318,13 +320,13 @@
             background: transparent;
             border: none;
             outline: none;
-            color: #ffffff;
+            color: #1e293b;
             font-size: 0.95rem;
             padding: 12px 10px;
         }
 
         .input-box-wrapper input::placeholder {
-            color: rgba(255, 255, 255, 0.25);
+            color: #0284c7;
         }
 
         /* Microphone & Action Buttons */
@@ -342,18 +344,18 @@
         .mic-btn {
             width: 46px;
             height: 46px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
             border-radius: 50%;
-            color: #e5e5e5;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            color: #0284c7;
+            box-shadow: 0 2px 8px rgba(3, 105, 161, 0.05);
         }
 
         .mic-btn:hover {
-            background: rgba(239, 71, 111, 0.1);
-            border-color: rgba(239, 71, 111, 0.3);
+            background: rgba(239, 71, 111, 0.08);
+            border-color: rgba(239, 71, 111, 0.2);
             color: #ef476f;
-            box-shadow: 0 4px 20px rgba(239, 71, 111, 0.2);
+            box-shadow: 0 4px 15px rgba(239, 71, 111, 0.08);
             transform: scale(1.05);
         }
 
@@ -365,23 +367,23 @@
         }
 
         @keyframes mic-pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 71, 111, 0.5); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 71, 111, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(239, 71, 111, 0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(239, 71, 111, 0); }
             100% { box-shadow: 0 0 0 0 rgba(239, 71, 111, 0); }
         }
 
         .send-btn {
             width: 46px;
             height: 46px;
-            background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             border-radius: 14px;
             color: #ffffff;
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
         }
 
         .send-btn:hover {
             transform: translateY(-2px) scale(1.03);
-            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
         }
 
         .action-btn svg {
@@ -396,18 +398,19 @@
             right: 30px;
             width: 40px;
             height: 40px;
-            background: rgba(255, 255, 255, 0.05);
+            background: #e0f2fe;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            color: #f1f1f1;
+            color: #0369a1;
             transition: all 0.3s;
         }
 
         .listening-overlay-close:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: #bae6fd;
+            color: #0c4a6e;
         }
 
         .login-overlay {
@@ -417,28 +420,29 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle at 50% 40%, rgba(25, 18, 43, 0.96) 0%, rgba(7, 3, 12, 0.98) 100%);
+            background: radial-gradient(circle at 50% 40%, #f0f9ff 0%, #dbeafe 100%);
             padding: 24px;
         }
 
         .login-panel {
             width: min(420px, 100%);
-            background: rgba(20, 12, 33, 0.78);
-            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #bae6fd;
             border-radius: 24px;
-            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+            box-shadow: 0 20px 50px rgba(37, 99, 235, 0.08);
             padding: 30px;
+            backdrop-filter: blur(20px);
         }
 
         .login-panel h1 {
-            color: #ffffff;
+            color: #0c4a6e;
             font-size: 1.45rem;
             font-weight: 700;
             margin-bottom: 6px;
         }
 
         .login-panel p {
-            color: rgba(255, 255, 255, 0.48);
+            color: #0369a1;
             font-size: 0.9rem;
             margin-bottom: 22px;
         }
@@ -451,25 +455,26 @@
         }
 
         .login-field label {
-            color: rgba(255, 255, 255, 0.72);
+            color: #0369a1;
             font-size: 0.82rem;
             font-weight: 700;
         }
 
         .login-field input {
             width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.04);
-            color: #ffffff;
+            border: 1px solid #bae6fd;
+            background: #ffffff;
+            color: #1e293b;
             border-radius: 14px;
             padding: 13px 14px;
             font-size: 0.95rem;
             outline: none;
+            transition: all 0.2s;
         }
 
         .login-field input:focus {
-            border-color: rgba(124, 58, 237, 0.72);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
 
         .login-submit {
@@ -478,11 +483,17 @@
             border-radius: 14px;
             padding: 13px 16px;
             color: #ffffff;
-            background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             font-size: 0.95rem;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.2);
+            transition: all 0.3s;
+        }
+
+        .login-submit:hover {
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+            transform: translateY(-1px);
         }
 
         .login-error {
@@ -493,17 +504,26 @@
         }
 
         .user-chip {
-            color: rgba(255, 255, 255, 0.62);
+            color: #0369a1;
             font-size: 0.82rem;
+            font-weight: 500;
         }
 
         .logout-btn {
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
-            color: rgba(255, 255, 255, 0.72);
+            border: 1px solid #bae6fd;
+            background: #ffffff;
+            color: #0284c7;
             border-radius: 12px;
             padding: 8px 10px;
             cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #f0f9ff;
+            color: #0c4a6e;
+            border-color: #38bdf8;
         }
     </style>
 </head>
@@ -619,6 +639,7 @@
     let recognition = null;
     let isListening = false;
     let isSpeaking = false;
+    let isVoiceQuery = false;
     let currentUserId = localStorage.getItem("bbot_user_id") || "";
 
     function setLoggedInUser(userId) {
@@ -683,6 +704,7 @@
 
         recognition.onstart = () => {
             isListening = true;
+            isVoiceQuery = true;
             micBtn.classList.add("active");
             listeningOverlay.classList.add("active");
             statusDot.className = "status-dot listening";
@@ -804,6 +826,9 @@
         const queryText = userInput.value.trim();
         if (!queryText) return;
 
+        const currentVoiceQuery = isVoiceQuery; // Capture current state
+        isVoiceQuery = false; // Reset for next message
+
         // Stop any current speaking
         stopSynthesis();
 
@@ -823,7 +848,7 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     customer_id: currentUserId,
-                    session_id: "sess_web_dashboard",
+                    session_id: currentVoiceQuery ? "sess_voice_web" : "sess_web_dashboard",
                     user_query: queryText
                 })
             });
