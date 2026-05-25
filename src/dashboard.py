@@ -222,6 +222,70 @@ if "latest_debug_data" not in st.session_state:
     st.session_state.latest_debug_data = None
 if "input_query" not in st.session_state:
     st.session_state.input_query = ""
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "logged_in_user_id" not in st.session_state:
+    st.session_state.logged_in_user_id = None
+
+# -------------------------------------------------------------
+# 🔒 User Authentication Gateway Gate
+# -------------------------------------------------------------
+if not st.session_state.logged_in:
+    _, col, _ = st.columns([1, 1.8, 1])
+    with col:
+        st.markdown("""
+            <div style="text-align: center; margin-top: 50px; margin-bottom: 30px;">
+                <h2 style="color:#ffffff; font-family:'Orbitron',sans-serif; font-weight:900; margin:0; font-size:2rem; letter-spacing:1px; background:linear-gradient(to right, #7c3aed, #ef476f); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">B-BOT ENTERPRISE LOGIN</h2>
+                <span style="color:rgba(255,255,255,0.4); font-family:'Outfit',sans-serif; font-size:0.85rem; text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">SaaS Core Operations Gateway</span>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        with st.container():
+            st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%);
+                    backdrop-filter: blur(25px);
+                    border: 1px solid rgba(124, 58, 237, 0.2);
+                    border-radius: 20px;
+                    padding: 30px;
+                    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+                    margin-bottom: 25px;
+                ">
+            """, unsafe_allow_html=True)
+            
+            user_id = st.text_input("User ID", placeholder="Enter your User ID (e.g. Cust_0410)")
+            password = st.text_input("Password", type="password", placeholder="••••••••")
+            
+            st.markdown("<div class='apply-btn' style='margin-top: 20px;'>", unsafe_allow_html=True)
+            login_clicked = st.button("Authenticate Client", key="login_btn")
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            if login_clicked:
+                if not user_id.strip() or not password.strip():
+                    st.error("Please enter both User ID and Password.")
+                else:
+                    with st.spinner("Authorizing credentials..."):
+                        try:
+                            res = requests.post("http://localhost:8000/login", json={
+                                "user_id": user_id.strip(),
+                                "password": password.strip()
+                            })
+                            if res.status_code == 200:
+                                res_data = res.json()
+                                if res_data.get("status") == "success":
+                                    st.session_state.logged_in = True
+                                    st.session_state.logged_in_user_id = res_data.get("user_id")
+                                    st.success("Access Granted! Synchronizing gateway...")
+                                    st.rerun()
+                                else:
+                                    st.error(res_data.get("message", "Invalid credentials."))
+                            else:
+                                st.error(f"Authentication Gateway Offline (Status Code {res.status_code})")
+                        except Exception as e:
+                            st.error(f"Cannot connect to core API gateway: {e}")
+                            
+            st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
 
 # -------------------------------------------------------------
 # 🎛️ Sidebar Configuration
@@ -237,7 +301,17 @@ st.sidebar.markdown(
 )
 
 st.sidebar.markdown("### 🎯 Context Target")
-customer_id = st.sidebar.selectbox("Customer ID", ["Cust_0410", "Cust_0411", "Cust_0100"], index=0)
+allowed_users = ["Cust_0410", "Cust_0411", "Cust_0100"]
+default_idx = 0
+logged_in_user = st.session_state.get("logged_in_user_id")
+if logged_in_user in allowed_users:
+    default_idx = allowed_users.index(logged_in_user)
+else:
+    if logged_in_user:
+        allowed_users.append(logged_in_user)
+        default_idx = len(allowed_users) - 1
+
+customer_id = st.sidebar.selectbox("Customer ID", allowed_users, index=default_idx)
 session_id = st.sidebar.text_input("Session Token ID", value="sess_streamlit_01")
 
 st.sidebar.markdown("---")
@@ -282,6 +356,17 @@ for idx, q in enumerate(suggested_queries):
     if st.sidebar.button(q, key=f"sug_btn_{idx}"):
         st.session_state.input_query = q
     st.sidebar.markdown("</div>", unsafe_allow_html=True)
+
+# 🔓 Log Out Option
+st.sidebar.markdown("---")
+st.sidebar.markdown("<div class='sug-button'>", unsafe_allow_html=True)
+if st.sidebar.button("🔓 Terminate Session (Log Out)", key="logout_btn"):
+    st.session_state.logged_in = False
+    st.session_state.logged_in_user_id = None
+    st.session_state.chat_history = []
+    st.session_state.latest_debug_data = None
+    st.rerun()
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------
 # 🏢 Main Header
