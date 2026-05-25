@@ -17,8 +17,8 @@
         }
 
         body {
-            background: linear-gradient(135deg, #f97066 0%, #fb923c 40%, #fdba74 70%, #fde6d0 100%);
-            color: #1e293b;
+            background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
+            color: #1f2937;
             height: 100vh;
             display: flex;
             justify-content: center;
@@ -29,31 +29,25 @@
         /* ===== MAIN DASHBOARD SHELL ===== */
         .dashboard-shell {
             width: 94%;
-            max-width: 1280px;
-            height: 88vh;
+            max-width: 600px;
+            height: 85vh;
             display: flex;
             border-radius: 28px;
             overflow: hidden;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.18);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.15);
+            background: #ffffff;
         }
 
         /* ===== LEFT SIDEBAR ===== */
         .sidebar {
-            width: 100px;
-            background: linear-gradient(180deg, #ffffff 0%, #fff5f3 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 28px 0;
-            border-right: 1px solid rgba(0,0,0,0.06);
-            gap: 6px;
+            display: none !important;
         }
 
         .sidebar-avatar {
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -61,7 +55,7 @@
             font-size: 1.15rem;
             font-weight: 700;
             margin-bottom: 6px;
-            box-shadow: 0 4px 14px rgba(249,112,102,0.35);
+            box-shadow: 0 4px 14px rgba(124,58,237,0.35);
             position: relative;
         }
 
@@ -71,15 +65,15 @@
             right: 2px;
             width: 12px;
             height: 12px;
-            background: #22c55e;
-            border: 2.5px solid #fff;
+            background: #10b981;
+            border: 2.5px solid #1f2025;
             border-radius: 50%;
         }
 
         .sidebar-name {
             font-size: 0.72rem;
             font-weight: 600;
-            color: #64748b;
+            color: #94a3b8;
             margin-bottom: 20px;
             text-align: center;
             max-width: 80px;
@@ -111,12 +105,12 @@
         }
 
         .nav-item:hover {
-            background: rgba(249,112,102,0.08);
+            background: rgba(124, 58, 237, 0.12);
         }
 
         .nav-item.active {
-            background: linear-gradient(135deg, #f97066, #fb923c);
-            box-shadow: 0 4px 16px rgba(249,112,102,0.3);
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
         }
 
         .nav-item.active .nav-icon {
@@ -135,7 +129,7 @@
         }
 
         .nav-item:hover .nav-icon {
-            color: #f97066;
+            color: #a78bfa;
         }
 
         .nav-label {
@@ -146,7 +140,7 @@
         }
 
         .nav-item:hover .nav-label {
-            color: #f97066;
+            color: #a78bfa;
         }
 
         .nav-badge {
@@ -157,7 +151,7 @@
             height: 8px;
             background: #ef4444;
             border-radius: 50%;
-            border: 2px solid #fff;
+            border: 2px solid #1f2025;
         }
 
         .sidebar-bottom {
@@ -167,11 +161,7 @@
 
         /* ===== CHAT LIST PANEL ===== */
         .chatlist-panel {
-            width: 300px;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid rgba(0,0,0,0.06);
+            display: none !important;
         }
 
         .chatlist-header {
@@ -188,7 +178,7 @@
         .chatlist-title {
             font-size: 1.15rem;
             font-weight: 700;
-            color: #1e293b;
+            color: #f1f5f9;
             letter-spacing: 1.5px;
         }
 
@@ -211,12 +201,12 @@
         .recent-dot {
             width: 8px;
             height: 8px;
-            background: #22c55e;
+            background: #10b981;
             border-radius: 50%;
         }
 
         .new-chat-btn {
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
             color: #fff;
             border: none;
             border-radius: 20px;
@@ -225,12 +215,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 3px 12px rgba(249,112,102,0.25);
+            box-shadow: 0 3px 12px rgba(124,58,237,0.25);
         }
 
         .new-chat-btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(249,112,102,0.35);
+            box-shadow: 0 6px 20px rgba(124,58,237,0.35);
         }
 
         .search-box {
@@ -240,24 +230,24 @@
 
         .search-box input {
             width: 100%;
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             padding: 10px 14px 10px 38px;
             font-size: 0.88rem;
             outline: none;
-            background: #f8fafc;
-            color: #334155;
+            background: #151619;
+            color: #f1f5f9;
             transition: all 0.25s;
         }
 
         .search-box input:focus {
-            border-color: #f97066;
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(249,112,102,0.1);
+            border-color: #7c3aed;
+            background: #18191c;
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
         }
 
         .search-box input::placeholder {
-            color: #cbd5e1;
+            color: #64748b;
         }
 
         .search-box .search-icon {
@@ -297,12 +287,12 @@
         }
 
         .chat-item:hover {
-            background: #fef2f2;
+            background: rgba(255, 255, 255, 0.03);
         }
 
         .chat-item.active {
-            background: linear-gradient(135deg, rgba(249,112,102,0.08), rgba(251,146,60,0.06));
-            border: 1px solid rgba(249,112,102,0.15);
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(79, 70, 229, 0.08));
+            border: 1px solid rgba(124, 58, 237, 0.25);
         }
 
         .chat-item-avatar {
@@ -320,8 +310,8 @@
         }
 
         .chat-item-avatar.bot-avatar {
-            background: linear-gradient(135deg, #f97066, #fb923c);
-            box-shadow: 0 3px 10px rgba(249,112,102,0.3);
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            box-shadow: 0 3px 10px rgba(124, 58, 237, 0.35);
         }
 
         .chat-item-avatar .status-online {
@@ -330,8 +320,8 @@
             right: 0;
             width: 10px;
             height: 10px;
-            background: #22c55e;
-            border: 2px solid #fff;
+            background: #10b981;
+            border: 2px solid #1e1f24;
             border-radius: 50%;
         }
 
@@ -343,19 +333,19 @@
         .chat-item-name {
             font-size: 0.88rem;
             font-weight: 600;
-            color: #1e293b;
+            color: #f1f5f9;
             margin-bottom: 2px;
         }
 
         .chat-item-status {
             font-size: 0.75rem;
-            color: #22c55e;
+            color: #10b981;
             font-weight: 500;
         }
 
         .chat-item-preview {
             font-size: 0.78rem;
-            color: #94a3b8;
+            color: #64748b;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -363,7 +353,7 @@
 
         .chat-item-time {
             font-size: 0.7rem;
-            color: #cbd5e1;
+            color: #64748b;
             flex-shrink: 0;
             align-self: flex-start;
             margin-top: 2px;
@@ -375,7 +365,7 @@
             right: 10px;
             width: 20px;
             height: 20px;
-            background: #f97066;
+            background: #7c3aed;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -388,7 +378,7 @@
         /* ===== MAIN CHAT PANEL ===== */
         .chat-panel {
             flex: 1;
-            background: #fafbfc;
+            background: #ffffff;
             display: flex;
             flex-direction: column;
             position: relative;
@@ -397,7 +387,7 @@
         /* Chat Header */
         .chat-header {
             padding: 18px 28px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f3f4f6;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -414,20 +404,20 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #fff;
             font-size: 1rem;
             font-weight: 700;
-            box-shadow: 0 3px 10px rgba(249,112,102,0.25);
+            box-shadow: 0 3px 10px rgba(124, 58, 237, 0.35);
         }
 
         .chat-header-info h3 {
             font-size: 1.05rem;
             font-weight: 700;
-            color: #1e293b;
+            color: #1f2937;
         }
 
         .chat-header-info .online-status {
@@ -435,14 +425,14 @@
             align-items: center;
             gap: 6px;
             font-size: 0.78rem;
-            color: #22c55e;
+            color: #10b981;
             font-weight: 500;
         }
 
         .chat-header-info .online-status .dot {
             width: 8px;
             height: 8px;
-            background: #22c55e;
+            background: #10b981;
             border-radius: 50%;
         }
 
@@ -456,19 +446,19 @@
             width: 38px;
             height: 38px;
             border: none;
-            background: #f8fafc;
+            background: #ffffff;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.25s;
-            color: #64748b;
+            color: #6b7280;
         }
 
         .header-action-btn:hover {
-            background: #fef2f2;
-            color: #f97066;
+            background: #f5f3ff;
+            color: #7c3aed;
         }
 
         .header-action-btn svg {
@@ -482,7 +472,7 @@
             align-items: center;
             gap: 6px;
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: #6b7280;
             cursor: pointer;
             user-select: none;
         }
@@ -491,7 +481,7 @@
             appearance: none;
             width: 34px;
             height: 18px;
-            background: #e2e8f0;
+            background: #e5e7eb;
             border-radius: 20px;
             position: relative;
             outline: none;
@@ -500,7 +490,7 @@
         }
 
         .voice-toggle-checkbox:checked {
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
         }
 
         .voice-toggle-checkbox::before {
@@ -567,24 +557,24 @@
 
         .message.user {
             align-self: flex-end;
-            background: linear-gradient(135deg, #f97066 0%, #fb923c 100%);
+            background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
             border-radius: 18px 18px 4px 18px;
             color: #ffffff;
-            box-shadow: 0 4px 16px rgba(249,112,102,0.2);
+            box-shadow: 0 4px 16px rgba(109, 40, 217, 0.2);
         }
 
         .message.assistant {
             align-self: flex-start;
-            background: #ffffff;
-            border: 1px solid #f1f5f9;
+            background: #f3f4f6;
+            border: none;
             border-radius: 18px 18px 18px 4px;
-            color: #334155;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            color: #1f2937;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
 
         .msg-timestamp {
             font-size: 0.68rem;
-            color: #cbd5e1;
+            color: #9ca3af;
             margin-top: 4px;
             padding: 0 4px;
         }
@@ -617,7 +607,7 @@
         .typing-indicator span {
             width: 8px;
             height: 8px;
-            background: #cbd5e1;
+            background: #9ca3af;
             border-radius: 50%;
             animation: typing-bounce 1.4s ease-in-out infinite;
         }
@@ -633,7 +623,7 @@
         /* Chat Input Area */
         .chat-input-area {
             padding: 18px 28px;
-            border-top: 1px solid #f1f5f9;
+            border-top: 1px solid #f3f4f6;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -650,14 +640,14 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            color: #94a3b8;
+            color: #9ca3af;
             transition: all 0.25s;
             flex-shrink: 0;
         }
 
         .input-emoji-btn:hover {
-            color: #f97066;
-            background: #fef2f2;
+            color: #7c3aed;
+            background: #f5f3ff;
         }
 
         .input-emoji-btn svg {
@@ -668,8 +658,8 @@
         .input-wrapper {
             flex: 1;
             position: relative;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
             border-radius: 24px;
             display: flex;
             align-items: center;
@@ -678,9 +668,9 @@
         }
 
         .input-wrapper:focus-within {
-            border-color: #f97066;
-            box-shadow: 0 0 0 3px rgba(249,112,102,0.1);
-            background: #fff;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+            background: #ffffff;
         }
 
         .input-wrapper input {
@@ -688,13 +678,13 @@
             background: transparent;
             border: none;
             outline: none;
-            color: #1e293b;
+            color: #1f2937;
             font-size: 0.9rem;
             padding: 10px 8px;
         }
 
         .input-wrapper input::placeholder {
-            color: #cbd5e1;
+            color: #9ca3af;
         }
 
         .input-action-btn {
@@ -713,7 +703,7 @@
         }
 
         .input-action-btn:hover {
-            color: #f97066;
+            color: #7c3aed;
         }
 
         .input-action-btn svg {
@@ -738,20 +728,20 @@
         }
 
         .mic-btn:hover {
-            color: #f97066;
-            background: #fef2f2;
+            color: #7c3aed;
+            background: #f5f3ff;
         }
 
         .mic-btn.active {
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #7c3aed, #a78bfa);
             color: #fff;
             animation: mic-pulse 1.5s infinite;
         }
 
         @keyframes mic-pulse {
-            0% { box-shadow: 0 0 0 0 rgba(249,112,102,0.4); }
-            70% { box-shadow: 0 0 0 14px rgba(249,112,102,0); }
-            100% { box-shadow: 0 0 0 0 rgba(249,112,102,0); }
+            0% { box-shadow: 0 0 0 0 rgba(124,58,237,0.4); }
+            70% { box-shadow: 0 0 0 14px rgba(124,58,237,0); }
+            100% { box-shadow: 0 0 0 0 rgba(124,58,237,0); }
         }
 
         .mic-btn svg {
@@ -765,7 +755,7 @@
             width: 44px;
             height: 44px;
             border: none;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #6d28d9, #7c3aed);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -774,12 +764,12 @@
             color: #fff;
             transition: all 0.3s;
             flex-shrink: 0;
-            box-shadow: 0 4px 14px rgba(249,112,102,0.3);
+            box-shadow: 0 4px 14px rgba(109, 40, 217, 0.3);
         }
 
         .send-btn:hover {
             transform: translateY(-2px) scale(1.05);
-            box-shadow: 0 8px 24px rgba(249,112,102,0.4);
+            box-shadow: 0 8px 24px rgba(109, 40, 217, 0.4);
         }
 
         .send-btn svg {
@@ -795,7 +785,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255,255,255,0.96);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(15px);
             z-index: 10;
             display: flex;
@@ -816,11 +806,11 @@
         .listening-overlay h3 {
             font-size: 1.4rem;
             font-weight: 600;
-            color: #1e293b;
+            color: #1f2937;
         }
 
         .listening-overlay p {
-            color: #94a3b8;
+            color: #6b7280;
             font-size: 0.9rem;
             height: 20px;
         }
@@ -835,7 +825,7 @@
         .wave-bar {
             width: 5px;
             height: 15px;
-            background: linear-gradient(to top, #f97066, #fb923c);
+            background: linear-gradient(to top, #7c3aed, #a78bfa);
             border-radius: 10px;
             animation: quiet 1.2s ease-in-out infinite;
         }
@@ -866,20 +856,20 @@
             right: 30px;
             width: 40px;
             height: 40px;
-            background: #fef2f2;
+            background: #f5f3ff;
             border: none;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            color: #f97066;
+            color: #7c3aed;
             transition: all 0.3s;
         }
 
         .listening-overlay-close:hover {
-            background: #fecaca;
-            color: #dc2626;
+            background: #ede9fe;
+            color: #6d28d9;
         }
 
         /* ===== LOGIN OVERLAY ===== */
@@ -890,14 +880,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #f97066 0%, #fb923c 40%, #fdba74 70%, #fde6d0 100%);
+            background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
             padding: 24px;
         }
 
         .login-panel {
             width: min(430px, 100%);
-            background: rgba(255,255,255,0.95);
-            border: 1px solid rgba(249,112,102,0.15);
+            background: #ffffff;
+            border: 1px solid rgba(124, 58, 237, 0.1);
             border-radius: 28px;
             box-shadow: 0 30px 80px rgba(0,0,0,0.15);
             padding: 40px 36px;
@@ -907,7 +897,7 @@
         .login-panel .login-logo {
             width: 56px;
             height: 56px;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
             border-radius: 16px;
             display: flex;
             align-items: center;
@@ -916,18 +906,18 @@
             font-size: 1.4rem;
             font-weight: 800;
             margin-bottom: 20px;
-            box-shadow: 0 6px 20px rgba(249,112,102,0.3);
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.25);
         }
 
         .login-panel h1 {
-            color: #1e293b;
+            color: #1f2937;
             font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 6px;
         }
 
         .login-panel p {
-            color: #94a3b8;
+            color: #6b7280;
             font-size: 0.9rem;
             margin-bottom: 28px;
         }
@@ -940,16 +930,16 @@
         }
 
         .login-field label {
-            color: #64748b;
+            color: #4b5563;
             font-size: 0.82rem;
             font-weight: 600;
         }
 
         .login-field input {
             width: 100%;
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            color: #1e293b;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            color: #1f2937;
             border-radius: 14px;
             padding: 13px 16px;
             font-size: 0.95rem;
@@ -958,9 +948,9 @@
         }
 
         .login-field input:focus {
-            border-color: #f97066;
-            box-shadow: 0 0 0 3px rgba(249,112,102,0.12);
-            background: #fff;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+            background: #ffffff;
         }
 
         .login-submit {
@@ -969,17 +959,17 @@
             border-radius: 14px;
             padding: 14px 16px;
             color: #ffffff;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
             font-size: 0.95rem;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(249,112,102,0.25);
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25);
             transition: all 0.3s;
             margin-top: 4px;
         }
 
         .login-submit:hover {
-            box-shadow: 0 12px 32px rgba(249,112,102,0.4);
+            box-shadow: 0 12px 32px rgba(124, 58, 237, 0.4);
             transform: translateY(-2px);
         }
 
@@ -1123,14 +1113,8 @@
                     <span>TTS</span>
                     <input id="ttsToggle" type="checkbox" class="voice-toggle-checkbox" checked>
                 </label>
-                <button class="header-action-btn" title="Voice Call (coming soon)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-                </button>
-                <button class="header-action-btn" title="Video Call (coming soon)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                </button>
-                <button class="header-action-btn" title="More" id="moreMenuBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                <button class="header-action-btn" title="Log Out" id="navLogout">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 </button>
             </div>
         </header>
