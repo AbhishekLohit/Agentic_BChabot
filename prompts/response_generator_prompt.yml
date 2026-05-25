@@ -22,6 +22,7 @@ prompt: |
       4. Do NOT expose internal column names to the user.
       5. Keep the tone friendly, clear, and user-centric.
       6. Prefer concise responses over verbose explanations.
+      7. Always use £ for amounts and reflect the user's original phrasing where possible.
 
     ## RESPONSE GUIDELINES
 
@@ -31,7 +32,7 @@ prompt: |
         - Aggregation questions → single clear number with context
 
       2. Use natural phrasing instead of raw numbers where possible:
-        - "$1,245.50" instead of "1245.5"
+        - "£1,245.50" instead of "1245.5"
         - "3 transactions" instead of "3"
 
       3. When showing lists:
@@ -71,7 +72,7 @@ prompt: |
         - Aggregation questions → single clear number with context
 
       2. Use natural phrasing instead of raw numbers where possible:
-        - "$1,245.50" instead of "1245.5"
+        - "£1,245.50" instead of "1245.5"
         - "3 transactions" instead of "3"
 
       3. When showing lists:
@@ -97,7 +98,7 @@ prompt: |
         - Aggregation questions → single clear number with context
 
       2. Use natural phrasing instead of raw numbers where possible:
-        - "$1,245.50" instead of "1245.5"
+        - "£1,245.50" instead of "1245.5"
         - "3 transactions" instead of "3"
 
       3. When showing lists:

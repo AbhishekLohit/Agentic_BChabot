@@ -17,7 +17,7 @@
         }
 
         body {
-            background: linear-gradient(135deg, #f97066 0%, #fb923c 40%, #fdba74 70%, #fde6d0 100%);
+            background: linear-gradient(135deg, #00AFE9 0%, #0077B6 50%, #005fa3 100%);
             color: #1e293b;
             height: 100vh;
             display: flex;
@@ -40,7 +40,7 @@
         /* ===== LEFT SIDEBAR ===== */
         .sidebar {
             width: 100px;
-            background: linear-gradient(180deg, #ffffff 0%, #fff5f3 100%);
+            background: linear-gradient(180deg, #ffffff 0%, #f0faff 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -53,7 +53,7 @@
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -61,7 +61,7 @@
             font-size: 1.15rem;
             font-weight: 700;
             margin-bottom: 6px;
-            box-shadow: 0 4px 14px rgba(249,112,102,0.35);
+            box-shadow: 0 4px 14px rgba(0,175,233,0.35);
             position: relative;
         }
 
@@ -111,12 +111,12 @@
         }
 
         .nav-item:hover {
-            background: rgba(249,112,102,0.08);
+            background: rgba(0,175,233,0.08);
         }
 
         .nav-item.active {
-            background: linear-gradient(135deg, #f97066, #fb923c);
-            box-shadow: 0 4px 16px rgba(249,112,102,0.3);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
+            box-shadow: 0 4px 16px rgba(0,175,233,0.3);
         }
 
         .nav-item.active .nav-icon {
@@ -135,7 +135,7 @@
         }
 
         .nav-item:hover .nav-icon {
-            color: #f97066;
+            color: #00AFE9;
         }
 
         .nav-label {
@@ -146,18 +146,7 @@
         }
 
         .nav-item:hover .nav-label {
-            color: #f97066;
-        }
-
-        .nav-badge {
-            position: absolute;
-            top: 6px;
-            right: 10px;
-            width: 8px;
-            height: 8px;
-            background: #ef4444;
-            border-radius: 50%;
-            border: 2px solid #fff;
+            color: #00AFE9;
         }
 
         .sidebar-bottom {
@@ -216,7 +205,7 @@
         }
 
         .new-chat-btn {
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
             color: #fff;
             border: none;
             border-radius: 20px;
@@ -225,12 +214,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 3px 12px rgba(249,112,102,0.25);
+            box-shadow: 0 3px 12px rgba(0,175,233,0.25);
         }
 
         .new-chat-btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(249,112,102,0.35);
+            box-shadow: 0 6px 20px rgba(0,175,233,0.35);
         }
 
         .search-box {
@@ -251,9 +240,9 @@
         }
 
         .search-box input:focus {
-            border-color: #f97066;
+            border-color: #00AFE9;
             background: #fff;
-            box-shadow: 0 0 0 3px rgba(249,112,102,0.1);
+            box-shadow: 0 0 0 3px rgba(0,175,233,0.1);
         }
 
         .search-box input::placeholder {
@@ -297,12 +286,12 @@
         }
 
         .chat-item:hover {
-            background: #fef2f2;
+            background: #e6f7fd;
         }
 
         .chat-item.active {
-            background: linear-gradient(135deg, rgba(249,112,102,0.08), rgba(251,146,60,0.06));
-            border: 1px solid rgba(249,112,102,0.15);
+            background: linear-gradient(135deg, rgba(0,175,233,0.08), rgba(0,119,182,0.06));
+            border: 1px solid rgba(0,175,233,0.15);
         }
 
         .chat-item-avatar {
@@ -320,8 +309,8 @@
         }
 
         .chat-item-avatar.bot-avatar {
-            background: linear-gradient(135deg, #f97066, #fb923c);
-            box-shadow: 0 3px 10px rgba(249,112,102,0.3);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
+            box-shadow: 0 3px 10px rgba(0,175,233,0.3);
         }
 
         .chat-item-avatar .status-online {
@@ -369,22 +358,6 @@
             margin-top: 2px;
         }
 
-        .chat-item-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 20px;
-            height: 20px;
-            background: #f97066;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: #fff;
-        }
-
         /* ===== MAIN CHAT PANEL ===== */
         .chat-panel {
             flex: 1;
@@ -414,14 +387,14 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #fff;
             font-size: 1rem;
             font-weight: 700;
-            box-shadow: 0 3px 10px rgba(249,112,102,0.25);
+            box-shadow: 0 3px 10px rgba(0,175,233,0.25);
         }
 
         .chat-header-info h3 {
@@ -467,8 +440,8 @@
         }
 
         .header-action-btn:hover {
-            background: #fef2f2;
-            color: #f97066;
+            background: #e6f7fd;
+            color: #00AFE9;
         }
 
         .header-action-btn svg {
@@ -500,7 +473,7 @@
         }
 
         .voice-toggle-checkbox:checked {
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
         }
 
         .voice-toggle-checkbox::before {
@@ -567,10 +540,10 @@
 
         .message.user {
             align-self: flex-end;
-            background: linear-gradient(135deg, #f97066 0%, #fb923c 100%);
+            background: linear-gradient(135deg, #00AFE9 0%, #0077B6 100%);
             border-radius: 18px 18px 4px 18px;
             color: #ffffff;
-            box-shadow: 0 4px 16px rgba(249,112,102,0.2);
+            box-shadow: 0 4px 16px rgba(0,175,233,0.2);
         }
 
         .message.assistant {
@@ -640,31 +613,6 @@
             background: #ffffff;
         }
 
-        .input-emoji-btn {
-            width: 40px;
-            height: 40px;
-            border: none;
-            background: transparent;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #94a3b8;
-            transition: all 0.25s;
-            flex-shrink: 0;
-        }
-
-        .input-emoji-btn:hover {
-            color: #f97066;
-            background: #fef2f2;
-        }
-
-        .input-emoji-btn svg {
-            width: 22px;
-            height: 22px;
-        }
-
         .input-wrapper {
             flex: 1;
             position: relative;
@@ -678,8 +626,8 @@
         }
 
         .input-wrapper:focus-within {
-            border-color: #f97066;
-            box-shadow: 0 0 0 3px rgba(249,112,102,0.1);
+            border-color: #00AFE9;
+            box-shadow: 0 0 0 3px rgba(0,175,233,0.1);
             background: #fff;
         }
 
@@ -695,30 +643,6 @@
 
         .input-wrapper input::placeholder {
             color: #cbd5e1;
-        }
-
-        .input-action-btn {
-            width: 36px;
-            height: 36px;
-            border: none;
-            background: transparent;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #94a3b8;
-            transition: all 0.25s;
-            flex-shrink: 0;
-        }
-
-        .input-action-btn:hover {
-            color: #f97066;
-        }
-
-        .input-action-btn svg {
-            width: 20px;
-            height: 20px;
         }
 
         /* Mic Button */
@@ -738,20 +662,20 @@
         }
 
         .mic-btn:hover {
-            color: #f97066;
-            background: #fef2f2;
+            color: #00AFE9;
+            background: #e6f7fd;
         }
 
         .mic-btn.active {
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
             color: #fff;
             animation: mic-pulse 1.5s infinite;
         }
 
         @keyframes mic-pulse {
-            0% { box-shadow: 0 0 0 0 rgba(249,112,102,0.4); }
-            70% { box-shadow: 0 0 0 14px rgba(249,112,102,0); }
-            100% { box-shadow: 0 0 0 0 rgba(249,112,102,0); }
+            0% { box-shadow: 0 0 0 0 rgba(0,175,233,0.4); }
+            70% { box-shadow: 0 0 0 14px rgba(0,175,233,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,175,233,0); }
         }
 
         .mic-btn svg {
@@ -765,7 +689,7 @@
             width: 44px;
             height: 44px;
             border: none;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -774,12 +698,12 @@
             color: #fff;
             transition: all 0.3s;
             flex-shrink: 0;
-            box-shadow: 0 4px 14px rgba(249,112,102,0.3);
+            box-shadow: 0 4px 14px rgba(0,175,233,0.3);
         }
 
         .send-btn:hover {
             transform: translateY(-2px) scale(1.05);
-            box-shadow: 0 8px 24px rgba(249,112,102,0.4);
+            box-shadow: 0 8px 24px rgba(0,175,233,0.4);
         }
 
         .send-btn svg {
@@ -835,7 +759,7 @@
         .wave-bar {
             width: 5px;
             height: 15px;
-            background: linear-gradient(to top, #f97066, #fb923c);
+            background: linear-gradient(to top, #00AFE9, #0077B6);
             border-radius: 10px;
             animation: quiet 1.2s ease-in-out infinite;
         }
@@ -866,20 +790,20 @@
             right: 30px;
             width: 40px;
             height: 40px;
-            background: #fef2f2;
+            background: #e6f7fd;
             border: none;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            color: #f97066;
+            color: #00AFE9;
             transition: all 0.3s;
         }
 
         .listening-overlay-close:hover {
-            background: #fecaca;
-            color: #dc2626;
+            background: #c8ecf9;
+            color: #0062A0;
         }
 
         /* ===== LOGIN OVERLAY ===== */
@@ -890,14 +814,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #f97066 0%, #fb923c 40%, #fdba74 70%, #fde6d0 100%);
+            background: linear-gradient(135deg, #00AFE9 0%, #0077B6 50%, #005fa3 100%);
             padding: 24px;
         }
 
         .login-panel {
             width: min(430px, 100%);
             background: rgba(255,255,255,0.95);
-            border: 1px solid rgba(249,112,102,0.15);
+            border: 1px solid rgba(0,175,233,0.15);
             border-radius: 28px;
             box-shadow: 0 30px 80px rgba(0,0,0,0.15);
             padding: 40px 36px;
@@ -907,7 +831,7 @@
         .login-panel .login-logo {
             width: 56px;
             height: 56px;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
             border-radius: 16px;
             display: flex;
             align-items: center;
@@ -916,7 +840,7 @@
             font-size: 1.4rem;
             font-weight: 800;
             margin-bottom: 20px;
-            box-shadow: 0 6px 20px rgba(249,112,102,0.3);
+            box-shadow: 0 6px 20px rgba(0,175,233,0.3);
         }
 
         .login-panel h1 {
@@ -958,8 +882,8 @@
         }
 
         .login-field input:focus {
-            border-color: #f97066;
-            box-shadow: 0 0 0 3px rgba(249,112,102,0.12);
+            border-color: #00AFE9;
+            box-shadow: 0 0 0 3px rgba(0,175,233,0.12);
             background: #fff;
         }
 
@@ -969,17 +893,17 @@
             border-radius: 14px;
             padding: 14px 16px;
             color: #ffffff;
-            background: linear-gradient(135deg, #f97066, #fb923c);
+            background: linear-gradient(135deg, #00AFE9, #0077B6);
             font-size: 0.95rem;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(249,112,102,0.25);
+            box-shadow: 0 8px 24px rgba(0,175,233,0.25);
             transition: all 0.3s;
             margin-top: 4px;
         }
 
         .login-submit:hover {
-            box-shadow: 0 12px 32px rgba(249,112,102,0.4);
+            box-shadow: 0 12px 32px rgba(0,175,233,0.4);
             transform: translateY(-2px);
         }
 
@@ -1048,17 +972,8 @@
                 <span class="nav-label">Chats</span>
             </div>
             <div class="nav-item">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                <span class="nav-label">Alerts</span>
-                <span class="nav-badge"></span>
-            </div>
-            <div class="nav-item">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                <span class="nav-label">Settings</span>
-            </div>
-            <div class="nav-item">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                <span class="nav-label">Statements</span>
+                <span class="nav-label">Previous Chats</span>
             </div>
         </nav>
 
@@ -1123,12 +1038,6 @@
                     <span>TTS</span>
                     <input id="ttsToggle" type="checkbox" class="voice-toggle-checkbox" checked>
                 </label>
-                <button class="header-action-btn" title="Voice Call (coming soon)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-                </button>
-                <button class="header-action-btn" title="Video Call (coming soon)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                </button>
                 <button class="header-action-btn" title="More" id="moreMenuBtn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                 </button>
@@ -1165,17 +1074,9 @@
 
         <!-- Chat Input -->
         <footer class="chat-input-area">
-            <button class="input-emoji-btn" title="Emoji">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            </button>
-
             <div class="input-wrapper">
                 <input id="userInput" type="text" placeholder="Type your message here..." onkeydown="if(event.key==='Enter') sendMessage();">
             </div>
-
-            <button class="input-action-btn" title="Attachment">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-            </button>
 
             <button id="micBtn" class="mic-btn" title="Tap to Speak">
                 <svg viewBox="0 0 24 24">

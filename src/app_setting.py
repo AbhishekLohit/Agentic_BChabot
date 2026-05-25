@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings
 
 class AppSettings(BaseSettings):
-    LLM_PROVIDER: str = "openai"
+    LLM_PROVIDER: str = "anthropic"
     OPENAI_API_KEY: str | None = None
     GEMINI_API_KEY: str | None = None
     GROQ_API_KEY: str | None = None
@@ -9,7 +9,7 @@ class AppSettings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"
     GEMINI_MODEL: str = "gemini-1.5-flash"
     GROQ_MODEL: str = "llama3-70b-8192"
-    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-latest"
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
     TEMPERATURE: float = 0.2
     MAX_TOKENS: int = 1500
     context_builder_prompt_path: str = "context_builder_prompt.yml"

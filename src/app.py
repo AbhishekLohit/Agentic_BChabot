@@ -287,23 +287,23 @@ async def process(
 
 )-> str:
     # Bypass local fallback for voice queries to ensure they trigger the full, real SQL pipeline
-    is_voice = input_request.session_id and input_request.session_id.startswith("sess_voice")
+    # is_voice = input_request.session_id and input_request.session_id.startswith("sess_voice")
     
-    local_response = None
-    if not is_voice:
-        local_response = _local_transaction_fallback(input_request, db_conn)
+    # local_response = None
+    # if not is_voice:
+    #     local_response = _local_transaction_fallback(input_request, db_conn)
         
-    if local_response:
-        final_chat_response, _, _ = local_response
-        save_chat_history(
-            redis_client,
-            input_request.customer_id,
-            input_request.session_id,
-            [ChatMessage(role="user", content=input_request.user_query)],
-            final_chat_response,
-            logger,
-        )
-        return final_chat_response
+    # if local_response:
+    #     final_chat_response, _, _ = local_response
+    #     save_chat_history(
+    #         redis_client,
+    #         input_request.customer_id,
+    #         input_request.session_id,
+    #         [ChatMessage(role="user", content=input_request.user_query)],
+    #         final_chat_response,
+    #         logger,
+    #     )
+    #     return final_chat_response
     chat_history = get_chat_history(
                 redis_client, 
                 input_request.customer_id, 
@@ -347,10 +347,10 @@ async def process(
         #                       generated_response = str(response.response_generation_response.generated_response)
         #                     )
         final_chat_response = response["response_generation_response"].generated_response
-        if final_chat_response == TECHNICAL_FALLBACK_MESSAGE:
-            local_response = _local_transaction_fallback(input_request, db_conn)
-            if local_response:
-                final_chat_response, _, _ = local_response
+        # if final_chat_response == TECHNICAL_FALLBACK_MESSAGE:
+        #     local_response = _local_transaction_fallback(input_request, db_conn)
+        #     if local_response:
+        #         final_chat_response, _, _ = local_response
         default_ai_response = "I'm sorry, I couldn't process your request at the moment."
         save_chat_history(redis_client, 
                           input_request.customer_id, 
