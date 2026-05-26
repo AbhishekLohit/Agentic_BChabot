@@ -115,10 +115,13 @@ class Agent_Graph:
     def _supervisor_router(self, state: Graph_State) -> list[str]:
         routes = []
 
-        if len(state.banksql_queries) == 1:
+        banksql = state.banksql_queries or []
+        out_of_scope = state.out_of_scope_queries or []
+
+        if len(banksql) == 1:
             routes.append("sql_generation")
 
-        if len(state.out_of_scope_queries) > 0 or len(state.banksql_queries) > 1:
+        if len(out_of_scope) > 0 or len(banksql) > 1:
             routes.append("fallback")
 
         if not routes:

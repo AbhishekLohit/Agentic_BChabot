@@ -1,7 +1,7 @@
 import sqlite3
 import re
 from logging import Logger
-from app_models import Graph_State, Text2SqlGeneratorResponse
+from app_models import FallbackResponse, Graph_State, Text2SqlGeneratorResponse
 
 async def execute_query(
     state: Graph_State,
@@ -55,8 +55,13 @@ async def execute_query(
             db_conn.commit()
             logger.info(f"SQL execution completed with no output description (e.g. non-SELECT query or empty execution).\n")
     except sqlite3.Error as e:
-        logger.info(f"SQL Error: {e}")
-        state.sql_query_correction = True
+        logger.warning(f"SQL Error encountered — routing to correction: {e}")
+        state.fallback_response = FallbackResponse(
+            fallback_flag=True,
+            fallback_node="sql_execution",
+            fallback_reason="query_error",
+            fallback_message="The generated SQL query failed. Attempting automatic correction."
+        )
     finally:
         cursor.close()
     return state

@@ -286,24 +286,9 @@ async def process(
 
 
 )-> str:
-    # Bypass local fallback for voice queries to ensure they trigger the full, real SQL pipeline
-    is_voice = input_request.session_id and input_request.session_id.startswith("sess_voice")
-    
-    local_response = None
-    if not is_voice:
-        local_response = _local_transaction_fallback(input_request, db_conn)
-        
-    if local_response:
-        final_chat_response, _, _ = local_response
-        save_chat_history(
-            redis_client,
-            input_request.customer_id,
-            input_request.session_id,
-            [ChatMessage(role="user", content=input_request.user_query)],
-            final_chat_response,
-            logger,
-        )
-        return final_chat_response
+    # Preemptive bypass disabled: Ensure that all transaction queries run through the Agent Graph
+    # to fetch real data dynamically from the database, using _local_transaction_fallback strictly
+    # as a backup if the agent graph execution fails.
     chat_history = get_chat_history(
                 redis_client, 
                 input_request.customer_id, 
@@ -382,38 +367,6 @@ async def process_debug(
         customer_id=input_request.customer_id,
         session_id=input_request.session_id
     )
-    local_response = _local_transaction_fallback(input_request_debug, db_conn)
-    if local_response:
-        answer, rows, sql_query = local_response
-        return {
-            "input_request": input_request_debug.model_dump(),
-            "chat_history": [msg.model_dump() for msg in chat_history],
-            "customer_id": input_request.customer_id,
-            "context_builder_response": None,
-            "entity_extraction_response": None,
-            "suprivisor_response": None,
-            "text2sql_generator_response": (
-                Text2SqlGeneratorResponse(
-                    user_query=input_request.user_query,
-                    sql_query=sql_query.strip()
-                ).model_dump()
-                if sql_query else None
-            ),
-            "database_query_results": rows,
-            "sql_query_correction": False,
-            "banksql_queries": [input_request.user_query],
-            "out_of_scope_queries": [],
-            "fallback_response": FallbackResponse(
-                fallback_flag=False,
-                fallback_node="local_sql_fallback",
-                fallback_reason="llm_unavailable",
-                fallback_message=None
-            ).model_dump(),
-            "response_generation_response": ResponseGeneratorResponse(
-                generated_response=answer
-            ).model_dump(),
-            "agent_metrics": None,
-        }
 
     logger.info(f"[DEBUG] Chat history received: {chat_history}")
 

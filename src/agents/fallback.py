@@ -73,7 +73,10 @@ async def fallback_agent(
             )
             reason = "multiple_invalid"
 
-        
+        # 5️⃣ Catch-all: single valid query that failed downstream (e.g. sql query_error)
+        else:
+            message = FALLBACK_MESSAGES["exception"]
+            reason = state.fallback_response.fallback_reason if state.fallback_response else "exception"
         fallback_response = FallbackResponse(
             fallback_flag=True,
             fallback_node="fallback_agent",

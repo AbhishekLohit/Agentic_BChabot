@@ -35,7 +35,6 @@ async def sql_correction(
         
         sql_correction_response = response_raw["parsed"]
         response_message  = response_raw["raw"]   # AIMessage
-        state.sql_correction_response = sql_correction_response
         logger.info(f"Sql correction response: {sql_correction_response}\n")
 
         metric_metadata = agent_utils.agent_metrics(response_message,latency)
@@ -51,16 +50,18 @@ async def sql_correction(
                         Cached Tokens (read): {metric_metadata.cached_tokens},
                         Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
 
-        # ✅ Update state
-        # state.agent_metrics = AgentMetrics(
-        #     context_builder_metrics=None,
-        #     suprivisor_metrics=None,
-        #     classification_metrics=None,
-        #     text2sql_generator_metrics=None,
-        #     response_generator_metrics=None,
-        #     sql_corection_metrics=metric_metadata
-        # )
         state.agent_metrics["sql_correction"] = metric_metadata
+
+        # ✅ Write corrected SQL back into the active query so execution reruns it
+        if state.text2sql_generator_response:
+            state.text2sql_generator_response.sql_query = sql_correction_response.corrected_sql_query
+            logger.info(f"Corrected SQL written to state: {sql_correction_response.corrected_sql_query}")
+
+        # ✅ Set loop guard — prevents a second correction attempt if execution fails again
+        state.sql_query_correction = True
+
+        # ✅ Clear the fallback so _sql_query_correction router sends flow back to sql_execution
+        state.fallback_response = None
 
     except Exception as e:
         logger.exception(f"Error in sql correction agent: {str(e)}")
