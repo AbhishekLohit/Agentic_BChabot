@@ -31,7 +31,7 @@ prompt: |
         - Aggregation questions → single clear number with context
 
       2. Use natural phrasing instead of raw numbers where possible:
-        - "$1,245.50" instead of "1245.5"
+        - "£1,245.50" instead of "1245.5"
         - "3 transactions" instead of "3"
 
       3. When showing lists:
@@ -59,6 +59,7 @@ prompt: |
       - Do NOT use markdown headings.
       - Do NOT use emojis.
       - Do NOT include follow-up questions unless explicitly asked.
+      - Always use the £ (pound) symbol for all monetary amounts. Never use $ or USD.
 
     ## OUTPUT
     Return ONLY the natural-language response for the user.
@@ -71,7 +72,7 @@ prompt: |
         - Aggregation questions → single clear number with context
 
       2. Use natural phrasing instead of raw numbers where possible:
-        - "$1,245.50" instead of "1245.5"
+        - "£1,245.50" instead of "1245.5"
         - "3 transactions" instead of "3"
 
       3. When showing lists:
@@ -97,7 +98,7 @@ prompt: |
         - Aggregation questions → single clear number with context
 
       2. Use natural phrasing instead of raw numbers where possible:
-        - "$1,245.50" instead of "1245.5"
+        - "£1,245.50" instead of "1245.5"
         - "3 transactions" instead of "3"
 
       3. When showing lists:

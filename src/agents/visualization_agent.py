@@ -100,10 +100,7 @@ async def visualization_agent(
         if state.agent_metrics is not None:
             state.agent_metrics["visualization_agent"] = metric_metadata
 
-        logger.info(
-            f"Visualization decision: chart_type={decision.chart_type}, "
-            f"should_visualize={decision.should_visualize}, reasoning={decision.reasoning}"
-        )
+        logger.info(f"Visualization agent full response: {decision.model_dump()}")
 
         if not decision.should_visualize or decision.chart_type == "none":
             state.visualization_response = VisualizationResponse(
@@ -142,15 +139,41 @@ def _build_plotly_figure(
         y_field = decision.y_field
         title = decision.chart_title
 
-        barclays_colors = ["#00AFE9", "#0077B6", "#005fa3", "#10b981", "#ffc857", "#64748b", "#0062A0"]
+        ui_colors = ["#7c3aed", "#a78bfa", "#6d28d9", "#ec4899", "#10b981", "#4f46e5", "#64748b"]
+
+        _label_map = {
+            "merchant_system_category1_name": "Category",
+            "merchant_system_category2_name": "Sub-Category",
+            "merchant_brand_name": "Merchant",
+            "amount_usd": "Amount (£)",
+            "total_spent": "Total Spent (£)",
+            "total": "Total (£)",
+            "transaction_date": "Date",
+            "month": "Month",
+            "year": "Year",
+            "day": "Day",
+            "country": "Country",
+            "channel": "Channel",
+            "card_type": "Card Type",
+            "count": "Count",
+            "transaction_id": "Transaction ID",
+            "customer_id": "Customer",
+        }
+
+        def _axis_label(field: str | None) -> str:
+            if not field:
+                return ""
+            return _label_map.get(field, field.replace("_", " ").title())
+
+        y_label = _axis_label(y_field)
 
         common_layout = go.Layout(
-            title=dict(text=title, font=dict(size=14, color="#1e293b", family="Outfit")),
+            title=dict(text=title, font=dict(size=15, color="#1f2937", family="Outfit"), x=0.02, xanchor="left"),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Outfit", color="#334155", size=12),
-            margin=dict(l=45, r=20, t=50, b=45),
-            colorway=barclays_colors,
+            font=dict(family="Outfit", color="#374151", size=12),
+            margin=dict(l=65, r=30, t=55, b=75),
+            colorway=ui_colors,
         )
 
         if chart_type == "bar" and x_field and y_field:
@@ -161,16 +184,31 @@ def _build_plotly_figure(
                     go.Bar(
                         x=x_vals,
                         y=y_vals,
-                        marker_color="#00AFE9",
-                        marker_line_color="#0077B6",
+                        marker_color="#7c3aed",
+                        marker_line_color="#6d28d9",
                         marker_line_width=1,
+                        opacity=0.88,
+                        text=[f"{v:,.2f}" if v >= 1000 else f"{v:,.0f}" for v in y_vals],
+                        textposition="outside",
+                        textfont=dict(size=11, color="#6d28d9", family="Outfit"),
+                        cliponaxis=False,
+                        hovertemplate="%{x}<br><b>£%{y:,.2f}</b><extra></extra>",
                     )
                 ],
                 layout=common_layout,
             )
             fig.update_layout(
-                xaxis=dict(showgrid=False, tickangle=-30),
-                yaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.06)"),
+                margin=dict(l=65, r=30, t=55, b=90),
+                xaxis=dict(
+                    showgrid=False,
+                    tickangle=-30,
+                ),
+                yaxis=dict(
+                    title=dict(text=y_label, font=dict(size=12, color="#6b7280")),
+                    showgrid=True,
+                    gridcolor="rgba(124,58,237,0.06)",
+                ),
+                uniformtext=dict(minsize=9, mode="hide"),
             )
 
         elif chart_type == "line" and x_field and y_field:
@@ -182,67 +220,35 @@ def _build_plotly_figure(
                         x=x_vals,
                         y=y_vals,
                         mode="lines+markers",
-                        line=dict(color="#00AFE9", width=3),
-                        marker=dict(color="#0077B6", size=7),
+                        line=dict(color="#7c3aed", width=2.5, shape="spline", smoothing=0.8),
+                        marker=dict(
+                            color="#ffffff",
+                            size=9,
+                            line=dict(color="#7c3aed", width=2.5),
+                            symbol="circle",
+                        ),
                         fill="tozeroy",
-                        fillcolor="rgba(0,175,233,0.08)",
+                        fillcolor="rgba(124,58,237,0.10)",
+                        hovertemplate="%{x}<br><b>£%{y:,.2f}</b><extra></extra>",
                     )
                 ],
                 layout=common_layout,
             )
             fig.update_layout(
-                xaxis=dict(showgrid=False, tickangle=-30),
-                yaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.06)"),
+                xaxis=dict(
+                    showgrid=False,
+                    tickangle=-30,
+                    showline=True,
+                    linecolor="rgba(0,0,0,0.08)",
+                ),
+                yaxis=dict(
+                    title=dict(text=y_label, font=dict(size=12, color="#6b7280")),
+                    showgrid=True,
+                    gridcolor="rgba(124,58,237,0.06)",
+                    zeroline=False,
+                ),
             )
 
-        elif chart_type == "pie" and x_field and y_field:
-            labels = [str(r.get(x_field, "")) for r in rows]
-            values = _to_floats([r.get(y_field, 0) for r in rows])
-            fig = go.Figure(
-                data=[
-                    go.Pie(
-                        labels=labels,
-                        values=values,
-                        hole=0.42,
-                        marker=dict(colors=barclays_colors, line=dict(color="#ffffff", width=2)),
-                    )
-                ],
-                layout=common_layout,
-            )
-            fig.update_traces(textposition="inside", textinfo="percent+label")
-            fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5))
-
-        elif chart_type == "table":
-            if not rows:
-                return None
-            headers = list(rows[0].keys())
-            col_values = [[str(r.get(h, "")) for r in rows] for h in headers]
-            # Alternating row fill for readability
-            n_rows = len(rows)
-            row_fills = [["#f0faff" if i % 2 == 0 else "#ffffff" for i in range(n_rows)] for _ in headers]
-            fig = go.Figure(
-                data=[
-                    go.Table(
-                        header=dict(
-                            values=[f"<b>{h}</b>" for h in headers],
-                            fill_color="#00AFE9",
-                            font=dict(color="white", size=12, family="Outfit"),
-                            align="left",
-                            line_color="#0077B6",
-                            height=32,
-                        ),
-                        cells=dict(
-                            values=col_values,
-                            fill_color=row_fills,
-                            font=dict(color="#334155", size=11, family="Outfit"),
-                            align="left",
-                            line_color="#e2e8f0",
-                            height=28,
-                        ),
-                    )
-                ],
-                layout=common_layout,
-            )
         else:
             return None
 
