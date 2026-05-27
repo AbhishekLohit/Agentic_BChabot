@@ -13,6 +13,7 @@ class Prompts(BaseModel):
     fallback_prompt: BasePromptTemplate
     sql_correction_prompt: BasePromptTemplate
     test_data_generation_prompt: BasePromptTemplate
+    visualization_prompt: BasePromptTemplate
     
 
 class UIUserRequest(BaseModel):
@@ -68,6 +69,18 @@ class ResponseGeneratorRequest(BaseModel):
 
 class ResponseGeneratorResponse(BaseModel):
     generated_response: str
+
+class VisualizationDecision(BaseModel):
+    should_visualize: bool
+    chart_type: str  # "bar" | "line" | "pie" | "table" | "none"
+    chart_title: str
+    x_field: str | None
+    y_field: str | None
+    reasoning: str
+
+class VisualizationResponse(BaseModel):
+    decision: VisualizationDecision
+    plotly_json: str | None
 
 class OutputGuardrail(BaseModel):
     final_response: str
@@ -142,6 +155,7 @@ class Graph_State(BaseModel):
     out_of_scope_queries: list[str] | None
     fallback_response: FallbackResponse | None
     response_generation_response: ResponseGeneratorResponse | None
+    visualization_response: VisualizationResponse | None = None
     agent_metrics: dict[str, Metrics]  | None
 
 class SubGraph_State(BaseModel):

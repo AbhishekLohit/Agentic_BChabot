@@ -31,7 +31,8 @@ def get_all_prompts(appsettings:AppSettings
         responsegenerator_prompt= read_prompt_file(appsettings.response_generator_prompt_path),
         fallback_prompt= read_prompt_file(appsettings.fallback_prompt_path),
         sql_correction_prompt= read_prompt_file(appsettings.sql_correction_prompt_path),
-        test_data_generation_prompt= read_prompt_file(appsettings.test_data_generation_prompt_path)
+        test_data_generation_prompt= read_prompt_file(appsettings.test_data_generation_prompt_path),
+        visualization_prompt= read_prompt_file(appsettings.visualization_agent_prompt_path),
     )
 
 def _get_redis_key(user_id: str, 

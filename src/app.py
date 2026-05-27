@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from clients.llm_client import get_configured_llm, get_openai_embeddings
 from app_models import (
@@ -285,7 +286,7 @@ async def process(
     db_conn: Annotated[any,Depends(get_db_conn)], # type: ignore
 
 
-)-> str:
+):
     # Preemptive bypass disabled: Ensure that all transaction queries run through the Agent Graph
     # to fetch real data dynamically from the database, using _local_transaction_fallback strictly
     # as a backup if the agent graph execution fails.
@@ -332,24 +333,32 @@ async def process(
         #                       generated_response = str(response.response_generation_response.generated_response)
         #                     )
         final_chat_response = response["response_generation_response"].generated_response
-        if final_chat_response == TECHNICAL_FALLBACK_MESSAGE:
-            local_response = _local_transaction_fallback(input_request, db_conn)
-            if local_response:
-                final_chat_response, _, _ = local_response
-        default_ai_response = "I'm sorry, I couldn't process your request at the moment."
-        save_chat_history(redis_client, 
-                          input_request.customer_id, 
-                          input_request.session_id, 
+
+        save_chat_history(redis_client,
+                          input_request.customer_id,
+                          input_request.session_id,
                           chat_history,
                           final_chat_response,
                           logger)
+
+        # Build visualization payload (None when no chart was produced)
+        viz_payload = None
+        viz_response = response.get("visualization_response")
+        if viz_response and viz_response.decision.should_visualize and viz_response.plotly_json:
+            viz_payload = {
+                "should_visualize": True,
+                "chart_type": viz_response.decision.chart_type,
+                "chart_title": viz_response.decision.chart_title,
+                "plotly_json": viz_response.plotly_json,
+            }
+
         logger.info("Final response generated")
     except Exception as e:
         logger.exception("Error while invoking agent graph")
-        return {"error": "internal_error", "details": str(e)}
+        return JSONResponse({"error": "internal_error", "details": str(e)}, status_code=500)
 
     logger.info(f"Final response generated: {final_chat_response}")
-    return final_chat_response
+    return JSONResponse({"response": final_chat_response, "visualization": viz_payload})
 
 @app.post("/process-debug")
 async def process_debug(
