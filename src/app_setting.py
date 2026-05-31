@@ -24,6 +24,7 @@ class AppSettings(BaseSettings):
     visualization_agent_prompt_path: str = "visualization_agent_prompt.yml"
     db_path: str = "transactions.db"
     EMBED_MODEL: str = "text-embedding-3-small"
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     merchant_name_query: str = "SELECT DISTINCT merchant_brand_name FROM transactions WHERE customer_id = ?;"
     merchant_category1_query: str = "SELECT DISTINCT merchant_system_category1_name FROM transactions WHERE customer_id = ?;"

@@ -49,10 +49,8 @@ async def lifespan(app: FastAPI):
     prompts = get_all_prompts(app_settings)
     logger = setup_logging()
     
-    redis_client = redis.Redis(
-        host='localhost',
-        port=6379,
-        db=0,
+    redis_client = redis.from_url(
+        app_settings.REDIS_URL,
         decode_responses=True,
         socket_connect_timeout=0.5,
         socket_timeout=0.5,
@@ -536,7 +534,6 @@ async def update_settings(req: SettingsUpdateRequest):
         return {"status": "error", "details": str(e)}
 
 if __name__ == "__main__":
-    # Run the FastAPI app with uvicorn. Adjust host/port/reload as needed.
-    # uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True, reload_dirs=["src", "prompts"])
-# ...existing code...
+    port = int(os.getenv("PORT", 8000))
+    dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=dev_mode, reload_dirs=["src", "prompts"] if dev_mode else None)
