@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B-Bot Transaction Assistant</title>
+    <title>FinTell Transaction Assistant</title>
     <meta name="description" content="Premium banking transaction chatbot assistant with AI-powered query handling">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -1023,8 +1023,7 @@
 <!-- ===== LOGIN OVERLAY ===== -->
 <div id="loginOverlay" class="login-overlay">
     <form id="loginForm" class="login-panel">
-        <div class="login-logo">B</div>
-        <h1>B-Bot Login</h1>
+        <h1>FinTell Login</h1>
         <p>Sign in to access your transaction assistant.</p>
         <div class="login-field">
             <label for="loginUserId">User ID</label>
@@ -1071,7 +1070,7 @@
         </nav>
 
         <div class="sidebar-bottom">
-            <div class="nav-item" id="navLogout">
+            <div class="nav-item">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 <span class="nav-label">Log Out</span>
             </div>
@@ -1098,11 +1097,11 @@
             <!-- B-Bot always present -->
             <div class="chat-item active" id="chatItemBot">
                 <div class="chat-item-avatar bot-avatar">
-                    B
+                    F
                     <span class="status-online"></span>
                 </div>
                 <div class="chat-item-info">
-                    <div class="chat-item-name">B-Bot Assistant</div>
+                    <div class="chat-item-name">FinTell</div>
                     <div class="chat-item-status">Online</div>
                     <div class="chat-item-preview" id="chatPreview">Ask me about your transactions!</div>
                 </div>
@@ -1117,9 +1116,9 @@
         <!-- Chat Header -->
         <header class="chat-header">
             <div class="chat-header-left">
-                <div class="chat-header-avatar">B</div>
+                <div class="chat-header-avatar">F</div>
                 <div class="chat-header-info">
-                    <h3>B-Bot Assistant</h3>
+                    <h3>FinTell</h3>
                     <div class="online-status" id="onlineStatus">
                         <span class="dot" id="statusDot"></span>
                         <span id="statusText">Online</span>
@@ -1140,7 +1139,7 @@
         <!-- Chat Messages Board -->
         <main id="chatBoard" class="chat-board">
             <div class="message assistant">
-                Hi! I'm your premium banking transaction assistant. Ask me about your spending, merchant history, transaction details, or date ranges.
+                Hi Abhishek! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
             </div>
             <div class="msg-timestamp left" id="welcomeTs"></div>
         </main>
@@ -1251,7 +1250,7 @@
 
     function clearLoggedInUser() {
         currentUserId = "";
-        localStorage.removeItem("bbot_user_id");
+        localStorage.removeItem("fintell_user_id");
         sidebarInitials.textContent = "?";
         sidebarName.textContent = "Guest";
         loginPassword.value = "";
@@ -1282,7 +1281,7 @@
             }
             chatBoard.innerHTML = `
                 <div class="message assistant">
-                    Hi! I'm your premium banking transaction assistant. Ask me about your spending, merchant history, transaction details, or date ranges.
+                    Hi Abhishek! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
                 </div>
                 <div class="msg-timestamp left">${formatTime(new Date())}</div>
             `;
@@ -1299,7 +1298,7 @@
     newChatBtn.addEventListener("click", () => {
         chatBoard.innerHTML = `
             <div class="message assistant">
-                Hi! I'm your premium banking transaction assistant. Ask me about your spending, merchant history, transaction details, or date ranges.
+                Hi Abhishek! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
             </div>
             <div class="msg-timestamp left">${formatTime(new Date())}</div>
         `;

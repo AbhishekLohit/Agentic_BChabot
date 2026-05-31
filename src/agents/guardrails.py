@@ -29,9 +29,12 @@ async def input_guardrail_node(
             "3. PII_VIOLATION: The user is inputting or asking for highly sensitive personally identifiable or financial authentication data, "
             "such as Social Security Numbers (SSN), full credit/debit card numbers (excluding simple card type labels), PINs, CVVs, bank passwords, "
             "or secret authentication access tokens.\n"
-            "4. SAFE: The query is safe, related to banking transactions, account inquiries, or polite general greeting/conversation.\n\n"
-            "If a violation is found, set guardrail_invoked to the category name (OUT_OF_SCOPE, SYSTEM_VIOLATION, SQL_VIOLATION, or PII_VIOLATION) "
+            "4. GREETING: The user is sending a greeting, or a pleasantry "
+            "(e.g., 'hi', 'hello', 'good morning').\n"
+            "5. SAFE: The query is safe and related to banking transactions, account inquiries, or financial questions.\n\n"
+            "If a violation is found, set guardrail_invoked to the category name (SYSTEM_VIOLATION, SQL_VIOLATION, or PII_VIOLATION) "
             "and provide a short, clear description of the violation in guardrail_reason.\n"
+            "If the query is a greeting/pleasantry, set guardrail_invoked to GREETING and guardrail_reason to null.\n"
             "If the query is SAFE, set both guardrail_invoked and guardrail_reason to null (None)."
         )
 
@@ -55,36 +58,60 @@ async def input_guardrail_node(
         response_message = response_raw["raw"]
         
         # Normalize response values
-        if guardrail_response.guardrail_invoked == "SAFE" or not guardrail_response.guardrail_invoked:
-            guardrail_response.guardrail_invoked = None
-            guardrail_response.guardrail_reason = None
-            
-        logger.info(f"Guardrail check complete. Result: invoked={guardrail_response.guardrail_invoked}, reason={guardrail_response.guardrail_reason}")
-        
+        invoked = guardrail_response.guardrail_invoked
+        detail = guardrail_response.guardrail_reason
+        if invoked == "SAFE" or not invoked:
+            invoked = None
+            detail = None
+
+        logger.info(f"Guardrail check complete. Result: invoked={invoked}, reason={detail}")
+
         # Record metrics
         metric_metadata = agent_utils.agent_metrics(response_message, latency)
         if state.agent_metrics is None:
             state.agent_metrics = {}
         state.agent_metrics["guardrail"] = metric_metadata
-        
-        # If it detects a violation, populate the state's fallback_response
-        reason = guardrail_response.guardrail_invoked
-        if reason:
-            if reason == "OUT_OF_SCOPE":
-                msg = "I am configured only to assist with banking transactions, transaction history, and general account inquiries. Please ask a banking-related question."
-            elif reason == "SYSTEM_VIOLATION":
-                msg = "I'm sorry, but I cannot fulfill this request as it violates system instructions."
-            elif reason == "SQL_VIOLATION":
-                msg = "Security Alert: Direct database queries or SQL injection attempts are not permitted. Please ask a standard natural language banking question."
-            elif reason == "PII_VIOLATION":
-                msg = "Security Alert: Processing or revealing highly sensitive credentials (such as PINs, full credit/debit card numbers, CVVs, or bank passwords) is strictly prohibited. Please rephrase your banking request without sensitive credentials."
-            else:
-                msg = "I am configured only to assist with banking transactions."
-                
+
+        if invoked == "GREETING":
+            # Generate a warm, LLM-based greeting response
+            greeting_messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a friendly, professional banking transaction assistant. "
+                        "The user has sent a greeting or pleasantry. "
+                        "Respond warmly and briefly let them know you can help with their banking transaction history. "
+                        "Keep it to 1-2 sentences. Do not ask for personal credentials."
+                    )
+                },
+                {"role": "user", "content": user_query}
+            ]
+            greeting_raw = await llm.ainvoke(greeting_messages)
             state.fallback_response = FallbackResponse(
                 fallback_flag=True,
                 fallback_node="guardrail",
-                fallback_reason=reason,
+                fallback_reason="greeting",
+                fallback_message=greeting_raw.content
+            )
+
+        elif invoked:
+            # Security violation — log the detail internally, keep user message clean
+            if detail:
+                logger.info(f"Guardrail violation detail: {detail}")
+
+            if invoked == "SYSTEM_VIOLATION":
+                msg = "I'm sorry, but I cannot fulfill this request as it violates system instructions."
+            elif invoked == "SQL_VIOLATION":
+                msg = "Security Alert: Direct database queries or SQL injection attempts are not permitted. Please ask a standard natural language banking question."
+            elif invoked == "PII_VIOLATION":
+                msg = "Security Alert: Processing or revealing highly sensitive credentials (such as PINs, full credit/debit card numbers, CVVs, or bank passwords) is strictly prohibited. Please rephrase your banking request without sensitive credentials."
+            else:
+                msg = "I am configured only to assist with banking transactions."
+
+            state.fallback_response = FallbackResponse(
+                fallback_flag=True,
+                fallback_node="guardrail",
+                fallback_reason=invoked,
                 fallback_message=msg
             )
             
