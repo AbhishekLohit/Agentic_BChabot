@@ -9,6 +9,29 @@ import plotly.io as pio
 from app_models import Graph_State, VisualizationDecision, VisualizationResponse
 from utils import agent_utils
 
+# A chart becomes unreadable when there are too many x-axis values. Above these caps
+# we skip the chart (the text answer still lists the data).
+#   - MAX_BAR_CATEGORIES: cap on x-axis values for a bar chart.
+#   - MAX_LINE_POINTS: cap on points for a line chart; also the hard cap used to
+#     short-circuit BEFORE the LLM call (saving a request when no chart can be clean).
+MAX_BAR_CATEGORIES = 12
+MAX_LINE_POINTS = 12
+
+
+def _skip_viz(reasoning: str, decision: VisualizationDecision | None = None) -> VisualizationResponse:
+    """Build a 'no chart' response, preserving any title/fields the LLM already chose."""
+    return VisualizationResponse(
+        decision=VisualizationDecision(
+            should_visualize=False,
+            chart_type="none",
+            chart_title=decision.chart_title if decision else "",
+            x_field=decision.x_field if decision else None,
+            y_field=decision.y_field if decision else None,
+            reasoning=reasoning,
+        ),
+        plotly_json=None,
+    )
+
 
 async def visualization_agent(
     state: Graph_State,
@@ -58,12 +81,24 @@ async def visualization_agent(
             )
             return state
 
+        # Too many rows for any clean chart — skip before calling the LLM (saves a request).
+        if len(rows) > MAX_LINE_POINTS:
+            logger.info(
+                f"Skipping visualization: {len(rows)} rows exceed the {MAX_LINE_POINTS}-point cap."
+            )
+            state.visualization_response = _skip_viz(
+                f"Too many data points ({len(rows)}) to render a clear chart."
+            )
+            return state
+
         columns = list(rows[0].keys())
-        user_query = (
-            state.context_builder_response.user_query
-            if state.context_builder_response
-            else ""
-        )
+        # Use the single classified query being answered on the SQL path.
+        if state.banksql_queries:
+            user_query = state.banksql_queries[0]
+        elif state.context_builder_response:
+            user_query = " ".join(state.context_builder_response.contextual_queries)
+        else:
+            user_query = ""
 
         messages = [
             {
@@ -105,6 +140,19 @@ async def visualization_agent(
         if not decision.should_visualize or decision.chart_type == "none":
             state.visualization_response = VisualizationResponse(
                 decision=decision, plotly_json=None
+            )
+            return state
+
+        # Skip charts with too many x-axis values to stay readable (bar caps tighter than line).
+        point_cap = MAX_LINE_POINTS if decision.chart_type == "line" else MAX_BAR_CATEGORIES
+        if decision.chart_type in ("bar", "line") and len(rows) > point_cap:
+            logger.info(
+                f"Skipping {decision.chart_type} chart: {len(rows)} values exceed the "
+                f"{point_cap}-value cap."
+            )
+            state.visualization_response = _skip_viz(
+                f"Too many values ({len(rows)}) for a clear {decision.chart_type} chart.",
+                decision,
             )
             return state
 
@@ -152,9 +200,10 @@ def _build_plotly_figure(
             "month": "Month",
             "year": "Year",
             "day": "Day",
-            "country": "Country",
-            "channel": "Channel",
-            "card_type": "Card Type",
+            "transaction_type": "Transaction Type",
+            "balance": "Balance (£)",
+            "current_balance": "Current Balance (£)",
+            "total_income": "Total Income (£)",
             "count": "Count",
             "transaction_id": "Transaction ID",
             "customer_id": "Customer",

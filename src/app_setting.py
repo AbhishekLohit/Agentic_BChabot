@@ -22,9 +22,20 @@ class AppSettings(BaseSettings):
     test_data_generation_prompt_path: str = "test_data_generation_prompt.yml"
     test_data_validation_prompt_path: str = "test_data_validation_prompt.yml"
     visualization_agent_prompt_path: str = "visualization_agent_prompt.yml"
+    history_summarizer_prompt_path: str = "history_summarizer_prompt.yml"
     db_path: str = "transactions.db"
     EMBED_MODEL: str = "text-embedding-3-small"
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_TTL: int = 1800
+    # When a brand-new conversation starts, seed the context builder with the
+    # customer's messages from the last N hours (rolling window). 0 disables it.
+    # Only the most recent HISTORY_LOOKBACK_MAX_MESSAGES within that window are used.
+    HISTORY_LOOKBACK_HOURS: int = 24
+    HISTORY_LOOKBACK_MAX_MESSAGES: int = 5
+
+    LANGCHAIN_API_KEY: str | None = None
+    LANGCHAIN_TRACING_V2: str = "false"
+    LANGCHAIN_PROJECT: str = "fintell-chatbot"
 
     merchant_name_query: str = "SELECT DISTINCT merchant_brand_name FROM transactions WHERE customer_id = ?;"
     merchant_category1_query: str = "SELECT DISTINCT merchant_system_category1_name FROM transactions WHERE customer_id = ?;"

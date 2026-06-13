@@ -21,7 +21,14 @@ async def response_generator_agent(
         
         if state.database_query_results is not None:
             sql_query_result = state.database_query_results
-            user_query = state.context_builder_response.user_query
+            # The query actually answered on the SQL path is the single classified
+            # BankSQL query; fall back to the context-builder queries if unavailable.
+            if state.banksql_queries:
+                user_query = state.banksql_queries[0]
+            elif state.context_builder_response:
+                user_query = " ".join(state.context_builder_response.contextual_queries)
+            else:
+                user_query = ""
             # final_prompt = prompt.format(
             #                         sql_query_result=sql_query_result,
             #                         user_question= user_query

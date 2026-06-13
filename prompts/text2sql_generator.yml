@@ -18,18 +18,21 @@ prompt: |
     - transaction_id (TEXT, PRIMARY KEY) — unique transaction identifier
     - customer_id (TEXT) — id of the customer who made the transaction
     - card_number (INTEGER) — card used for the transaction
-    - country (TEXT) — country where the transaction occurred (e.g., "UK", "USA", "Nigeria")
-    - card_type (TEXT) — type of card used (e.g., "Basic Debit", "Premium Debit")
-    - card_present (BOOLEAN) — whether the physical card was present (True = in-store, False = online)
-    - channel (TEXT) — transaction channel ("mobile", "web", "pos")
     - transaction_date (TEXT) — date of transaction in YYYY-MM-DD format
     - year (INTEGER) — year of transaction
     - month (INTEGER) — month of transaction (1–12)
     - day (INTEGER) — day of month
-    - amount_usd (REAL) — transaction amount in USD
-    - merchant_brand_name (TEXT) — name of the merchant (e.g., "Amazon", "Tesco")
-    - merchant_system_category1_name (TEXT) — primary spending category (e.g., "Shopping", "Groceries", "Travel")
-    - merchant_system_category2_name (TEXT) — secondary spending sub-category (e.g., "Pet Shops", "Coffee Shop")
+    - amount_usd (REAL) — transaction amount in USD. ALWAYS positive; the direction
+      (money in vs money out) is given by transaction_type, NOT by the sign of this column.
+    - transaction_type (TEXT) — one of:
+        'income'         — incoming money (salary, refunds, transfers received)
+        'payment'        — ordinary outgoing card spending
+        'direct_debit'   — outgoing recurring bills paid by direct debit (utilities, subscriptions)
+        'standing_order' — outgoing user-initiated fixed recurring transfers (rent, savings)
+    - balance (REAL) — the customer's running account balance immediately AFTER this transaction
+    - merchant_brand_name (TEXT) — name of the merchant or counterparty (e.g., "Amazon", "Tesco", "Employer Payroll")
+    - merchant_system_category1_name (TEXT) — primary category (e.g., "Shopping", "Groceries", "Income")
+    - merchant_system_category2_name (TEXT) — secondary sub-category (e.g., "Pet Shops", "Salary", "Refund")
 
 
     ## STRING MATCHING RULES (VERY IMPORTANT)
@@ -41,10 +44,9 @@ prompt: |
         - transactions.merchant_brand_name
         - transactions.merchant_system_category1_name
         - transactions.merchant_system_category2_name
-        - transactions.country
-        - transactions.channel
-        - transactions.card_type
       4. Do NOT use exact equality (=) for the above columns.
+      5. transaction_type is a fixed enum — match it with exact equality, e.g.
+         transaction_type = 'income'. Do NOT use LIKE for transaction_type.
 
 
     ## DATE FILTERING RULES
@@ -65,10 +67,17 @@ prompt: |
         - Always scope queries to that customer_id using: WHERE customer_id = '<customer_id>'
 
       2. Interpret business terms from the USER perspective only:
-        - "spending" / "spent" → SUM(amount_usd)
+        - "spending" / "spent" / "outgoing" / "money out" → SUM(amount_usd) WHERE transaction_type != 'income'
+          (i.e. include payment, direct_debit and standing_order; EXCLUDE income).
+        - "income" / "received" / "money in" / "incoming" → transaction_type = 'income'
+        - "direct debit(s)" → transaction_type = 'direct_debit'
+        - "standing order(s)" → transaction_type = 'standing_order'
+        - "payment(s)" (ordinary card spending) → transaction_type = 'payment'
+        - "balance" / "current balance" / "how much do I have" → the balance column. For the
+          CURRENT balance, take the most recent row: SELECT balance ... ORDER BY transaction_date DESC LIMIT 1.
+        - "refund(s)" → transaction_type = 'income' AND LOWER(merchant_system_category2_name) LIKE LOWER('%refund%')
+        - "salary" → transaction_type = 'income' AND LOWER(merchant_system_category2_name) LIKE LOWER('%salary%')
         - "transactions" → rows in the transactions table
-        - "online transactions" → card_present = 0 (False)
-        - "in-store transactions" → card_present = 1 (True)
         - "categories" → merchant_system_category1_name
 
 
@@ -94,7 +103,7 @@ prompt: |
     # Example 1 — Total spending by category
     example_1 = {{
         "user_query": "How much did I spend on groceries?",
-        "sql_query": "SELECT SUM(amount_usd) AS total_spent FROM transactions WHERE customer_id = '<customer_id>' AND LOWER(merchant_system_category1_name) LIKE LOWER('%groceries%')"
+        "sql_query": "SELECT SUM(amount_usd) AS total_spent FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type != 'income' AND LOWER(merchant_system_category1_name) LIKE LOWER('%groceries%')"
     }}
 
     # Example 2 — Spending at a specific merchant
@@ -121,14 +130,26 @@ prompt: |
         "sql_query": "SELECT SUM(amount_usd) AS total_spent FROM transactions WHERE customer_id = '<customer_id>' AND year = 2024"
     }}
 
-    # Example 6 — Transaction count by country
+    # Example 6 — Current account balance
     example_6 = {{
-        "user_query": "How many transactions did I make in the UK?",
-        "sql_query": "SELECT COUNT(*) AS transaction_count FROM transactions WHERE customer_id = '<customer_id>' AND LOWER(country) LIKE LOWER('%uk%')"
+        "user_query": "What is my current balance?",
+        "sql_query": "SELECT balance AS current_balance FROM transactions WHERE customer_id = '<customer_id>' ORDER BY transaction_date DESC LIMIT 1"
     }}
 
-    # Example 7 — Online vs in-store
+    # Example 7 — Income received in a period
     example_7 = {{
-        "user_query": "How much did I spend online this year?",
-        "sql_query": "SELECT SUM(amount_usd) AS total_spent FROM transactions WHERE customer_id = '<customer_id>' AND card_present = 0 AND year = strftime('%Y', 'now')"
+        "user_query": "How much income did I receive in 2024?",
+        "sql_query": "SELECT SUM(amount_usd) AS total_income FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'income' AND year = 2024"
+    }}
+
+    # Example 8 — Direct debits
+    example_8 = {{
+        "user_query": "List my direct debits this year.",
+        "sql_query": "SELECT * FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'direct_debit' AND year = strftime('%Y', 'now') ORDER BY transaction_date DESC LIMIT 50"
+    }}
+
+    # Example 9 — Standing orders total
+    example_9 = {{
+        "user_query": "How much do I pay in standing orders each month?",
+        "sql_query": "SELECT year, month, SUM(amount_usd) AS total_standing_orders FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'standing_order' GROUP BY year, month ORDER BY year DESC, month DESC LIMIT 50"
     }}

@@ -14,6 +14,7 @@ class Prompts(BaseModel):
     sql_correction_prompt: BasePromptTemplate
     test_data_generation_prompt: BasePromptTemplate
     visualization_prompt: BasePromptTemplate
+    history_summarizer_prompt: BasePromptTemplate
     
 
 class UIUserRequest(BaseModel):
@@ -28,11 +29,18 @@ class GuardRailResponse(BaseModel):
     guardrail_reason : str | None
 
 class ContextBuilderResponse(BaseModel):
-    user_query : str
+    # The context builder is the ONLY splitter: it returns one or more fully
+    # self-contained queries. Same-topic questions (e.g. multiple timeframes) stay
+    # as a single entry; genuinely independent questions become separate entries.
+    contextual_queries : list[str]
 
 class ClassifiedSubQuery(BaseModel):
     sub_query: str
     class_label: Literal["BankSQL","Out_of_scope"]
+    transaction_query_type: Literal[
+        "income", "payment", "direct_debit", "standing_order",
+        "refund", "balance_check", "general", "none"
+    ]
 
 class SuprivisorResponse(BaseModel):
     classified_sub_queries : list[ClassifiedSubQuery]

@@ -18,9 +18,11 @@ async def context_builder_agent(
         input_query = state.input_request.user_query
         logger.info(f"Chat history in context builder agent: {state.chat_history}")
     
+        today_str = datetime.now().strftime("%Y-%m-%d")
         messages = [
             {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral", "ttl": "1h"}}]},
             {"role": "user", "content": f"""
+                                Today's date: {today_str}
                                 Latest user question: {input_query}
                                 Chat history: {state.chat_history}"""}
         ]

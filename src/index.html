@@ -936,7 +936,8 @@
             font-weight: 600;
         }
 
-        .login-field input {
+        .login-field input,
+        .login-field select {
             width: 100%;
             border: 1px solid #e5e7eb;
             background: #f9fafb;
@@ -946,13 +947,49 @@
             font-size: 0.95rem;
             outline: none;
             transition: all 0.25s;
+            font-family: inherit;
         }
 
-        .login-field input:focus {
+        .login-field select {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 42px;
+        }
+
+        .login-field input:focus,
+        .login-field select:focus {
             border-color: #7c3aed;
             box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
-            background: #ffffff;
+            background-color: #ffffff;
         }
+
+        .login-credit {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 0.74rem;
+            color: #9ca3af;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .login-credit strong { color: #7c3aed; font-weight: 600; }
+
+        /* ===== APP CREDIT (main panel) ===== */
+        .app-credit {
+            text-align: center;
+            padding: 5px 0 7px;
+            font-size: 0.66rem;
+            color: #9ca3af;
+            background: #ffffff;
+            letter-spacing: 0.4px;
+            flex-shrink: 0;
+        }
+
+        .app-credit strong { color: #a78bfa; font-weight: 600; }
 
         .login-submit {
             width: 100%;
@@ -1016,6 +1053,111 @@
             opacity: 0;
             transform: translateY(8px);
         }
+        /* ===== SUGGESTION CHIPS ===== */
+        .suggestions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 16px 4px;
+        }
+        .suggestion-chip {
+            border: 1.5px solid #a78bfa;
+            background: transparent;
+            color: #7c3aed;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .suggestion-chip:hover {
+            background: #7c3aed;
+            color: #fff;
+        }
+
+        /* ===== HISTORY VIEW (in-panel) ===== */
+        #headerStateNormal { display: flex; align-items: center; gap: 12px; }
+        #headerStateHistory { display: none; align-items: center; gap: 2px; }
+        .back-btn {
+            background: none; border: none; cursor: pointer; color: #7c3aed;
+            display: flex; align-items: center; gap: 4px;
+            font-size: 0.82rem; font-weight: 700; padding: 5px 8px;
+            border-radius: 8px; transition: background 0.18s; font-family: inherit;
+        }
+        .back-btn:hover { background: #f5f3ff; }
+        .history-view-title {
+            font-size: 0.95rem; font-weight: 700; color: #1f2937; margin-left: 2px;
+        }
+        .history-view {
+            flex: 1; overflow-y: auto; display: none;
+            flex-direction: column; background: #f8fafc;
+        }
+        .history-view::-webkit-scrollbar { width: 4px; }
+        .history-view::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        .history-date-label {
+            font-size: 0.67rem; font-weight: 700; letter-spacing: 1.4px;
+            color: #94a3b8; text-transform: uppercase;
+            padding: 14px 16px 6px; flex-shrink: 0;
+        }
+        .history-card {
+            margin: 0 12px 8px; border-radius: 14px;
+            background: #fff; border: 1px solid #e9edf5;
+            overflow: hidden; transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .history-card:hover { box-shadow: 0 3px 14px rgba(124,58,237,0.1); border-color: #c4b5fd; }
+        .history-card-hdr {
+            display: flex; align-items: center; padding: 13px 14px;
+            cursor: pointer; gap: 10px; user-select: none;
+        }
+        .history-card-icon {
+            width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .history-card-icon svg { color: #7c3aed; }
+        .history-card-info { flex: 1; min-width: 0; }
+        .history-card-summary {
+            font-size: 0.84rem; font-weight: 600; color: #1e1b4b;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
+        }
+        .history-card-meta {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.71rem; color: #94a3b8;
+        }
+        .meta-sep { width: 3px; height: 3px; border-radius: 50%; background: #cbd5e1; flex-shrink: 0; }
+        .history-chevron { color: #c4b5fd; flex-shrink: 0; transition: transform 0.22s ease; }
+        .history-card.open .history-chevron { transform: rotate(180deg); }
+        .history-thread {
+            display: none; flex-direction: column; gap: 8px;
+            background: #faf5ff; border-top: 1px solid #ede9fe;
+            padding: 12px 14px; max-height: 220px; overflow-y: auto;
+        }
+        .history-card.open .history-thread { display: flex; }
+        .history-thread::-webkit-scrollbar { width: 3px; }
+        .history-thread::-webkit-scrollbar-thumb { background: #ddd6fe; border-radius: 3px; }
+        .h-msg { display: flex; flex-direction: column; gap: 2px; }
+        .h-msg.user { align-items: flex-end; }
+        .h-msg.assistant { align-items: flex-start; }
+        .h-msg-label {
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 0.6px;
+            text-transform: uppercase; margin-bottom: 1px;
+        }
+        .h-msg.user .h-msg-label { color: #7c3aed; }
+        .h-msg.assistant .h-msg-label { color: #059669; }
+        .h-msg-bubble {
+            font-size: 0.79rem; line-height: 1.5; border-radius: 10px;
+            padding: 7px 11px; max-width: 88%; border: 1px solid transparent;
+        }
+        .h-msg.user .h-msg-bubble { background: #ede9fe; border-color: #c4b5fd; color: #3730a3; }
+        .h-msg.assistant .h-msg-bubble { background: #fff; border-color: #e9edf5; color: #374151; }
+        .history-empty-state {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 10px; color: #94a3b8; padding: 40px 20px; text-align: center;
+        }
+        .history-empty-state p { font-size: 0.84rem; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -1026,8 +1168,15 @@
         <h1>FinTell Login</h1>
         <p>Sign in to access your transaction assistant.</p>
         <div class="login-field">
-            <label for="loginUserId">User ID</label>
-            <input id="loginUserId" type="text" autocomplete="username" value="Cust_0410">
+            <label for="loginUserId">User</label>
+            <select id="loginUserId" autocomplete="username">
+                <option value="Cust_0410">Abhishek</option>
+                <option value="Cust_0410">Sue</option>
+                <option value="Cust_0410">Sathish</option>
+                <option value="Cust_0410">Parag</option>
+                <option value="Cust_0410">Sanket</option>
+                <option value="Cust_0410">Pankaj</option>
+            </select>
         </div>
         <div class="login-field">
             <label for="loginPassword">Password</label>
@@ -1035,6 +1184,7 @@
         </div>
         <button class="login-submit" type="submit">Sign In</button>
         <div id="loginError" class="login-error"></div>
+        <div class="login-credit">Developed by <strong>abhishek.lohit</strong></div>
     </form>
 </div>
 
@@ -1085,7 +1235,7 @@
             </div>
             <div class="chatlist-subtitle-row">
                 <span class="recent-label"><span class="recent-dot"></span> Recent Chats</span>
-                <button class="new-chat-btn" id="newChatBtn">+ New Chat</button>
+                <button class="new-chat-btn">+ New Chat</button>
             </div>
             <div class="search-box">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1116,33 +1266,57 @@
         <!-- Chat Header -->
         <header class="chat-header">
             <div class="chat-header-left">
-                <div class="chat-header-avatar">F</div>
-                <div class="chat-header-info">
-                    <h3>FinTell</h3>
-                    <div class="online-status" id="onlineStatus">
-                        <span class="dot" id="statusDot"></span>
-                        <span id="statusText">Online</span>
+                <div id="headerStateNormal">
+                    <div class="chat-header-avatar">F</div>
+                    <div class="chat-header-info">
+                        <h3>FinTell</h3>
+                        <div class="online-status" id="onlineStatus">
+                            <span class="dot" id="statusDot"></span>
+                            <span id="statusText">Online</span>
+                        </div>
                     </div>
+                </div>
+                <div id="headerStateHistory">
+                    <button class="back-btn" id="backFromHistory">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        Back
+                    </button>
+                    <span class="history-view-title">Chat History</span>
                 </div>
             </div>
             <div class="chat-header-actions">
-                <label class="voice-toggle-label">
-                    <span>TTS</span>
-                    <input id="ttsToggle" type="checkbox" class="voice-toggle-checkbox" checked>
-                </label>
-                <button class="header-action-btn" title="Log Out" id="navLogout">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                </button>
+                <div id="actionsNormal" style="display:flex;align-items:center;gap:6px;">
+                    <button class="header-action-btn" title="New Chat" id="newChatBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </button>
+                    <button class="header-action-btn" title="Chat History" id="historyBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </button>
+                    <button class="header-action-btn" title="Log Out" id="navLogout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
+                </div>
+                <div id="actionsHistory" style="display:none;align-items:center;gap:6px;">
+                    <button class="header-action-btn" title="Clear older chats" id="clearHistoryBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2"/></svg>
+                    </button>
+                    <button class="header-action-btn" title="Log Out" id="navLogoutHistory">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
+                </div>
             </div>
         </header>
 
         <!-- Chat Messages Board -->
         <main id="chatBoard" class="chat-board">
             <div class="message assistant">
-                Hi Abhishek! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
+                Hi! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
             </div>
             <div class="msg-timestamp left" id="welcomeTs"></div>
         </main>
+
+        <!-- History View (replaces chatBoard when active) -->
+        <div id="historyView" class="history-view"></div>
 
         <!-- Voice Listening Overlay -->
         <div id="listeningOverlay" class="listening-overlay">
@@ -1164,12 +1338,16 @@
             <p id="liveTranscript">Say something like: "Show my grocery transactions"</p>
         </div>
 
+        <!-- Suggested Questions -->
+        <div class="suggestions-row" id="suggestionsRow">
+            <button class="suggestion-chip" onclick="useChip(this)">What did I spend last month?</button>
+            <button class="suggestion-chip" onclick="useChip(this)">Show my top 5 merchants</button>
+            <button class="suggestion-chip" onclick="useChip(this)">How much did I spend on groceries?</button>
+            <button class="suggestion-chip" onclick="useChip(this)">What's my current balance?</button>
+        </div>
+
         <!-- Chat Input -->
         <footer class="chat-input-area">
-            <button class="input-emoji-btn" title="Emoji">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            </button>
-
             <div class="input-wrapper">
                 <input id="userInput" type="text" placeholder="Type your message here..." onkeydown="if(event.key==='Enter') sendMessage();">
             </div>
@@ -1191,6 +1369,7 @@
                 </svg>
             </button>
         </footer>
+        <div class="app-credit">Developed by <strong>abhishek.lohit</strong></div>
     </div>
 </div>
 
@@ -1220,12 +1399,36 @@
     const chatItemTime = document.getElementById("chatItemTime");
     const newChatBtn = document.getElementById("newChatBtn");
     const welcomeTs = document.getElementById("welcomeTs");
+    const chatInputArea = document.querySelector(".chat-input-area");
+    const historyView = document.getElementById("historyView");
 
     let recognition = null;
     let isListening = false;
     let isSpeaking = false;
     let isVoiceQuery = false;
-    let currentUserId = localStorage.getItem("bbot_user_id") || "";
+    let currentUserId = localStorage.getItem("fintell_user_id") || "";
+
+    const SESSION_IDLE_MS = 30 * 60 * 1000; // 30 minutes — matches backend REDIS_TTL
+
+    function generateSessionId() { return 'sess_' + Date.now(); }
+
+    function saveSession(id) {
+        localStorage.setItem("fintell_session_id", id);
+        localStorage.setItem("fintell_session_ts", Date.now().toString());
+    }
+
+    function loadSession() {
+        const id  = localStorage.getItem("fintell_session_id");
+        const ts  = parseInt(localStorage.getItem("fintell_session_ts") || "0", 10);
+        if (id && (Date.now() - ts) < SESSION_IDLE_MS) return id;
+        const newId = generateSessionId();
+        saveSession(newId);
+        return newId;
+    }
+
+    let currentSessionId = loadSession();
+
+    const suggestionsRow = document.getElementById("suggestionsRow");
 
     // Set welcome timestamp
     welcomeTs.textContent = formatTime(new Date());
@@ -1240,17 +1443,29 @@
         return parts.map(p => p.charAt(0).toUpperCase()).join('').substring(0, 2);
     }
 
-    function setLoggedInUser(userId) {
+    const USER_DISPLAY_NAMES = { "Cust_0410": "Abhishek Lohit" };
+
+    function setLoggedInUser(userId, isNewLogin = false) {
         currentUserId = userId;
-        localStorage.setItem("bbot_user_id", userId);
-        sidebarInitials.textContent = getInitials(userId);
-        sidebarName.textContent = userId;
+        localStorage.setItem("fintell_user_id", userId);
+        const displayName = USER_DISPLAY_NAMES[userId] || userId;
+        sidebarInitials.textContent = getInitials(displayName);
+        sidebarName.textContent = displayName;
         loginOverlay.style.display = "none";
+        if (isNewLogin) {
+            // Fresh login — start a brand new session
+            currentSessionId = generateSessionId();
+            saveSession(currentSessionId);
+            suggestionsRow.style.display = "flex";
+        }
+        // On page-load restore (isNewLogin=false), loadSession() already set currentSessionId correctly
     }
 
     function clearLoggedInUser() {
         currentUserId = "";
         localStorage.removeItem("fintell_user_id");
+        localStorage.removeItem("fintell_session_id");
+        localStorage.removeItem("fintell_session_ts");
         sidebarInitials.textContent = "?";
         sidebarName.textContent = "Guest";
         loginPassword.value = "";
@@ -1281,29 +1496,31 @@
             }
             chatBoard.innerHTML = `
                 <div class="message assistant">
-                    Hi Abhishek! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
+                    Hi! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
                 </div>
                 <div class="msg-timestamp left">${formatTime(new Date())}</div>
             `;
-            setLoggedInUser(result.user_id);
+            setLoggedInUser(result.user_id, true);
         } catch (error) {
             loginError.textContent = error.message || "Login failed.";
         }
     });
 
-    navLogout.addEventListener("click", () => {
-        clearLoggedInUser();
-    });
+    navLogout.addEventListener("click", () => { clearLoggedInUser(); });
+    document.getElementById("navLogoutHistory").addEventListener("click", () => { clearLoggedInUser(); });
 
     newChatBtn.addEventListener("click", () => {
         chatBoard.innerHTML = `
             <div class="message assistant">
-                Hi Abhishek! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
+                Hi! I'm your banking transaction assistant. Ask me about your spending and transaction details for the last 3 years.
             </div>
             <div class="msg-timestamp left">${formatTime(new Date())}</div>
         `;
         chatPreview.textContent = "Ask me about your transactions!";
         chatItemTime.textContent = "Now";
+        currentSessionId = generateSessionId();
+        saveSession(currentSessionId);
+        suggestionsRow.style.display = "flex";
     });
 
     // Speech Recognition
@@ -1389,7 +1606,8 @@
 
     // Text-to-Speech
     function speakReply(text) {
-        if (!ttsToggle.checked || !window.speechSynthesis) return;
+        // TTS option removed from the UI — keep this a safe no-op.
+        if (!ttsToggle || !ttsToggle.checked || !window.speechSynthesis) return;
 
         const cleanedText = text.replace(/\[System Notification:[^\]]+\]/g, '').trim();
         stopSynthesis();
@@ -1448,6 +1666,9 @@
         const now = new Date();
         const ts = formatTime(now);
 
+        // Hide suggestion chips after first message
+        suggestionsRow.style.display = "none";
+
         // Render user message
         chatBoard.innerHTML += `
             <div class="message user">${escapeHtml(queryText)}</div>
@@ -1475,7 +1696,7 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     customer_id: currentUserId,
-                    session_id: currentVoiceQuery ? "sess_voice_web" : "sess_web_dashboard",
+                    session_id: currentSessionId,
                     user_query: queryText
                 })
             });
@@ -1543,6 +1764,7 @@
             chatItemTime.textContent = replyTs;
 
             speakReply(cleanReply);
+            saveSession(currentSessionId); // reset idle timer on every successful exchange
 
         } catch (error) {
             console.error("API Fetch Error:", error);
@@ -1583,6 +1805,151 @@
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    // ===== SUGGESTION CHIPS =====
+    function useChip(btn) {
+        userInput.value = btn.textContent;
+        sendMessage();
+    }
+
+    // ===== HISTORY VIEW =====
+    const headerStateNormal  = document.getElementById("headerStateNormal");
+    const headerStateHistory = document.getElementById("headerStateHistory");
+    const actionsNormal      = document.getElementById("actionsNormal");
+    const actionsHistory     = document.getElementById("actionsHistory");
+    let _suggestionsWas = "";
+
+    document.getElementById("historyBtn").addEventListener("click", openHistory);
+    document.getElementById("backFromHistory").addEventListener("click", closeHistory);
+    document.getElementById("clearHistoryBtn").addEventListener("click", clearOlderHistory);
+
+    function loadHistorySessions() {
+        historyView.innerHTML = buildLoadingState();
+        fetch(`/chat-history/${encodeURIComponent(currentUserId)}`)
+            .then(r => r.json())
+            .then(renderHistorySessions)
+            .catch(() => {
+                historyView.innerHTML = buildEmptyState("Failed to load history.", "Try again in a moment.");
+            });
+    }
+
+    function openHistory() {
+        if (!currentUserId) return;
+        // Transform header
+        headerStateNormal.style.display  = "none";
+        headerStateHistory.style.display = "flex";
+        actionsNormal.style.display      = "none";
+        actionsHistory.style.display     = "flex";
+        // Swap content area
+        chatBoard.style.display = "none";
+        _suggestionsWas = suggestionsRow.style.display;
+        suggestionsRow.style.display  = "none";
+        chatInputArea.style.display   = "none";
+        historyView.style.display     = "flex";
+        // Load data
+        loadHistorySessions();
+    }
+
+    async function clearOlderHistory() {
+        if (!currentUserId) return;
+        if (!confirm("Remove all older conversations? Your current chat will be kept.")) return;
+        historyView.innerHTML = buildLoadingState();
+        try {
+            const r = await fetch(
+                `/chat-history/${encodeURIComponent(currentUserId)}?keep_session_id=${encodeURIComponent(currentSessionId)}`,
+                { method: "DELETE" }
+            );
+            if (!r.ok) throw new Error();
+            loadHistorySessions();
+        } catch (e) {
+            historyView.innerHTML = buildEmptyState("Could not clear history.", "Please try again in a moment.");
+        }
+    }
+
+    function closeHistory() {
+        // Restore header
+        headerStateNormal.style.display  = "flex";
+        headerStateHistory.style.display = "none";
+        actionsNormal.style.display      = "flex";
+        actionsHistory.style.display     = "none";
+        // Restore content
+        chatBoard.style.display       = "";
+        suggestionsRow.style.display  = _suggestionsWas;
+        chatInputArea.style.display   = "";
+        historyView.style.display     = "none";
+        historyView.innerHTML         = "";
+    }
+
+    function buildLoadingState() {
+        return `<div class="history-empty-state">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <p>Loading your conversations…</p>
+        </div>`;
+    }
+
+    function buildEmptyState(title, sub) {
+        return `<div class="history-empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <p><strong>${escapeHtml(title)}</strong><br><span style="font-size:0.78rem">${escapeHtml(sub)}</span></p>
+        </div>`;
+    }
+
+    function renderHistorySessions(sessions) {
+        if (!sessions || sessions.length === 0) {
+            historyView.innerHTML = buildEmptyState("No conversations yet", "Start a chat and your history will appear here.");
+            return;
+        }
+        const today     = new Date(); today.setHours(0,0,0,0);
+        const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+
+        function dateLabel(isoStr) {
+            const d = new Date(isoStr + "Z"); d.setHours(0,0,0,0);
+            if (d.getTime() === today.getTime())     return "Today";
+            if (d.getTime() === yesterday.getTime()) return "Yesterday";
+            return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+        }
+
+        let html = "";
+        let lastLabel = "";
+        sessions.forEach((s, i) => {
+            const label = dateLabel(s.updated_at);
+            if (label !== lastLabel) {
+                html += `<div class="history-date-label">${label}</div>`;
+                lastLabel = label;
+            }
+            const d       = new Date(s.updated_at + "Z");
+            const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            const count   = s.messages.length;
+            const msgHtml = s.messages.map(m => `
+                <div class="h-msg ${m.role}">
+                    <span class="h-msg-label">${m.role === "user" ? "You" : "Fintell"}</span>
+                    <div class="h-msg-bubble">${escapeHtml(m.content.length > 180 ? m.content.substring(0, 180) + "…" : m.content)}</div>
+                </div>`).join("");
+            html += `
+                <div class="history-card" id="hcard_${i}">
+                    <div class="history-card-hdr" onclick="toggleHistoryCard(${i})">
+                        <div class="history-card-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        </div>
+                        <div class="history-card-info">
+                            <div class="history-card-summary">${escapeHtml(s.summary || "Conversation")}</div>
+                            <div class="history-card-meta">
+                                <span>${timeStr}</span>
+                                <span class="meta-sep"></span>
+                                <span>${count} message${count !== 1 ? "s" : ""}</span>
+                            </div>
+                        </div>
+                        <svg class="history-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="history-thread">${msgHtml}</div>
+                </div>`;
+        });
+        historyView.innerHTML = html;
+    }
+
+    function toggleHistoryCard(i) {
+        document.getElementById("hcard_" + i).classList.toggle("open");
     }
 </script>
 </body>

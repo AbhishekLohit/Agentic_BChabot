@@ -15,15 +15,15 @@ async def suprivisor_agent(
     logger.info("Executing suprivisor agent.")
     # Render the final prompt string using .format()
     try:
-        input_query = state.context_builder_response.user_query
-        # final_prompt = prompt.format(
-        #                         input_query=input_query
-        #                     )
+        # The context builder already split the user input into one or more
+        # self-contained queries. The supervisor must ONLY classify each of them —
+        # it must NOT split or merge them further.
+        input_queries = state.context_builder_response.contextual_queries
 
         messages = [
                 {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
                 {"role": "user", "content": f"""
-                                    input_query: {input_query}"""}
+                                    input_queries: {input_queries}"""}
         ]
         # Send the prompt to the model directly (no chain)
         structured_llm = llm.with_structured_output(SuprivisorResponse,include_raw=True)

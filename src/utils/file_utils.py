@@ -23,7 +23,7 @@ def read_prompt_file(prompt:str
 
 
 def get_all_prompts(appsettings:AppSettings
-) -> Prompts:  
+) -> Prompts:
     return Prompts(
         context_builder_prompt = read_prompt_file(appsettings.context_builder_prompt_path),
         suprivisor_prompt = read_prompt_file(appsettings.suprivisor_prompt_path),
@@ -33,6 +33,7 @@ def get_all_prompts(appsettings:AppSettings
         sql_correction_prompt= read_prompt_file(appsettings.sql_correction_prompt_path),
         test_data_generation_prompt= read_prompt_file(appsettings.test_data_generation_prompt_path),
         visualization_prompt= read_prompt_file(appsettings.visualization_agent_prompt_path),
+        history_summarizer_prompt= read_prompt_file(appsettings.history_summarizer_prompt_path),
     )
 
 def _get_redis_key(user_id: str, 
@@ -42,16 +43,18 @@ def _get_redis_key(user_id: str,
 
 def save_chat_history(
         redis_client : any,
-        user_id: str, 
-        session_id: str, 
+        user_id: str,
+        session_id: str,
         chat_history: list[ChatMessage],
         ai_response:str,
         logger:Logger,
-        ttl_seconds: int = 300
+        ttl_seconds: int = 1800
 ):
     """
     Save chat history as JSON list of dicts.
     """
+    if redis_client is None:
+        return
     key = _get_redis_key(user_id, session_id)
     # Convert Pydantic models -> dicts -> JSON string
     chat_history.append(ChatMessage(role="assistant", content=ai_response))
@@ -63,14 +66,16 @@ def save_chat_history(
         logger.warning("Redis unavailable while saving chat history; continuing without persistence: %s", exc)
 
 def get_chat_history(
-        redis_client:any, 
-        user_id: str, 
-        session_id: str, 
+        redis_client:any,
+        user_id: str,
+        session_id: str,
         user_latest_message: str
 ) -> list[ChatMessage]:
     """
     Retrieve chat history and convert JSON -> list of ChatMessage
     """
+    if redis_client is None:
+        return [ChatMessage(role="user", content=user_latest_message)]
     history : list[ChatMessage] =  []
     key = _get_redis_key(user_id, session_id)
     try:
@@ -82,6 +87,22 @@ def get_chat_history(
         history = []
     history.append(ChatMessage(role="user", content=user_latest_message))
     return history
+
+
+def save_raw_chat_history(
+    redis_client: any,
+    user_id: str,
+    session_id: str,
+    history: list,
+    ttl_seconds: int = 1800,
+) -> None:
+    if redis_client is None:
+        return
+    key = _get_redis_key(user_id, session_id)
+    try:
+        redis_client.set(key, json.dumps([m.dict() for m in history]), ex=ttl_seconds)
+    except Exception:
+        pass
 
 
 def get_vectordb_data(

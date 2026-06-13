@@ -16,7 +16,7 @@ import pandas as pd
 from datetime import datetime
 
 DEFAULT_DB = "transactions.db"
-DEFAULT_TRANSACTIONS_XLSX = "data/data_processing/df_transaction_data_preprocessed.xlsx"
+DEFAULT_TRANSACTIONS_XLSX = "data/data_processing/df_transaction_data_enhanced.xlsx"
 
 
 def build_database(db_path: str, transactions_xlsx: str, backup_old_db: bool = True):
@@ -42,9 +42,8 @@ def build_database(db_path: str, transactions_xlsx: str, backup_old_db: bool = T
     df["transaction_id"] = df["transaction_id"].astype(str).str.strip()
     df["customer_id"] = df["customer_id"].astype(str).str.strip()
     df["transaction_date"] = pd.to_datetime(df["transaction_date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    df["card_present"] = df["card_present"].astype(bool)
 
-    for col in ["country", "card_type", "channel", "merchant_brand_name",
+    for col in ["transaction_type", "merchant_brand_name",
                 "merchant_system_category1_name", "merchant_system_category2_name"]:
         df[col] = df[col].astype(str).str.strip()
 
@@ -63,15 +62,13 @@ def build_database(db_path: str, transactions_xlsx: str, backup_old_db: bool = T
         transaction_id TEXT PRIMARY KEY,
         customer_id TEXT NOT NULL,
         card_number INTEGER,
-        country TEXT,
-        card_type TEXT,
-        card_present BOOLEAN,
-        channel TEXT,
         transaction_date TEXT,
         year INTEGER,
         month INTEGER,
         day INTEGER,
         amount_usd REAL,
+        transaction_type TEXT,
+        balance REAL,
         merchant_brand_name TEXT,
         merchant_system_category1_name TEXT,
         merchant_system_category2_name TEXT
@@ -83,9 +80,9 @@ def build_database(db_path: str, transactions_xlsx: str, backup_old_db: bool = T
 
     print("Inserting transactions...")
     cols = [
-        "transaction_id", "customer_id", "card_number", "country", "card_type",
-        "card_present", "channel", "transaction_date", "year", "month", "day",
-        "amount_usd", "merchant_brand_name", "merchant_system_category1_name",
+        "transaction_id", "customer_id", "card_number", "transaction_date",
+        "year", "month", "day", "amount_usd", "transaction_type", "balance",
+        "merchant_brand_name", "merchant_system_category1_name",
         "merchant_system_category2_name"
     ]
     df[cols].to_sql("transactions", conn, if_exists="append", index=False)
@@ -97,6 +94,7 @@ def build_database(db_path: str, transactions_xlsx: str, backup_old_db: bool = T
         CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date);
         CREATE INDEX IF NOT EXISTS idx_transactions_category1 ON transactions(merchant_system_category1_name);
         CREATE INDEX IF NOT EXISTS idx_transactions_merchant ON transactions(merchant_brand_name);
+        CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(transaction_type);
     """)
     conn.commit()
     conn.close()
