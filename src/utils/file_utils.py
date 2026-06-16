@@ -4,13 +4,13 @@ import yaml
 from app_setting import AppSettings
 from app_models import Prompts,ChatMessage
 from langchain_core.prompts import PromptTemplate
-import json
 from misc.get_db_info import db_info
 import os
 from langchain_openai import OpenAIEmbeddings
 import pandas as pd
 import numpy as np
 import faiss
+from utils import db_utils
 
 def read_prompt_file(prompt:str
 ) -> PromptTemplate:
@@ -36,73 +36,29 @@ def get_all_prompts(appsettings:AppSettings
         history_summarizer_prompt= read_prompt_file(appsettings.history_summarizer_prompt_path),
     )
 
-def _get_redis_key(user_id: str, 
-                   session_id: str
-) -> str:
-    return f"chat:{user_id}:{session_id}"
-
-def save_chat_history(
-        redis_client : any,
-        user_id: str,
-        session_id: str,
-        chat_history: list[ChatMessage],
-        ai_response:str,
-        logger:Logger,
-        ttl_seconds: int = 1800
-):
-    """
-    Save chat history as JSON list of dicts.
-    """
-    if redis_client is None:
-        return
-    key = _get_redis_key(user_id, session_id)
-    # Convert Pydantic models -> dicts -> JSON string
-    chat_history.append(ChatMessage(role="assistant", content=ai_response))
-    logger.info(f"Saving chat history to Redis key: {chat_history}")
-    serialized = json.dumps([msg.dict() for msg in chat_history])
-    try:
-        redis_client.set(key, serialized, ex=ttl_seconds)
-    except Exception as exc:
-        logger.warning("Redis unavailable while saving chat history; continuing without persistence: %s", exc)
-
 def get_chat_history(
-        redis_client:any,
-        user_id: str,
+        db_conn: sqlite3.Connection,
         session_id: str,
-        user_latest_message: str
+        customer_id: str,
+        user_latest_message: str,
 ) -> list[ChatMessage]:
-    """
-    Retrieve chat history and convert JSON -> list of ChatMessage
-    """
-    if redis_client is None:
-        return [ChatMessage(role="user", content=user_latest_message)]
-    history : list[ChatMessage] =  []
-    key = _get_redis_key(user_id, session_id)
-    try:
-        history_json = redis_client.get(key)
-        if history_json:
-            data = json.loads(history_json)
-            history =  [ChatMessage(**msg) for msg in data]  # Convert dicts back to ChatMessage objects
-    except Exception:
-        history = []
+    rows = db_utils.get_messages(db_conn, session_id)
+    history = [ChatMessage(role=r["role"], content=r["content"]) for r in rows]
     history.append(ChatMessage(role="user", content=user_latest_message))
     return history
 
 
 def save_raw_chat_history(
-    redis_client: any,
-    user_id: str,
+    db_conn: sqlite3.Connection,
     session_id: str,
-    history: list,
-    ttl_seconds: int = 1800,
+    customer_id: str,
+    history: list[ChatMessage],
 ) -> None:
-    if redis_client is None:
-        return
-    key = _get_redis_key(user_id, session_id)
-    try:
-        redis_client.set(key, json.dumps([m.dict() for m in history]), ex=ttl_seconds)
-    except Exception:
-        pass
+    db_conn.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+    now = db_utils.now_iso()
+    for msg in history:
+        db_utils.save_message(db_conn, session_id, customer_id, msg.role, msg.content, now)
+    db_conn.commit()
 
 
 def get_vectordb_data(

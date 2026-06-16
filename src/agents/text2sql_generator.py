@@ -47,7 +47,6 @@ async def text2sql_generator_agent(
     llm: Any,
     prompt: str,
     logger: Logger,
-    redis_client: Any = None,
     db_conn: Any = None,
 )-> SubGraph_State:
     logger.info("Executing text2sql generator agent.")
@@ -58,21 +57,11 @@ async def text2sql_generator_agent(
         logger.info(f"Input query for Text2SQL Generator: {input_query}")
         logger.info(f"Customer ID for Text2SQL Generator: {customer_id}")
 
-        # --- CACHE CHECK ---
+        # --- CACHE CHECK (SQLite) ---
         cache_key = _make_cache_key(customer_id, query_str)
         cached_sql = None
-        if redis_client is not None:
-            try:
-                cached_sql = redis_client.get(cache_key)
-            except Exception:
-                pass
-        if cached_sql is None and db_conn is not None:
+        if db_conn is not None:
             cached_sql = db_utils.get_cached_sql(db_conn, cache_key)
-            if cached_sql and redis_client is not None:
-                try:
-                    redis_client.set(cache_key, cached_sql, ex=86400)
-                except Exception:
-                    pass
         if cached_sql:
             logger.info(f"[text2sql] Cache HIT for: {query_str[:80]}")
             state.text2sql_generator_response = Text2SqlGeneratorResponse(
@@ -114,16 +103,11 @@ async def text2sql_generator_agent(
         state.agent_metrics["text2sql_generator"] = metric_metadata
         logger.info(f"state.agent_metrics updated in text2sql generator agent\n{state.agent_metrics}")
 
-        # --- CACHE WRITE ---
+        # --- CACHE WRITE (SQLite) ---
         generated_sql = sql_generator.sql_query
         if db_conn is not None:
             try:
                 db_utils.save_cached_sql(db_conn, cache_key, customer_id, query_str, generated_sql)
-            except Exception:
-                pass
-        if redis_client is not None:
-            try:
-                redis_client.set(cache_key, generated_sql, ex=86400)
             except Exception:
                 pass
         # --- END CACHE WRITE ---

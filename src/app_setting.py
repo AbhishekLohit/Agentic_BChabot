@@ -25,8 +25,6 @@ class AppSettings(BaseSettings):
     history_summarizer_prompt_path: str = "history_summarizer_prompt.yml"
     db_path: str = "transactions.db"
     EMBED_MODEL: str = "text-embedding-3-small"
-    REDIS_URL: str = "redis://localhost:6379/0"
-    REDIS_TTL: int = 1800
     # When a brand-new conversation starts, seed the context builder with the
     # customer's messages from the last N hours (rolling window). 0 disables it.
     # Only the most recent HISTORY_LOOKBACK_MAX_MESSAGES within that window are used.

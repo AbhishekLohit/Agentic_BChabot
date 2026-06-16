@@ -9,9 +9,6 @@ def get_prompts(requests: Request):
 def get_logging(requests: Request):
     return requests.app.state.logger
 
-def get_redis_client(requests: Request):
-    return requests.app.state.redis_client
-
 def get_db_conn(requests: Request):
     return requests.app.state.sqlite_db
 

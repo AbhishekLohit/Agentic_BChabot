@@ -19,14 +19,12 @@ class Agent_SubGraph:
                  prompts:Prompts,
                  logger: Logger,
                  db_conn: Any,
-                 redis_client: Any = None,
                  ):
         self.llm = openai_llm
         self.prompts = prompts
         self.app = self._workflow()
         self.logger = logger
         self.db_conn = db_conn
-        self.redis_client = redis_client
 
     def _workflow(self):
         builder = StateGraph(SubGraph_State)
@@ -80,7 +78,6 @@ class Agent_SubGraph:
             self.llm,
             self.prompts.text2sqlgenerator_prompt,
             self.logger,
-            redis_client=self.redis_client,
             db_conn=self.db_conn,
         )
         return state

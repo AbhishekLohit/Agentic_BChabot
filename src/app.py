@@ -18,16 +18,14 @@ from app_models import (
 from app_setting import AppSettings
 from utils.file_utils import (
                             get_all_prompts,
-                            save_chat_history,
                             save_raw_chat_history,
                             get_chat_history,
                             get_vectordb_data)
 from agents.history_summarizer import summarize_chat_history
 from dependencies import (
-                    get_llm, 
-                    get_prompts, 
+                    get_llm,
+                    get_prompts,
                     get_logging,
-                    get_redis_client,
                     get_db_conn,
                     get_user_data,
                     get_llm_embeddings
@@ -41,7 +39,6 @@ from logging import Logger
 from datetime import datetime
 from pydantic import BaseModel
 import uvicorn
-import redis
 import sqlite3
 import re
 import hmac
@@ -65,19 +62,6 @@ async def lifespan(app: FastAPI):
     prompts = get_all_prompts(app_settings)
     logger = setup_logging()
 
-    # Graceful Redis fallback — app starts even when Redis is unavailable
-    try:
-        redis_client = redis.from_url(
-            app_settings.REDIS_URL,
-            decode_responses=True,
-            socket_connect_timeout=0.5,
-            socket_timeout=0.5,
-        )
-        redis_client.ping()
-    except Exception:
-        logger.warning("Redis unavailable at %s — chat history persistence disabled.", app_settings.REDIS_URL)
-        redis_client = None
-
     # Path to your SQLite database
     DB_PATH = app_settings.db_path
     if not os.path.isabs(DB_PATH):
@@ -97,15 +81,12 @@ async def lifespan(app: FastAPI):
     app.state.llm = llm
     app.state.prompts = prompts
     app.state.logger = logger
-    app.state.redis_client = redis_client
     app.state.sqlite_db = db_conn
     app.state.llm_embeddings = llm_embeddings
     app.state.app_settings = app_settings
 
     yield
 
-    if redis_client is not None:
-        redis_client.close()
     db_conn.close()
     logger.info("Shutting down chatbot...")
    
@@ -310,15 +291,14 @@ async def process(
     openai_llm : Annotated[Any,Depends(get_llm)], # type: ignore
     prompts : Annotated[Prompts,Depends(get_prompts)], # type: ignore
     logger: Annotated[Logger,Depends(get_logging)], # type: ignore
-    redis_client: Annotated[any,Depends(get_redis_client)], # type: ignore
     db_conn: Annotated[any,Depends(get_db_conn)], # type: ignore
 ):
     app_settings: AppSettings = request.app.state.app_settings
     chat_history = get_chat_history(
-                redis_client,
-                input_request.customer_id,
+                db_conn,
                 input_request.session_id,
-                input_request.user_query
+                input_request.customer_id,
+                input_request.user_query,
                 )
 
     # Fresh conversation (Redis holds nothing for this session yet, so chat_history
@@ -352,11 +332,10 @@ async def process(
         )
         chat_history = compressed + [current_msg]
         save_raw_chat_history(
-            redis_client,
-            input_request.customer_id,
+            db_conn,
             input_request.session_id,
+            input_request.customer_id,
             compressed,
-            app_settings.REDIS_TTL,
         )
 
     logger.info(f"Chat history retrieved: {chat_history}")
@@ -378,8 +357,7 @@ async def process(
     agent_subgraph = Agent_SubGraph(openai_llm=openai_llm,
                               prompts=prompts,
                               logger=logger,
-                              db_conn=db_conn,
-                              redis_client=redis_client)
+                              db_conn=db_conn)
     agent_graph = Agent_Graph(openai_llm=openai_llm,
                               prompts=prompts,
                               logger=logger,
@@ -390,16 +368,6 @@ async def process(
         response = await agent_graph.app.ainvoke(graph_state)
 
         final_chat_response = response["response_generation_response"].generated_response
-
-        save_chat_history(
-            redis_client,
-            input_request.customer_id,
-            input_request.session_id,
-            chat_history,
-            final_chat_response,
-            logger,
-            ttl_seconds=app_settings.REDIS_TTL,
-        )
 
         # Persist conversation messages and token metrics to SQLite
         now = db_utils.now_iso()
@@ -475,7 +443,6 @@ async def process_debug(
         prompts=prompts,
         logger=logger,
         db_conn=db_conn,
-        redis_client=None,   # debug endpoint has no Redis; SQLite-only cache
     )
 
     agent_graph = Agent_Graph(
@@ -520,20 +487,13 @@ async def process_debug(
 
 
 @app.get("/health")
-async def health(db_conn: Annotated[any, Depends(get_db_conn)], redis_client: Annotated[any, Depends(get_redis_client)]):
-    redis_ok = False
-    if redis_client is not None:
-        try:
-            redis_client.ping()
-            redis_ok = True
-        except Exception:
-            pass
+async def health(db_conn: Annotated[any, Depends(get_db_conn)]):
     try:
         db_conn.execute("SELECT 1")
         db_ok = True
     except Exception:
         db_ok = False
-    return {"status": "ok", "redis": redis_ok, "db": db_ok}
+    return {"status": "ok", "db": db_ok}
 
 
 @app.get("/chat-history/{customer_id}")
@@ -569,7 +529,6 @@ async def process_voice(
     openai_llm: Annotated[Any, Depends(get_llm)] = None,
     prompts: Annotated[Prompts, Depends(get_prompts)] = None,
     logger: Annotated[Logger, Depends(get_logging)] = None,
-    redis_client: Annotated[any, Depends(get_redis_client)] = None,
     db_conn: Annotated[any, Depends(get_db_conn)] = None,
 ):
     """
@@ -616,7 +575,6 @@ async def process_voice(
             openai_llm=openai_llm,
             prompts=prompts,
             logger=logger,
-            redis_client=redis_client,
             db_conn=db_conn
         )
     except Exception as e:
