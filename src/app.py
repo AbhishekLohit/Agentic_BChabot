@@ -130,6 +130,178 @@ def _rows_as_strings(cursor: sqlite3.Cursor, rows: list[tuple]) -> list[str]:
     return [str(dict(zip(columns, row))) for row in rows]
 
 
+def _metric_dict(metric: Any) -> dict | None:
+    """Reduce a per-agent Metrics object (or dict) to the demo-relevant subset."""
+    if metric is None:
+        return None
+    if hasattr(metric, "model_dump"):
+        metric = metric.model_dump()
+    if not isinstance(metric, dict):
+        return None
+    return {
+        "model_used": metric.get("model_used"),
+        "total_tokens": metric.get("total_tokens"),
+        "latency": metric.get("latency"),
+        "model_cost_with_cache": metric.get("model_cost_with_cache"),
+    }
+
+
+def _build_agent_trace(response: dict) -> list[dict]:
+    """Assemble an ordered, UI-friendly trace of what each backend agent did.
+
+    Reads only the intermediate outputs already present in the LangGraph result
+    (and `agent_metrics`). Purely descriptive — never raises on missing fields.
+    """
+    metrics = response.get("agent_metrics") or {}
+
+    def metric(name: str) -> dict | None:
+        return _metric_dict(metrics.get(name))
+
+    fallback = response.get("fallback_response")
+    fallback_node = getattr(fallback, "fallback_node", None) if fallback else None
+    fallback_active = bool(fallback and getattr(fallback, "fallback_flag", False)) or bool(fallback_node)
+
+    trace: list[dict] = []
+
+    # 1) Guardrail
+    guardrail_tripped = fallback_node == "guardrail"
+    trace.append({
+        "agent": "guardrail",
+        "title": "Guardrail",
+        "status": "fallback" if guardrail_tripped else "ok",
+        "summary": (
+            f"Blocked: {getattr(fallback, 'fallback_reason', 'violation')}"
+            if guardrail_tripped else "No violations detected"
+        ),
+        "details": {},
+        "metrics": metric("guardrail"),
+    })
+
+    # 2) Context builder
+    cb = response.get("context_builder_response")
+    if cb is not None:
+        queries = getattr(cb, "contextual_queries", []) or []
+        trace.append({
+            "agent": "context_builder",
+            "title": "Context Builder",
+            "status": "ok",
+            "summary": f"Resolved {len(queries)} self-contained quer{'y' if len(queries) == 1 else 'ies'}",
+            "details": {"contextual_queries": list(queries)},
+            "metrics": metric("context_builder"),
+        })
+
+    # 3) Supervisor
+    sup = response.get("suprivisor_response")
+    if sup is not None:
+        classified = [
+            {
+                "sub_query": getattr(c, "sub_query", ""),
+                "class_label": getattr(c, "class_label", ""),
+                "transaction_query_type": getattr(c, "transaction_query_type", ""),
+            }
+            for c in (getattr(sup, "classified_sub_queries", []) or [])
+        ]
+        bank = response.get("banksql_queries") or []
+        oos = response.get("out_of_scope_queries") or []
+        trace.append({
+            "agent": "supervisor",
+            "title": "Supervisor",
+            "status": "ok",
+            "summary": f"{len(bank)} bank quer{'y' if len(bank) == 1 else 'ies'}, {len(oos)} out-of-scope",
+            "details": {
+                "classified": classified,
+                "banksql_queries": list(bank),
+                "out_of_scope_queries": list(oos),
+            },
+            "metrics": metric("suprivisor"),
+        })
+
+    # 4) Text-to-SQL (+ optional correction)
+    t2s = response.get("text2sql_generator_response")
+    if t2s is not None:
+        sql_query = getattr(t2s, "sql_query", "") or ""
+        trace.append({
+            "agent": "text2sql_generator",
+            "title": "Text-to-SQL",
+            "status": "ok",
+            "summary": "Generated SQL query",
+            "details": {"sql_query": sql_query},
+            "metrics": metric("text2sql_generator"),
+        })
+        if response.get("sql_query_correction"):
+            trace.append({
+                "agent": "sql_correction",
+                "title": "SQL Correction",
+                "status": "ok",
+                "summary": "Repaired a failed SQL query",
+                "details": {},
+                "metrics": metric("sql_correction"),
+            })
+
+        # 5) SQL execution (DB call — no LLM metrics)
+        rows = response.get("database_query_results")
+        if rows is not None:
+            trace.append({
+                "agent": "sql_execution",
+                "title": "SQL Execution",
+                "status": "ok",
+                "summary": f"Returned {len(rows)} row{'' if len(rows) == 1 else 's'}",
+                "details": {"row_count": len(rows), "sample_rows": [str(r) for r in rows[:5]]},
+                "metrics": None,
+            })
+
+    # 6) Visualization
+    viz = response.get("visualization_response")
+    if viz is not None:
+        decision = getattr(viz, "decision", None)
+        should = bool(getattr(decision, "should_visualize", False)) if decision else False
+        rendered = bool(getattr(viz, "plotly_json", None))
+        trace.append({
+            "agent": "visualization_agent",
+            "title": "Visualization",
+            "status": "ok" if should else "skipped",
+            "summary": (
+                f"{getattr(decision, 'chart_type', 'chart')} chart"
+                if should else "No chart needed"
+            ),
+            "details": {
+                "chart_type": getattr(decision, "chart_type", None) if decision else None,
+                "chart_title": getattr(decision, "chart_title", None) if decision else None,
+                "reasoning": getattr(decision, "reasoning", None) if decision else None,
+                "rendered": rendered,
+            },
+            "metrics": metric("visualization_agent"),
+        })
+
+    # 7) Response generator
+    rg = response.get("response_generation_response")
+    if rg is not None:
+        trace.append({
+            "agent": "response_generator",
+            "title": "Response Generator",
+            "status": "ok",
+            "summary": "Rephrased results into a chat reply",
+            "details": {"generated_response": getattr(rg, "generated_response", "")},
+            "metrics": metric("response_generator"),
+        })
+
+    # 8) Fallback (non-guardrail)
+    if fallback_active and fallback_node and fallback_node != "guardrail":
+        trace.append({
+            "agent": "fallback",
+            "title": "Fallback",
+            "status": "fallback",
+            "summary": f"Triggered at '{fallback_node}'",
+            "details": {
+                "fallback_node": fallback_node,
+                "fallback_reason": getattr(fallback, "fallback_reason", None),
+            },
+            "metrics": None,
+        })
+
+    return trace
+
+
 def _local_transaction_fallback(
     input_request: UIUserRequest,
     db_conn: sqlite3.Connection,
@@ -427,13 +599,20 @@ async def process(
                 "plotly_json": viz_response.plotly_json,
             }
 
+        # Build a step-by-step trace of each agent's work for the UI's backend panel
+        agent_trace = _build_agent_trace(response)
+
         logger.info("Final response generated")
     except Exception as e:
         logger.exception("Error while invoking agent graph")
         return JSONResponse({"error": "internal_error", "details": str(e)}, status_code=500)
 
     logger.info(f"Final response generated: {final_chat_response}")
-    return JSONResponse({"response": final_chat_response, "visualization": viz_payload})
+    return JSONResponse({
+        "response": final_chat_response,
+        "visualization": viz_payload,
+        "agent_trace": agent_trace,
+    })
 
 @app.post("/process-debug")
 async def process_debug(

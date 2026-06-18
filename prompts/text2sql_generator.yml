@@ -87,7 +87,7 @@ prompt: |
       - Always scope queries to the current customer_id.
       - Use aggregation functions only when required.
       - Include GROUP BY for all non-aggregated columns in SELECT when using aggregates.
-      - Unless the user explicitly requests otherwise, for any SELECT query that returns detailed lists of individual transactions (not aggregate sums, counts, or averages), always order results by recency using `ORDER BY transaction_date DESC` and apply a default limit of 50 using `LIMIT 50`.
+      - For any SELECT query that returns detailed lists of individual transactions (not aggregate sums, counts, or averages), always order results by recency using `ORDER BY transaction_date DESC` and apply a limit of 20 using `LIMIT 20`. This is a hard ceiling: even when the user asks to "show all" / "list all" transactions, return at most the 20 most recent (`ORDER BY transaction_date DESC LIMIT 20`). Never use a limit greater than 20 for detailed transaction lists.
       - Return ONLY the SQL query.
       - Do NOT include explanations, comments, or markdown.
 
@@ -145,11 +145,11 @@ prompt: |
     # Example 8 — Direct debits
     example_8 = {{
         "user_query": "List my direct debits this year.",
-        "sql_query": "SELECT * FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'direct_debit' AND year = strftime('%Y', 'now') ORDER BY transaction_date DESC LIMIT 50"
+        "sql_query": "SELECT * FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'direct_debit' AND year = strftime('%Y', 'now') ORDER BY transaction_date DESC LIMIT 20"
     }}
 
     # Example 9 — Standing orders total
     example_9 = {{
         "user_query": "How much do I pay in standing orders each month?",
-        "sql_query": "SELECT year, month, SUM(amount_usd) AS total_standing_orders FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'standing_order' GROUP BY year, month ORDER BY year DESC, month DESC LIMIT 50"
+        "sql_query": "SELECT year, month, SUM(amount_usd) AS total_standing_orders FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'standing_order' GROUP BY year, month ORDER BY year DESC, month DESC LIMIT 20"
     }}
