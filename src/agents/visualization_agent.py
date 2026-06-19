@@ -9,12 +9,14 @@ import plotly.io as pio
 from app_models import Graph_State, VisualizationDecision, VisualizationResponse
 from utils import agent_utils
 
-# A chart becomes unreadable when there are too many x-axis values. Above these caps
-# we skip the chart (the text answer still lists the data).
-#   - MAX_BAR_CATEGORIES: cap on x-axis values for a bar chart.
+# A chart is only worth showing on the (narrow, mobile) UI when it has enough points to
+# compare/trend, but not so many that it turns into clutter.
+#   - MIN_CHART_ROWS: below this a chart looks sparse/pointless — the text answer is clearer.
+#   - MAX_BAR_CATEGORIES: cap on x-axis values for a bar chart (kept tight for mobile width).
 #   - MAX_LINE_POINTS: cap on points for a line chart; also the hard cap used to
 #     short-circuit BEFORE the LLM call (saving a request when no chart can be clean).
-MAX_BAR_CATEGORIES = 12
+MIN_CHART_ROWS = 3
+MAX_BAR_CATEGORIES = 8
 MAX_LINE_POINTS = 12
 
 
@@ -81,7 +83,18 @@ async def visualization_agent(
             )
             return state
 
-        # Too many rows for any clean chart — skip before calling the LLM (saves a request).
+        # Decide cheaply before the LLM call when no chart can ever be clean:
+        #   - too few rows (single aggregate / 1–2 values) → text answer is clearer
+        #   - too many rows → unreadable on a narrow screen
+        if len(rows) < MIN_CHART_ROWS:
+            logger.info(
+                f"Skipping visualization: only {len(rows)} row(s) (need at least {MIN_CHART_ROWS})."
+            )
+            state.visualization_response = _skip_viz(
+                f"Only {len(rows)} value(s) — too few for a meaningful chart."
+            )
+            return state
+
         if len(rows) > MAX_LINE_POINTS:
             logger.info(
                 f"Skipping visualization: {len(rows)} rows exceed the {MAX_LINE_POINTS}-point cap."
@@ -92,9 +105,9 @@ async def visualization_agent(
             return state
 
         columns = list(rows[0].keys())
-        # Use the single classified query being answered on the SQL path.
+        # Use the classified query/queries being answered on the SQL path.
         if state.banksql_queries:
-            user_query = state.banksql_queries[0]
+            user_query = " ".join(state.banksql_queries)
         elif state.context_builder_response:
             user_query = " ".join(state.context_builder_response.contextual_queries)
         else:
@@ -140,6 +153,19 @@ async def visualization_agent(
         if not decision.should_visualize or decision.chart_type == "none":
             state.visualization_response = VisualizationResponse(
                 decision=decision, plotly_json=None
+            )
+            return state
+
+        # Too FEW points to be worth a chart — a 1–2 value chart looks sparse on the UI;
+        # the text answer conveys it better.
+        if decision.chart_type in ("bar", "line") and len(rows) < MIN_CHART_ROWS:
+            logger.info(
+                f"Skipping {decision.chart_type} chart: only {len(rows)} value(s) "
+                f"(need at least {MIN_CHART_ROWS})."
+            )
+            state.visualization_response = _skip_viz(
+                f"Only {len(rows)} value(s) — too few for a meaningful {decision.chart_type} chart.",
+                decision,
             )
             return state
 
@@ -217,10 +243,10 @@ def _build_plotly_figure(
         y_label = _axis_label(y_field)
 
         common_layout = go.Layout(
-            title=dict(text=title, font=dict(size=15, color="#1f2937", family="Outfit"), x=0.02, xanchor="left"),
+            title=dict(text=title, font=dict(size=15, color="#1f2937", family="Hanken Grotesk"), x=0.02, xanchor="left"),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Outfit", color="#374151", size=12),
+            font=dict(family="Hanken Grotesk", color="#374151", size=12),
             margin=dict(l=65, r=30, t=55, b=75),
             colorway=ui_colors,
         )
@@ -239,7 +265,7 @@ def _build_plotly_figure(
                         opacity=0.88,
                         text=[f"{v:,.2f}" if v >= 1000 else f"{v:,.0f}" for v in y_vals],
                         textposition="outside",
-                        textfont=dict(size=11, color="#6d28d9", family="Outfit"),
+                        textfont=dict(size=11, color="#6d28d9", family="Hanken Grotesk"),
                         cliponaxis=False,
                         hovertemplate="%{x}<br><b>£%{y:,.2f}</b><extra></extra>",
                     )

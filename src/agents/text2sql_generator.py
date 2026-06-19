@@ -99,6 +99,21 @@ async def text2sql_generator_agent(
         logger.info(f"Text2SQL Generator response: {sql_generator}\n")
 
         metric_metadata = agent_utils.agent_metrics(response_message,latency)
+        state.agent_metrics["text2sql_generator"] = metric_metadata
+
+        # Multiple distinct intents that CANNOT be answered by one combined SQL query →
+        # ask the user to split them. (Single-intent inputs are always answerable.)
+        if input_query and len(input_query) > 1 and not sql_generator.can_answer_with_single_query:
+            logger.info(
+                "Text2SQL: multiple intents cannot be combined into a single query — falling back."
+            )
+            state.fallback_response = FallbackResponse(
+                fallback_flag=True,
+                fallback_node="text2sql_generator",
+                fallback_reason="needs_separate_questions",
+                fallback_message=None,
+            )
+            return state
 
         logger.info(f"""Agent: "Text2SQL Generator",
                         Model Used: {metric_metadata.model_used},
@@ -111,7 +126,6 @@ async def text2sql_generator_agent(
                         Cached Tokens (read): {metric_metadata.cached_tokens},
                         Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
 
-        state.agent_metrics["text2sql_generator"] = metric_metadata
         logger.info(f"state.agent_metrics updated in text2sql generator agent\n{state.agent_metrics}")
 
         # --- CACHE WRITE ---

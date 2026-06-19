@@ -121,10 +121,15 @@ class Agent_Graph:
         banksql = state.banksql_queries or []
         out_of_scope = state.out_of_scope_queries or []
 
-        if len(banksql) == 1:
+        # One or more valid (BankSQL) intents → hand them ALL to the SQL agent. For a
+        # single intent it just generates the query; for multiple intents the SQL agent
+        # decides whether they can be answered by ONE combined query (else it falls back
+        # asking the user to ask them separately).
+        if len(banksql) >= 1:
             routes.append("sql_generation")
 
-        if len(out_of_scope) > 0 or len(banksql) > 1:
+        # Only out-of-scope intents (no valid query at all) → fallback explains we can't help.
+        elif len(out_of_scope) > 0:
             routes.append("fallback")
 
         if not routes:

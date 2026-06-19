@@ -13,6 +13,12 @@ FALLBACK_MESSAGES = {
         "Please tell me which **one** you’d like me to answer."
     ),
 
+    "needs_separate_questions": (
+        "I can help with each of these, but they need to be asked separately:\n\n"
+        "{valid_items}\n\n"
+        "Could you ask them **one at a time**? That way I can give you an accurate answer for each."
+    ),
+
     "out_of_scope_only": (
         "I’m not able to help with the following request(s):\n\n"
         "{invalid_items}\n\n"
@@ -50,6 +56,14 @@ async def fallback_agent(
         if state.fallback_response and state.fallback_response.fallback_reason == "exception":
             message = FALLBACK_MESSAGES["exception"]
             reason = "exception"
+
+        # 1️⃣b Multiple valid intents that can't be combined into one SQL query →
+        #     ask the user to send them separately.
+        elif state.fallback_response and state.fallback_response.fallback_reason == "needs_separate_questions":
+            message = FALLBACK_MESSAGES["needs_separate_questions"].format(
+                valid_items="\n".join(f"• {q}" for q in valid)
+            )
+            reason = "needs_separate_questions"
 
         # 2️⃣ Mixed: multiple valid + one or more invalid
         elif len(valid) > 1 and len(invalid) > 0:

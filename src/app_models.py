@@ -120,6 +120,10 @@ class Text2SqlEntityExtractionResponse(BaseModel):
 class Text2SqlGeneratorResponse(BaseModel):
     user_query: str
     sql_query: str
+    # When the input contains MORE THAN ONE distinct intent, this flags whether all of
+    # them can be answered by a single SQL statement. True for single-intent inputs.
+    # When False, sql_query is empty and the flow falls back asking the user to split.
+    can_answer_with_single_query: bool = True
 
 class Metrics(BaseModel):
     model_used: str

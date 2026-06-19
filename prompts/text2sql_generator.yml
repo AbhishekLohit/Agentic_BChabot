@@ -5,12 +5,28 @@ prompt: |
     The user is NOT a bank analyst or administrator.
 
     ## TASK
-    Convert the user's natural language question into a valid SQL query
+    Convert the user's natural language question(s) into a valid SQL query
     using ONLY the schema, relationships, and rules defined below.
 
     ## INPUT:
-      - user_question : The user's question.
+      - input_query : A LIST of one or more fully self-contained questions to answer.
       - customer_id : The ID of the user making the query
+
+    ## MULTI-INTENT RULE (VERY IMPORTANT)
+    `input_query` may contain MORE THAN ONE distinct question.
+      - If the list has a SINGLE question: generate the SQL for it and set
+        `can_answer_with_single_query` to true.
+      - If the list has MULTIPLE questions: decide whether ALL of them can be answered
+        by ONE SQL statement (for example by combining them with conditional aggregates
+        such as SUM(CASE WHEN ...), separate scalar sub-queries in the SELECT list, or a
+        shared GROUP BY).
+          • If YES — produce that single combined SQL query and set
+            `can_answer_with_single_query` to true. Give each answer a clear, distinct
+            column alias so the values can be told apart.
+          • If NO — the questions are genuinely independent and need separate queries.
+            Set `can_answer_with_single_query` to false and return an EMPTY string for
+            `sql_query`. Do NOT attempt to stitch unrelated queries together with UNION
+            or by returning multiple statements.
 
     ## DATABASE SCHEMA
 
@@ -94,8 +110,9 @@ prompt: |
 
     ## OUTPUT FORMAT
     {{
-      user_query : "<USER_QUESTION>",
-      sql_query : "<GENERATED_SQL_QUERY>"
+      user_query : "<USER_QUESTION(S)>",
+      sql_query : "<GENERATED_SQL_QUERY, or empty string if not combinable>",
+      can_answer_with_single_query : true or false
     }}
 
     # FEW-SHOT EXAMPLES
@@ -151,5 +168,23 @@ prompt: |
     # Example 9 — Standing orders total
     example_9 = {{
         "user_query": "How much do I pay in standing orders each month?",
-        "sql_query": "SELECT year, month, SUM(amount_usd) AS total_standing_orders FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'standing_order' GROUP BY year, month ORDER BY year DESC, month DESC LIMIT 20"
+        "sql_query": "SELECT year, month, SUM(amount_usd) AS total_standing_orders FROM transactions WHERE customer_id = '<customer_id>' AND transaction_type = 'standing_order' GROUP BY year, month ORDER BY year DESC, month DESC LIMIT 20",
+        "can_answer_with_single_query": true
+    }}
+
+    # NOTE: Examples 1–9 each receive a single-item list, so can_answer_with_single_query is true.
+
+    # Example 10 — MULTIPLE intents that CAN be answered by one combined query.
+    # Each answer gets its own column alias.
+    example_10 = {{
+        "user_query": "['When did I spend the most at Moor Body Care in 2025?', 'What is my average spend at Moor Body Care in 2026?']",
+        "sql_query": "SELECT (SELECT transaction_date FROM transactions WHERE customer_id = '<customer_id>' AND LOWER(merchant_brand_name) LIKE LOWER('%moor body%') AND transaction_type != 'income' AND year = 2025 ORDER BY amount_usd DESC LIMIT 1) AS top_spend_date_2025, (SELECT AVG(amount_usd) FROM transactions WHERE customer_id = '<customer_id>' AND LOWER(merchant_brand_name) LIKE LOWER('%moor body%') AND transaction_type != 'income' AND year = 2026) AS avg_spend_2026",
+        "can_answer_with_single_query": true
+    }}
+
+    # Example 11 — MULTIPLE intents that are genuinely independent and CANNOT be a single query.
+    example_11 = {{
+        "user_query": "['List my last 20 transactions.', 'What is my current balance?']",
+        "sql_query": "",
+        "can_answer_with_single_query": false
     }}
