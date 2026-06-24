@@ -11,6 +11,7 @@ from agents.fallback import fallback_agent
 from agents.visualization_agent import visualization_agent
 from agents.sql_correction import sql_correction
 from agents.guardrails import input_guardrail_node
+from agents.help_center_agent import help_center_agent
 from typing import Any as LLMType
 from app_models import Prompts
 from logging import Logger
@@ -21,11 +22,13 @@ class Agent_Graph:
                  openai_llm:LLMType,
                  prompts:Prompts,
                  logger: Logger,
-                 agent_subgraph: Agent_SubGraph
+                 agent_subgraph: Agent_SubGraph,
+                 help_store: Any = None
                  ):
         self.llm = openai_llm
         self.prompts = prompts
         self.agent_subgraph = agent_subgraph
+        self.help_store = help_store
         self.app = self._workflow()
         self.logger = logger
 
@@ -36,6 +39,7 @@ class Agent_Graph:
         builder.add_node("context_builder", self._context_builder)
         builder.add_node("suprivisor", self._suprivisor_agent)
         builder.add_node("sql_generation", self.agent_subgraph.app)
+        builder.add_node("help_center", self._help_center_agent_node)
         builder.add_node("response_generator", self._response_generator_agent)
         builder.add_node("visualization_agent", self._visualization_agent_node)
         builder.add_node("fallback", self._fallback)
@@ -65,12 +69,24 @@ class Agent_Graph:
             self._supervisor_router,
             {
                 "sql_generation": "sql_generation",
+                "help_center": "help_center",
                 "fallback": "fallback",
                 END: END,
             }
         )
-        # BankSQL pipeline
-        builder.add_edge("sql_generation", "join")
+        # BankSQL pipeline. A message can mix a BankSQL query AND a help query; in that
+        # case the supervisor routes to sql_generation first, then this conditional edge
+        # chains into help_center afterwards (sequential, so the branches never write the
+        # shared agent_metrics channel concurrently).
+        builder.add_conditional_edges(
+            "sql_generation",
+            self._after_sql_router,
+            {
+                "help_center": "help_center",
+                "join": "join",
+            }
+        )
+        builder.add_edge("help_center", "join")
         builder.add_edge("fallback", "join")
         builder.add_edge("join", "visualization_agent")
         builder.add_edge("visualization_agent", "response_generator")
@@ -119,16 +135,24 @@ class Agent_Graph:
         routes = []
 
         banksql = state.banksql_queries or []
+        help_center = state.help_center_queries or []
         out_of_scope = state.out_of_scope_queries or []
 
         # One or more valid (BankSQL) intents → hand them ALL to the SQL agent. For a
         # single intent it just generates the query; for multiple intents the SQL agent
         # decides whether they can be answered by ONE combined query (else it falls back
         # asking the user to ask them separately).
+        # Pick a SINGLE primary route. When a message mixes BankSQL and help intents,
+        # go to sql_generation first; `_after_sql_router` then chains into help_center.
         if len(banksql) >= 1:
             routes.append("sql_generation")
 
-        # Only out-of-scope intents (no valid query at all) → fallback explains we can't help.
+        # Help-only message → answer it directly from the Barclays help KB.
+        elif len(help_center) >= 1:
+            routes.append("help_center")
+
+        # Only out-of-scope intents (nothing actionable at all) → fallback explains
+        # we can't help.
         elif len(out_of_scope) > 0:
             routes.append("fallback")
 
@@ -136,6 +160,13 @@ class Agent_Graph:
             routes.append(END)
 
         return routes
+
+    def _after_sql_router(self, state: Graph_State) -> str:
+        """After the SQL branch, chain into the help branch if the message also had
+        a help/how-to query; otherwise proceed to the join."""
+        if state.help_center_queries:
+            return "help_center"
+        return "join"
     
     def _context_builder_router(self, state: Graph_State) -> list[str]:
         routes = []
@@ -148,6 +179,17 @@ class Agent_Graph:
         return routes
     
     
+    async def _help_center_agent_node(self, state: Graph_State) -> Graph_State:
+        """Help-centre RAG node: retrieves Barclays help passages and answers from them."""
+        await help_center_agent(
+            state,
+            self.llm,
+            self.prompts.help_center_prompt,
+            self.help_store,
+            self.logger,
+        )
+        return state
+
     async def _visualization_agent_node(self, state: Graph_State) -> Graph_State:
         await visualization_agent(
             state,

@@ -663,6 +663,19 @@
             animation: msg-appear 0.35s ease forwards;
             opacity: 0;
             transform: translateY(8px);
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .message a.msg-link {
+            color: #0074a6;
+            text-decoration: underline;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
+
+        .message.user a.msg-link {
+            color: #ffffff;
         }
 
         @keyframes msg-appear {
@@ -679,6 +692,7 @@
 
         .message.assistant {
             align-self: flex-start;
+            max-width: 90%;
             background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 18px 18px 18px 4px;
@@ -2202,7 +2216,7 @@
 
             chatBoard.innerHTML += `
                 <div class="message assistant">
-                    ${escapeHtml(cleanReply).replace(/\n/g, '<br>')}
+                    ${linkify(escapeHtml(cleanReply)).replace(/\n/g, '<br>')}
                     ${noteHtml}
                 </div>
                 <div class="msg-timestamp left">${replyTs}</div>
@@ -2268,6 +2282,22 @@
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    // Turn raw http(s) URLs in an already-escaped string into clickable links.
+    // The full URL stays in href; the visible text is shortened (scheme/www and
+    // trailing slash stripped, long paths truncated) so it sits neatly inline.
+    function linkify(escapedText) {
+        return escapedText.replace(/(https?:\/\/[^\s<]+)/g, function (url) {
+            // don't let trailing sentence punctuation become part of the link
+            var trail = "";
+            var m = url.match(/[.,;:!?)]+$/);
+            if (m) { trail = m[0]; url = url.slice(0, -trail.length); }
+            var display = url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/+$/, "");
+            if (display.length > 45) display = display.slice(0, 44) + "…";
+            return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" class="msg-link">'
+                + display + '</a>' + trail;
+        });
     }
 
     // ===== SUGGESTION CHIPS =====

@@ -15,7 +15,8 @@ class Prompts(BaseModel):
     test_data_generation_prompt: BasePromptTemplate
     visualization_prompt: BasePromptTemplate
     history_summarizer_prompt: BasePromptTemplate
-    
+    help_center_prompt: BasePromptTemplate
+
 
 class UIUserRequest(BaseModel):
     customer_id: str
@@ -36,7 +37,7 @@ class ContextBuilderResponse(BaseModel):
 
 class ClassifiedSubQuery(BaseModel):
     sub_query: str
-    class_label: Literal["BankSQL","Out_of_scope"]
+    class_label: Literal["BankSQL","Out_of_scope","HelpCenter"]
     transaction_query_type: Literal[
         "income", "payment", "direct_debit", "standing_order",
         "refund", "balance_check", "general", "none"
@@ -165,6 +166,8 @@ class Graph_State(BaseModel):
     sql_query_correction: bool = False
     banksql_queries: list[str] | None
     out_of_scope_queries: list[str] | None
+    help_center_queries: list[str] | None = None
+    help_center_response: ResponseGeneratorResponse | None = None
     fallback_response: FallbackResponse | None
     response_generation_response: ResponseGeneratorResponse | None
     visualization_response: VisualizationResponse | None = None

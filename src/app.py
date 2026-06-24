@@ -30,10 +30,12 @@ from dependencies import (
                     get_redis_client,
                     get_db_conn,
                     get_user_data,
-                    get_llm_embeddings
+                    get_llm_embeddings,
+                    get_help_store
                     )
 from agent_graph import Agent_Graph
 from agent_subraph import Agent_SubGraph
+from utils.embeddings.help_store import HelpStore
 from typing import Annotated, Any
 from logging_setup import setup_logging
 from app_models import Prompts
@@ -47,6 +49,15 @@ import re
 import hmac
 
 limiter = Limiter(key_func=get_remote_address)
+
+
+def _resolve_path(path: str) -> str:
+    """Resolve a possibly-relative path against the project root (parent of src/)."""
+    import os
+    if os.path.isabs(path):
+        return path
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    return os.path.join(project_root, path)
 
 
 @asynccontextmanager
@@ -64,6 +75,22 @@ async def lifespan(app: FastAPI):
     llm_embeddings = get_openai_embeddings(model="text-embedding-3-small")
     prompts = get_all_prompts(app_settings)
     logger = setup_logging()
+
+    # Barclays help-centre RAG store. Opening the persisted Chroma dir is cheap;
+    # if the KB hasn't been built yet (or fails to open) the help branch degrades
+    # gracefully to a "couldn't find it" reply rather than crashing startup.
+    try:
+        help_store = HelpStore(
+            persist_directory=_resolve_path(app_settings.help_store_dir),
+            collection_name=app_settings.help_collection,
+            model=app_settings.EMBED_MODEL,
+            top_k=app_settings.help_top_k,
+            threshold=app_settings.help_similarity_threshold,
+        )
+        logger.info("Help store loaded (%s chunks).", help_store.count())
+    except Exception as e:
+        logger.warning("Help store unavailable — help-centre answers disabled: %s", e)
+        help_store = None
 
     # Graceful Redis fallback — app starts even when Redis is unavailable
     try:
@@ -100,6 +127,7 @@ async def lifespan(app: FastAPI):
     app.state.redis_client = redis_client
     app.state.sqlite_db = db_conn
     app.state.llm_embeddings = llm_embeddings
+    app.state.help_store = help_store
     app.state.app_settings = app_settings
 
     yield
@@ -202,18 +230,33 @@ def _build_agent_trace(response: dict) -> list[dict]:
             for c in (getattr(sup, "classified_sub_queries", []) or [])
         ]
         bank = response.get("banksql_queries") or []
+        help_q = response.get("help_center_queries") or []
         oos = response.get("out_of_scope_queries") or []
         trace.append({
             "agent": "supervisor",
             "title": "Supervisor",
             "status": "ok",
-            "summary": f"{len(bank)} bank quer{'y' if len(bank) == 1 else 'ies'}, {len(oos)} out-of-scope",
+            "summary": f"{len(bank)} bank quer{'y' if len(bank) == 1 else 'ies'}, {len(help_q)} help, {len(oos)} out-of-scope",
             "details": {
                 "classified": classified,
                 "banksql_queries": list(bank),
+                "help_center_queries": list(help_q),
                 "out_of_scope_queries": list(oos),
             },
             "metrics": metric("suprivisor"),
+        })
+
+    # 3b) Help centre (RAG) branch
+    help_resp = response.get("help_center_response")
+    help_q = response.get("help_center_queries") or []
+    if help_resp is not None or help_q:
+        trace.append({
+            "agent": "help_center",
+            "title": "Help Centre",
+            "status": "ok",
+            "summary": f"Answered {len(help_q)} help quer{'y' if len(help_q) == 1 else 'ies'} from the Barclays help KB",
+            "details": {"help_center_queries": list(help_q)},
+            "metrics": metric("help_center"),
         })
 
     # 4) Text-to-SQL (+ optional correction)
@@ -555,7 +598,8 @@ async def process(
     agent_graph = Agent_Graph(openai_llm=openai_llm,
                               prompts=prompts,
                               logger=logger,
-                              agent_subgraph=agent_subgraph)
+                              agent_subgraph=agent_subgraph,
+                              help_store=request.app.state.help_store)
 
     try:
         logger.info("Process endpoint invoked sucessfully")
@@ -621,8 +665,9 @@ async def process_debug(
     prompts: Annotated[Prompts, Depends(get_prompts)],  # type: ignore
     logger: Annotated[Logger, Depends(get_logging)],  # type: ignore
     db_conn: Annotated[any, Depends(get_db_conn)],  # type: ignore
+    help_store: Annotated[Any, Depends(get_help_store)],  # type: ignore
 ):
-    
+
     # 🔥 Use chat history directly from request
     chat_history = input_request.chat_history
     input_request_debug = UIUserRequest(
@@ -661,7 +706,8 @@ async def process_debug(
         openai_llm=openai_llm,
         prompts=prompts,
         logger=logger,
-        agent_subgraph=agent_subgraph
+        agent_subgraph=agent_subgraph,
+        help_store=help_store
     )
 
     try:

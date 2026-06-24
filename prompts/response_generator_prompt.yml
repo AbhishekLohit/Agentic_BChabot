@@ -41,11 +41,15 @@ prompt: |
         → State the figures being compared and the conclusion. Do not enumerate
           everything behind each side of the comparison.
 
-      - Insights / analysis / "how am I doing", "summarise", "trends", "overview"
-        → Synthesise 2–4 meaningful, specific takeaways from the data (e.g. the
-          largest spending area, a notable change over time, an unusually high or
-          recurring cost). Do NOT reproduce the underlying rows or a month-by-month
-          dump — the user wants conclusions, not the ledger.
+      - Insights / analysis / "how am I doing", "summarise", "trends", "overview",
+        "where did I spend", or comparisons across periods
+        → Present the takeaways as a SHORT BULLETED LIST. Begin with one brief lead-in
+          sentence, then 3–5 bullets, each starting with "• " on its own line. Each
+          bullet is ONE specific, data-backed takeaway (e.g. the largest spending area
+          with its figure, a notable change over time, an unusually high or recurring
+          cost). Keep each bullet to a single line where possible. Do NOT reproduce the
+          underlying rows or a month-by-month dump — the user wants conclusions, not the
+          ledger.
 
       - Explicit list ("list", "show all", "show each", "break down", "which ones")
         → Now an itemised list IS appropriate. Use a short, scannable bullet or
@@ -61,8 +65,9 @@ prompt: |
       - Be concise. Prefer a few precise sentences over long explanations. Cut
         anything that restates the question or states the obvious.
       - Use natural phrasing: "£1,245.50" not "1245.5"; "3 transactions" not "3".
-      - Use bullet/numbered lists only for genuine lists or for 2–4 distinct
-        insights — not for a single fact.
+      - Use a bulleted list (each line starting with "• ") for insights, multi-part
+        answers, comparisons and explicit lists. Do NOT bullet a single fact or a
+        one-line answer — keep those as a plain sentence.
       - Group and label numbers so they are easy to scan (e.g. "January: £747.09").
 
     ## HARD CONSTRAINTS

@@ -18,7 +18,12 @@ async def response_generator_agent(
         final_message = []
         if state.fallback_response:
             final_message.append(state.fallback_response.fallback_message)
-        
+
+        # Help-centre answers are produced (with source links) by the help_center
+        # agent itself — just pass them through to the final reply. No extra LLM call.
+        if state.help_center_response:
+            final_message.append(state.help_center_response.generated_response)
+
         if state.database_query_results is not None:
             sql_query_result = state.database_query_results
             # The queries answered on the SQL path are the classified BankSQL queries

@@ -20,3 +20,6 @@ def get_user_data(requests: Request):
 
 def get_llm_embeddings(requests: Request):
     return requests.app.state.llm_embeddings
+
+def get_help_store(requests: Request):
+    return requests.app.state.help_store

@@ -34,6 +34,7 @@ def get_all_prompts(appsettings:AppSettings
         test_data_generation_prompt= read_prompt_file(appsettings.test_data_generation_prompt_path),
         visualization_prompt= read_prompt_file(appsettings.visualization_agent_prompt_path),
         history_summarizer_prompt= read_prompt_file(appsettings.history_summarizer_prompt_path),
+        help_center_prompt= read_prompt_file(appsettings.help_center_prompt_path),
     )
 
 def _get_redis_key(user_id: str, 

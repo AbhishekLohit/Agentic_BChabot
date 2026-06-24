@@ -23,8 +23,14 @@ class AppSettings(BaseSettings):
     test_data_validation_prompt_path: str = "test_data_validation_prompt.yml"
     visualization_agent_prompt_path: str = "visualization_agent_prompt.yml"
     history_summarizer_prompt_path: str = "history_summarizer_prompt.yml"
+    help_center_prompt_path: str = "help_center_prompt.yml"
     db_path: str = "transactions.db"
     EMBED_MODEL: str = "text-embedding-3-small"
+    # Barclays help-centre RAG knowledge base (built by src/clients/barclays_help_ingest.py)
+    help_store_dir: str = "help_store"
+    help_collection: str = "barclays_help"
+    help_top_k: int = 5
+    help_similarity_threshold: float = 0.25
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_TTL: int = 1800
     # When a brand-new conversation starts, seed the context builder with the

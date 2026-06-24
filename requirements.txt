@@ -118,3 +118,6 @@ plotly
 watchdog
 pytest
 openpyxl
+beautifulsoup4
+lxml
+langchain-text-splitters

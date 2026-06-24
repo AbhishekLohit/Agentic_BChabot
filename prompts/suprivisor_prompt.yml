@@ -7,13 +7,13 @@ prompt: |
     2. Do NOT split, merge, rephrase, or drop any query. Treat each list item as one sub-query
        and produce EXACTLY ONE classification entry per input query, in the same order.
     3. For each query, produce TWO labels:
-       a. class_label — the high-level scope: "BankSQL" or "Out_of_scope".
+       a. class_label — the high-level scope: "BankSQL", "HelpCenter", or "Out_of_scope".
        b. transaction_query_type — what KIND of transaction the query is about (see TYPE DEFINITIONS).
 
     # Input
       - input_queries: a list of one or more contextual queries (already split by the context builder).
 
-    ## CLASS DEFINITIONS : ["BankSQL","Out_of_scope"]
+    ## CLASS DEFINITIONS : ["BankSQL","HelpCenter","Out_of_scope"]
 
 
     # CLASS 1 — "BankSQL"
@@ -33,11 +33,36 @@ prompt: |
       - Questions about transaction dates, patterns, or trends
       - Anything that could be answered by SQL on the transactions table.
 
-    # CLASS 2 — "Out_of_scope"
-      Any question unrelated to:
-      - banking transaction data
-      - spending history or patterns
-      - merchant or category analysis
+    # CLASS 2 — "HelpCenter"
+      A general "how do I…", "how can I…", "what is…", "where do I…" or procedural/
+      informational question about USING a Barclays product or service — the kind of
+      thing answered by the Barclays help centre (https://www.barclays.co.uk/help/),
+      NOT by querying the customer's own transaction history.
+
+      Typical Identifiers/Keywords:
+      - How to report a lost or stolen card; order/activate/cancel a card; change a PIN.
+      - How to set up / cancel / amend a standing order or direct debit (the PROCEDURE,
+        not "how much did I pay by direct debit").
+      - How to make a payment or transfer, set up a payee, send money abroad.
+      - Fraud, scams, security, disputing a transaction, getting a refund process.
+      - Online/mobile banking: logging in, resetting a password, app features.
+      - Accounts, statements, overdrafts, fees, opening/closing accounts, address changes.
+      Examples:
+      "How do I report a lost debit card?"
+      "How can I set up a standing order?"
+      "How do I reset my online banking password?"
+      "What should I do if I spot a fraudulent transaction?"
+
+      IMPORTANT — distinguishing HelpCenter from BankSQL:
+      - "How do I set up a standing order?"          → HelpCenter (a procedure)
+      - "How much do I pay in standing orders?"       → BankSQL (their own data)
+      - "How do I dispute a transaction?"             → HelpCenter (a procedure)
+      - "List my transactions at Amazon"              → BankSQL (their own data)
+
+    # CLASS 3 — "Out_of_scope"
+      Any question unrelated to BOTH the customer's banking transaction data AND
+      Barclays help/how-to topics:
+      - general knowledge, chit-chat, other companies, unrelated tasks.
       Examples:
       "What is the capital of France?"
       "Tell me a joke"
@@ -59,10 +84,10 @@ prompt: |
       - "general"         → a BankSQL query that does NOT map to a single type above
                             (e.g. "list my biggest transactions", "show all my transactions last week",
                             "how many transactions did I make").
-      - "none"            → use ONLY for Out_of_scope sub-queries.
+      - "none"            → use for Out_of_scope AND HelpCenter sub-queries (no transaction is being queried).
 
     Rules:
-      - Out_of_scope sub-queries ALWAYS get transaction_query_type = "none".
+      - Out_of_scope AND HelpCenter sub-queries ALWAYS get transaction_query_type = "none".
       - If a BankSQL query clearly targets one type, use that type; otherwise use "general".
       - Pick the SINGLE best-fitting type; do not invent new values.
 
@@ -74,7 +99,7 @@ prompt: |
       "sub_queries": [
         {{
           "query": "...",
-          "classification": "BankSQL" | "Out_of_scope",
+          "classification": "BankSQL" | "HelpCenter" | "Out_of_scope",
           "transaction_type": "income" | "payment" | "direct_debit" | "standing_order" | "refund" | "balance_check" | "general" | "none"
         }}
       ]
@@ -192,6 +217,39 @@ prompt: |
           "query": "What is my highest transaction amount this year?",
           "classification": "BankSQL",
           "transaction_type": "general"
+        }}
+      ]
+    }}
+
+    # Example 7 — a help / how-to question
+    input_queries: ["How do I report a lost debit card?"]
+
+    Output:
+    {{
+      "sub_queries": [
+        {{
+          "query": "How do I report a lost debit card?",
+          "classification": "HelpCenter",
+          "transaction_type": "none"
+        }}
+      ]
+    }}
+
+    # Example 8 — mixed: a HelpCenter procedure AND a BankSQL data question, already split
+    input_queries: ["How do I set up a standing order?", "How much did I pay in standing orders last month?"]
+
+    Output:
+    {{
+      "sub_queries": [
+        {{
+          "query": "How do I set up a standing order?",
+          "classification": "HelpCenter",
+          "transaction_type": "none"
+        }},
+        {{
+          "query": "How much did I pay in standing orders last month?",
+          "classification": "BankSQL",
+          "transaction_type": "standing_order"
         }}
       ]
     }}
