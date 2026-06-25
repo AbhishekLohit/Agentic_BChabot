@@ -78,24 +78,25 @@ async def help_center_agent(
             },
         ]
 
-        structured_llm = llm.with_structured_output(
-            ResponseGeneratorResponse, include_raw=True
-        )
-
+        # Stream the answer as PLAIN TEXT (not structured output) so /process-stream
+        # can surface tokens live. Accumulate chunks into the full text + a gathered
+        # message for metrics.
         start_time = time.time()
-        response_raw = await structured_llm.ainvoke(messages)
+        gathered = None
+        async for chunk in llm.astream(messages):
+            gathered = chunk if gathered is None else gathered + chunk
         latency = time.time() - start_time
 
-        help_response = response_raw["parsed"]
-        response_message = response_raw["raw"]  # AIMessage
-
-        metric_metadata = agent_utils.agent_metrics(response_message, latency)
+        answer_text = agent_utils.message_to_text(gathered)
         if state.agent_metrics is None:
             state.agent_metrics = {}
-        state.agent_metrics["help_center"] = metric_metadata
+        try:
+            state.agent_metrics["help_center"] = agent_utils.agent_metrics(gathered, latency)
+        except Exception as metric_err:
+            logger.warning(f"Help center metrics unavailable: {metric_err}")
 
-        state.help_center_response = help_response
-        logger.info(f"Help center response: {help_response}\n")
+        state.help_center_response = ResponseGeneratorResponse(generated_response=answer_text)
+        logger.info(f"Help center response: {answer_text}\n")
 
     except Exception as e:
         logger.exception(f"Error in help center agent: {str(e)}")

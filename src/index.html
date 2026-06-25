@@ -725,6 +725,15 @@
             opacity: 0.85;
         }
 
+        .stream-status {
+            align-self: flex-start;
+            font-size: 0.75rem;
+            color: #64748b;
+            font-style: italic;
+            padding: 2px 6px;
+            min-height: 14px;
+        }
+
         /* Typing Indicator */
         .typing-indicator {
             display: flex;
@@ -2150,22 +2159,45 @@
         chatPreview.textContent = queryText.substring(0, 40) + (queryText.length > 40 ? "..." : "");
         chatItemTime.textContent = ts;
 
-        // Add typing indicator
+        // Add typing indicator + a live status line for streaming progress
         const typingId = "typing_" + Date.now();
         chatBoard.innerHTML += `
             <div id="${typingId}" class="typing-indicator">
                 <span></span><span></span><span></span>
             </div>
+            <div id="${typingId}_status" class="stream-status"></div>
         `;
         chatBoard.scrollTop = chatBoard.scrollHeight;
 
         // Show a running placeholder in the agent-trace panel
         setTraceRunning(queryText);
 
+        // --- streaming state ---
+        let answer = "";
+        let assistantBubble = null;
+
+        const setStreamStatus = (label) => {
+            const el = document.getElementById(typingId + "_status");
+            if (el) el.textContent = label ? label + "…" : "";
+        };
+        const clearTyping = () => {
+            const t = document.getElementById(typingId);
+            if (t) t.remove();
+            const s = document.getElementById(typingId + "_status");
+            if (s) s.remove();
+        };
+        const ensureBubble = () => {
+            if (assistantBubble) return;
+            clearTyping();
+            assistantBubble = document.createElement("div");
+            assistantBubble.className = "message assistant";
+            chatBoard.appendChild(assistantBubble);
+        };
+
         try {
-            const response = await fetch("/process", {
+            const response = await fetch("/process-stream", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
                 body: JSON.stringify({
                     customer_id: currentUserId,
                     session_id: currentSessionId,
@@ -2173,38 +2205,56 @@
                 })
             });
 
-            const payload = await response.json();
-
-            // Handle error responses
-            if (!response.ok || payload.error) {
-                const errMsg = (payload && payload.details) ? payload.details : (payload && payload.error) ? payload.error : `HTTP ${response.status}`;
-                throw new Error(errMsg);
+            if (!response.ok || !response.body) {
+                throw new Error(`HTTP ${response.status}`);
             }
 
-            // Render the backend agent trace (most recent query)
-            renderAgentTrace(payload && payload.agent_trace);
+            // Read the Server-Sent Events stream
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let finalPayload = null;
 
-            // Extract text reply and optional visualization from new JSON shape
-            let reply = "";
-            let vizData = null;
-            if (payload && typeof payload.response === "string") {
-                reply = payload.response;
-                vizData = payload.visualization || null;
-            } else if (typeof payload === "string") {
-                reply = payload;
-            } else {
-                reply = JSON.stringify(payload);
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                let sep;
+                while ((sep = buffer.indexOf("\n\n")) >= 0) {
+                    const rawEvent = buffer.slice(0, sep);
+                    buffer = buffer.slice(sep + 2);
+                    const dataLine = rawEvent.split("\n").find(l => l.startsWith("data:"));
+                    if (!dataLine) continue;
+                    let evt;
+                    try { evt = JSON.parse(dataLine.slice(5).trim()); } catch (e) { continue; }
+
+                    if (evt.type === "step") {
+                        setStreamStatus(evt.label);                 // Level 1: live progress
+                    } else if (evt.type === "token") {
+                        ensureBubble();                              // Level 2: typing effect
+                        answer += evt.text;
+                        assistantBubble.innerHTML = linkify(escapeHtml(answer)).replace(/\n/g, '<br>');
+                        chatBoard.scrollTop = chatBoard.scrollHeight;
+                    } else if (evt.type === "final") {
+                        finalPayload = evt;
+                    } else if (evt.type === "error") {
+                        throw new Error(evt.message || "Streaming error");
+                    }
+                }
             }
 
-            // Remove typing indicator
-            const typingBubble = document.getElementById(typingId);
-            if (typingBubble) typingBubble.remove();
+            // ---- Reconcile with authoritative final payload ----
+            const payload = finalPayload || { response: answer, visualization: null, agent_trace: null };
+            renderAgentTrace(payload.agent_trace);
+
+            let reply = (typeof payload.response === "string" && payload.response) ? payload.response : answer;
+            const vizData = payload.visualization || null;
 
             // Extract system notifications
-            const hasNotification = reply.includes("[System Notification:");
             let cleanReply = reply;
             let noteHtml = "";
-            if (hasNotification) {
+            if (reply.includes("[System Notification:")) {
                 const match = reply.match(/\[System Notification:([^\]]+)\]/);
                 if (match) {
                     noteHtml = `<span class="system-note">Note: ${escapeHtml(match[1])}</span>`;
@@ -2213,14 +2263,13 @@
             }
 
             const replyTs = formatTime(new Date());
+            ensureBubble();
+            assistantBubble.innerHTML = linkify(escapeHtml(cleanReply)).replace(/\n/g, '<br>') + noteHtml;
 
-            chatBoard.innerHTML += `
-                <div class="message assistant">
-                    ${linkify(escapeHtml(cleanReply)).replace(/\n/g, '<br>')}
-                    ${noteHtml}
-                </div>
-                <div class="msg-timestamp left">${replyTs}</div>
-            `;
+            const tsDiv = document.createElement("div");
+            tsDiv.className = "msg-timestamp left";
+            tsDiv.textContent = replyTs;
+            chatBoard.appendChild(tsDiv);
             chatBoard.scrollTop = chatBoard.scrollHeight;
 
             // Render chart if visualization data is present
@@ -2242,17 +2291,22 @@
             saveSession(currentSessionId); // reset idle timer on every successful exchange
 
         } catch (error) {
-            console.error("API Fetch Error:", error);
-            const typingBubble = document.getElementById(typingId);
-            if (typingBubble) typingBubble.remove();
-
+            console.error("API Stream Error:", error);
+            clearTyping();
             setTraceError(error.message);
 
             const errTs = formatTime(new Date());
-            chatBoard.innerHTML += `
-                <div class="message assistant">${escapeHtml(error.message || "Sorry, I encountered an error. Please try again.")}</div>
-                <div class="msg-timestamp left">${errTs}</div>
-            `;
+            const errText = (assistantBubble && answer)
+                ? answer
+                : (error.message || "Sorry, I encountered an error. Please try again.");
+            if (assistantBubble) {
+                assistantBubble.innerHTML = linkify(escapeHtml(errText)).replace(/\n/g, '<br>');
+            } else {
+                chatBoard.innerHTML += `
+                    <div class="message assistant">${escapeHtml(errText)}</div>
+                    <div class="msg-timestamp left">${errTs}</div>
+                `;
+            }
             chatBoard.scrollTop = chatBoard.scrollHeight;
         }
     }

@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI, Request, UploadFile, File
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
+import json
 from contextlib import asynccontextmanager
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -23,6 +24,7 @@ from utils.file_utils import (
                             get_chat_history,
                             get_vectordb_data)
 from agents.history_summarizer import summarize_chat_history
+from utils import agent_utils
 from dependencies import (
                     get_llm, 
                     get_prompts, 
@@ -517,24 +519,17 @@ async def login(req: LoginRequest):
     return {"status": "success", "user_id": req.user_id}
 
 
-@app.post("/process")
-@limiter.limit("20/minute")
-async def process(
-    request: Request,
-    input_request : UIUserRequest,
-    openai_llm : Annotated[Any,Depends(get_llm)], # type: ignore
-    prompts : Annotated[Prompts,Depends(get_prompts)], # type: ignore
-    logger: Annotated[Logger,Depends(get_logging)], # type: ignore
-    redis_client: Annotated[any,Depends(get_redis_client)], # type: ignore
-    db_conn: Annotated[any,Depends(get_db_conn)], # type: ignore
-):
+async def _prepare_request(request, input_request, openai_llm, prompts, logger, redis_client, db_conn):
+    """Shared setup for /process and /process-stream: resolve chat history (with
+    rolling-window seeding + summarisation) and build the graph + initial state.
+    Returns (app_settings, chat_history, graph_state, agent_graph)."""
     app_settings: AppSettings = request.app.state.app_settings
     chat_history = get_chat_history(
-                redis_client,
-                input_request.customer_id,
-                input_request.session_id,
-                input_request.user_query
-                )
+        redis_client,
+        input_request.customer_id,
+        input_request.session_id,
+        input_request.user_query,
+    )
 
     # Fresh conversation (Redis holds nothing for this session yet, so chat_history
     # is just the current message): seed the context builder with this customer's
@@ -600,6 +595,23 @@ async def process(
                               logger=logger,
                               agent_subgraph=agent_subgraph,
                               help_store=request.app.state.help_store)
+    return app_settings, chat_history, graph_state, agent_graph
+
+
+@app.post("/process")
+@limiter.limit("20/minute")
+async def process(
+    request: Request,
+    input_request : UIUserRequest,
+    openai_llm : Annotated[Any,Depends(get_llm)], # type: ignore
+    prompts : Annotated[Prompts,Depends(get_prompts)], # type: ignore
+    logger: Annotated[Logger,Depends(get_logging)], # type: ignore
+    redis_client: Annotated[any,Depends(get_redis_client)], # type: ignore
+    db_conn: Annotated[any,Depends(get_db_conn)], # type: ignore
+):
+    app_settings, chat_history, graph_state, agent_graph = await _prepare_request(
+        request, input_request, openai_llm, prompts, logger, redis_client, db_conn
+    )
 
     try:
         logger.info("Process endpoint invoked sucessfully")
@@ -657,6 +669,119 @@ async def process(
         "visualization": viz_payload,
         "agent_trace": agent_trace,
     })
+
+
+# ---- Streaming (SSE) support -------------------------------------------------
+
+# Friendly progress labels for the live "what the bot is doing" stream (Level 1).
+_STREAM_STEP_LABELS = {
+    "guardrail": "Checking your request",
+    "context_builder": "Understanding your question",
+    "suprivisor": "Working out what you need",
+    "sql_generation": "Looking up your transactions",
+    "help_center": "Searching the Barclays help centre",
+    "visualization_agent": "Preparing a chart",
+    "response_generator": "Writing your answer",
+    "fallback": "Preparing a response",
+}
+
+
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+@app.post("/process-stream")
+@limiter.limit("20/minute")
+async def process_stream(
+    request: Request,
+    input_request: UIUserRequest,
+    openai_llm: Annotated[Any, Depends(get_llm)],  # type: ignore
+    prompts: Annotated[Prompts, Depends(get_prompts)],  # type: ignore
+    logger: Annotated[Logger, Depends(get_logging)],  # type: ignore
+    redis_client: Annotated[any, Depends(get_redis_client)],  # type: ignore
+    db_conn: Annotated[any, Depends(get_db_conn)],  # type: ignore
+):
+    """Server-Sent Events variant of /process. Streams live progress steps
+    (Level 1) and the answer token-by-token (Level 2), then a final event with the
+    full response, visualization and agent trace."""
+    app_settings, chat_history, graph_state, agent_graph = await _prepare_request(
+        request, input_request, openai_llm, prompts, logger, redis_client, db_conn
+    )
+
+    async def event_gen():
+        final_state: dict = {}
+        try:
+            async for mode, chunk in agent_graph.app.astream(
+                graph_state, stream_mode=["updates", "messages", "values"]
+            ):
+                if mode == "values":
+                    # Full state after each step; keep the last as the final state.
+                    final_state = chunk
+                elif mode == "updates":
+                    # {node_name: state_delta} — emit a progress step per completed node.
+                    for node in (chunk or {}).keys():
+                        label = _STREAM_STEP_LABELS.get(node)
+                        if label:
+                            yield _sse({"type": "step", "agent": node, "label": label})
+                elif mode == "messages":
+                    msg_chunk, meta = chunk
+                    # Only stream tokens from the user-facing answer nodes — not the
+                    # internal guardrail / SQL / supervisor LLM calls.
+                    if meta.get("langgraph_node") in ("response_generator", "help_center"):
+                        text = agent_utils.message_to_text(msg_chunk)
+                        if text:
+                            yield _sse({"type": "token", "text": text})
+
+            # ---- Stream complete: assemble final answer + persist (mirrors /process) ----
+            resp_obj = final_state.get("response_generation_response")
+            final_chat_response = (
+                resp_obj.generated_response if resp_obj else TECHNICAL_FALLBACK_MESSAGE
+            )
+
+            save_chat_history(
+                redis_client, input_request.customer_id, input_request.session_id,
+                chat_history, final_chat_response, logger, ttl_seconds=app_settings.REDIS_TTL,
+            )
+            now = db_utils.now_iso()
+            db_utils.upsert_session(db_conn, input_request.session_id, input_request.customer_id, input_request.user_query, now)
+            db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "user", input_request.user_query, now)
+            db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
+            metrics = final_state.get("agent_metrics")
+            if metrics:
+                db_utils.save_metrics(db_conn, input_request.customer_id, input_request.session_id, metrics, now)
+
+            viz_payload = None
+            viz_response = final_state.get("visualization_response")
+            if viz_response and viz_response.decision.should_visualize and viz_response.plotly_json:
+                viz_payload = {
+                    "should_visualize": True,
+                    "chart_type": viz_response.decision.chart_type,
+                    "chart_title": viz_response.decision.chart_title,
+                    "plotly_json": viz_response.plotly_json,
+                }
+
+            agent_trace = _build_agent_trace(final_state)
+
+            yield _sse({
+                "type": "final",
+                "response": final_chat_response,
+                "visualization": viz_payload,
+                "agent_trace": agent_trace,
+            })
+        except Exception:
+            logger.exception("Error while streaming agent graph")
+            yield _sse({"type": "error", "message": TECHNICAL_FALLBACK_MESSAGE})
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
 
 @app.post("/process-debug")
 async def process_debug(

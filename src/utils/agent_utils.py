@@ -80,9 +80,28 @@ def find_closest_entities(
 
     return results
 
+def message_to_text(message) -> str:
+    """Extract plain text from an AIMessage / accumulated AIMessageChunk whose
+    `content` may be a string or a list of content blocks (Anthropic-style)."""
+    if message is None:
+        return ""
+    content = getattr(message, "content", "")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for blk in content:
+            if isinstance(blk, dict):
+                parts.append(blk.get("text", ""))
+            else:
+                parts.append(str(blk))
+        return "".join(parts)
+    return str(content)
+
+
 def agent_metrics(
-        response_message: dict, 
-        latency: float 
+        response_message: dict,
+        latency: float
 )-> Metrics:
     usage = response_message.usage_metadata or {}
     model_name = (response_message.response_metadata.get("model_name") or

@@ -46,48 +46,26 @@ async def response_generator_agent(
                                     user_question: {user_query}"""}
             ]
 
-            # Send the prompt to the model directly (no chain)
-            structured_llm = llm.with_structured_output(ResponseGeneratorResponse,include_raw=True)
-
-            # ✅ START TIME
+            # Stream the answer token-by-token as PLAIN TEXT (not structured output) so
+            # the /process-stream endpoint can surface tokens live via LangGraph's
+            # "messages" stream mode. We accumulate the chunks into both the full reply
+            # text and a single gathered message (for usage/metrics).
             start_time = time.time()
-            response_raw = await structured_llm.ainvoke(messages)
-            # response_raw = await structured_llm.ainvoke(final_prompt)
-             # ✅ END TIME
-            end_time = time.time()
-            latency = end_time - start_time
+            gathered = None
+            async for chunk in llm.astream(messages):
+                gathered = chunk if gathered is None else gathered + chunk
+            latency = time.time() - start_time
 
-            response_generator_response = response_raw["parsed"]
-            response_message  = response_raw["raw"]   # AIMessage
-            logger.info(f"Response Generator response: {response_generator_response}\n")
+            generated_text = agent_utils.message_to_text(gathered)
+            logger.info(f"Response Generator response: {generated_text}\n")
 
+            # Best-effort metrics — streaming chunks expose usage_metadata when available.
+            try:
+                state.agent_metrics["response_generator"] = agent_utils.agent_metrics(gathered, latency)
+            except Exception as metric_err:
+                logger.warning(f"Response generator metrics unavailable: {metric_err}")
 
-            metric_metadata = agent_utils.agent_metrics(response_message,latency)
-
-            logger.info(f"""Agent: "Response Generator",
-                            Model Used: {metric_metadata.model_used},
-                            Latency: {metric_metadata.latency},
-                            Model Cost Without Cache: {metric_metadata.model_cost_without_cache},
-                            Model Cost With Cache: {metric_metadata.model_cost_with_cache},
-                            Input Tokens: {metric_metadata.input_tokens},
-                            Output Tokens: {metric_metadata.output_tokens},
-                            Total Tokens: {metric_metadata.total_tokens},
-                            Cached Tokens (read): {metric_metadata.cached_tokens},
-                        Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
-
-            # ✅ Update state
-            # state.agent_metrics = AgentMetrics(
-            #     context_builder_metrics=None,
-            #     suprivisor_metrics=None,
-            #     classification_metrics=None,
-            #     text2sql_generator_metrics=None,
-            #     response_generator_metrics=metric_metadata,
-            #     sql_corection_metrics=None
-            # )
-            # logger.info(f"Updating state.agent_metrics in response generator agent\nCurrent state.agent_metrics: {state.agent_metrics}")
-            state.agent_metrics["response_generator"] = metric_metadata
-
-            final_message.append(response_generator_response.generated_response)
+            final_message.append(generated_text)
         # Update the state with the response generator response
         state.response_generation_response = ResponseGeneratorResponse(generated_response="\n".join(final_message))
         logger.info(f"Response generation response: {final_message}\n")
