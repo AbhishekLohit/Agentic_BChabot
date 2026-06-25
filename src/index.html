@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinTell Transaction Assistant</title>
     <meta name="description" content="Premium banking transaction chatbot assistant with AI-powered query handling">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='23' fill='%2300263e'/%3E%3Ccircle cx='24' cy='24' r='21' fill='none' stroke='%232b9fc9' stroke-width='1.4'/%3E%3Cpath d='M12 14h24a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H22l-6 5v-5h-4a3 3 0 0 1-3-3V17a3 3 0 0 1 3-3z' fill='%23f2fbfe'/%3E%3Cline x1='16' y1='20' x2='32' y2='20' stroke='%230074a6' stroke-width='1.6'/%3E%3Cline x1='16' y1='20' x2='21' y2='26' stroke='%230074a6' stroke-width='1.6'/%3E%3Cline x1='24' y1='20' x2='21' y2='26' stroke='%230074a6' stroke-width='1.6'/%3E%3Cline x1='24' y1='20' x2='27' y2='26' stroke='%230074a6' stroke-width='1.6'/%3E%3Cline x1='32' y1='20' x2='27' y2='26' stroke='%230074a6' stroke-width='1.6'/%3E%3Ccircle cx='16' cy='20' r='2.4' fill='%232b9fc9'/%3E%3Ccircle cx='24' cy='20' r='2.4' fill='%232b9fc9'/%3E%3Ccircle cx='32' cy='20' r='2.4' fill='%232b9fc9'/%3E%3Ccircle cx='21' cy='26' r='2.4' fill='%2300263e'/%3E%3Ccircle cx='27' cy='26' r='2.4' fill='%2300263e'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%230a3d62'/%3E%3Crect x='32' y='26' width='56' height='20' rx='3' fill='%23ffffff'/%3E%3Crect x='32' y='26' width='22' height='80' rx='3' fill='%23ffffff'/%3E%3Crect x='58' y='62' width='40' height='18' rx='3' fill='%2316a9e8'/%3E%3C/svg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&family=Mulish:ital,wght@1,300;1,400;1,500&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
@@ -362,8 +362,8 @@
         }
 
         .chat-item-avatar.bot-avatar {
-            background: linear-gradient(135deg, #0074a6, #2b9fc9);
-            box-shadow: 0 3px 10px rgba(0, 116, 166,0.35);
+            background: #ffffff;
+            box-shadow: 0 3px 10px rgba(0, 116, 166,0.25);
         }
 
         .chat-item-avatar .status-online {
@@ -471,10 +471,12 @@
 
         .chat-header-info h3 {
             font-size: 1.05rem;
-            font-weight: 700;
+            font-weight: 800;
             color: #ffffff;
             letter-spacing: 0.2px;
         }
+        .chat-header-info h3 .brand-fin { color: #ffffff; }
+        .chat-header-info h3 .brand-tell { color: #2fb6f0; }
 
         .chat-header-info .online-status {
             display: flex;
@@ -1028,27 +1030,56 @@
         }
 
         .login-panel {
-            width: min(430px, 100%);
+            position: relative;
+            overflow: hidden;
+            width: min(440px, 100%);
             background: #ffffff;
             border: 1px solid rgba(0, 116, 166,0.1);
             border-radius: 28px;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.15);
-            padding: 40px 36px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.18);
+            padding: 42px 38px 34px;
             backdrop-filter: blur(20px);
         }
 
-        .login-panel .login-logo {
-            width: 56px;
-            height: 56px;
+        /* Brand-coloured accent bar across the top of the card */
+        .login-accent {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #0a3d62 0%, #0a3d62 38%, #16a9e8 100%);
+        }
+
+        /* FinTell logo lockup: F-mark + wordmark + tagline pill */
+        .login-brand {
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
+            gap: 14px;
+            margin-bottom: 26px;
         }
-        .login-panel .login-logo svg {
-            width: 56px;
-            height: 56px;
-            filter: drop-shadow(0 6px 16px rgba(0, 46, 66, 0.28));
+        .login-brand .brand-mark {
+            width: 52px;
+            height: 52px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 6px 14px rgba(10, 61, 98, 0.22));
+        }
+        .login-brand .brand-name {
+            font-size: 1.85rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.5px;
+        }
+        .login-brand .brand-name .fin { color: #0a3d62; }
+        .login-brand .brand-name .tell { color: #16a9e8; }
+        .login-brand .brand-tag {
+            display: inline-block;
+            margin-top: 8px;
+            background: #0a3d62;
+            color: #2fb6f0;
+            font-size: 0.56rem;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            padding: 4px 12px;
+            border-radius: 999px;
         }
 
         .login-panel h1 {
@@ -1199,7 +1230,11 @@
                 max-width: 480px;
                 height: auto;
                 max-height: 70vh;
+                border-radius: 0;
+                padding: 0;
+                box-shadow: none;
             }
+            .trace-screen { border-radius: 0; }
             /* On small screens the panel is hidden until toggled */
             .trace-panel:not(.mobile-open) { display: none; }
         }
@@ -1327,34 +1362,50 @@
         .history-empty-state p { font-size: 0.84rem; line-height: 1.5; font-family: var(--font-italic); font-style: italic; }
 
         /* ===== AGENT TRACE PANEL ===== */
+        /* Trace panel mirrors the phone "device" framing so it reads as a sibling
+           screen next to the chat, not a separate-looking card. */
         .trace-panel {
-            width: 420px;
+            position: relative;
+            width: 440px;
             height: 100%;
             max-height: 824px;
             flex-shrink: 0;
-            background: rgba(255,255,255,0.97);
-            border: 1px solid rgba(255,255,255,0.5);
-            border-radius: 24px;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.30);
+            background: #0a0e14;
+            border-radius: 52px;
+            padding: 13px;
+            box-shadow:
+                0 40px 90px rgba(0,0,0,0.45),
+                0 0 0 2px rgba(255,255,255,0.06) inset;
+            display: flex;
+            transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+        }
+        .trace-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: var(--surface);
+            border-radius: 40px;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            transition: width 0.3s ease, opacity 0.3s ease;
         }
         .trace-panel.collapsed {
             width: 0;
+            padding: 0;
             opacity: 0;
-            border: none;
+            box-shadow: none;
             pointer-events: none;
         }
         .trace-header {
             flex-shrink: 0;
-            padding: 18px 20px;
+            padding: 14px 18px;
             background: var(--brand-gradient-navy);
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 4px 16px rgba(0,65,93,0.25);
+            z-index: 1;
         }
         .trace-header-title {
             display: flex; align-items: center; gap: 10px;
@@ -1527,23 +1578,20 @@
 <!-- ===== LOGIN OVERLAY ===== -->
 <div id="loginOverlay" class="login-overlay">
     <form id="loginForm" class="login-panel">
-        <div class="login-logo">
-            <svg viewBox="0 0 48 48" fill="none" width="40" height="40" aria-label="FinTell logo">
-                <circle cx="24" cy="24" r="23" fill="#002e42"/>
-                <circle cx="24" cy="24" r="21" fill="none" stroke="#2b9fc9" stroke-width="1.4"/>
-                <path d="M13 14h22a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H21l-6 5v-5h-2a3 3 0 0 1-3-3V17a3 3 0 0 1 3-3z" fill="#f2fbfe"/>
-                <g stroke="#0074a6" stroke-width="1.6" stroke-linecap="round">
-                    <line x1="16" y1="20" x2="32" y2="20"/><line x1="16" y1="20" x2="21" y2="26"/>
-                    <line x1="24" y1="20" x2="21" y2="26"/><line x1="24" y1="20" x2="27" y2="26"/>
-                    <line x1="32" y1="20" x2="27" y2="26"/>
-                </g>
-                <circle cx="16" cy="20" r="2.4" fill="#2b9fc9"/><circle cx="24" cy="20" r="2.4" fill="#2b9fc9"/>
-                <circle cx="32" cy="20" r="2.4" fill="#2b9fc9"/><circle cx="21" cy="26" r="2.4" fill="#002e42"/>
-                <circle cx="27" cy="26" r="2.4" fill="#002e42"/>
+        <div class="login-accent"></div>
+        <div class="login-brand">
+            <svg class="brand-mark" viewBox="0 0 120 120" fill="none" aria-label="FinTell logo">
+                <rect x="24" y="16" width="62" height="22" rx="3" fill="#0a3d62"/>
+                <rect x="24" y="16" width="24" height="90" rx="3" fill="#0a3d62"/>
+                <rect x="52" y="56" width="46" height="20" rx="3" fill="#16a9e8"/>
             </svg>
+            <div class="brand-text">
+                <div class="brand-name"><span class="fin">Fin</span><span class="tell">Tell</span></div>
+                <span class="brand-tag">BANKING MADE SMARTER</span>
+            </div>
         </div>
-        <h1>FinTell Login</h1>
-        <p>Sign in to access your transaction assistant.</p>
+        <h1>Welcome back</h1>
+        <p>Sign in to your smart money assistant.</p>
         <div class="login-field">
             <label for="loginUserId">User</label>
             <select id="loginUserId" autocomplete="username">
@@ -1561,7 +1609,6 @@
         </div>
         <button class="login-submit" type="submit">Sign In</button>
         <div id="loginError" class="login-error"></div>
-        <div class="login-credit">Developed by <strong>abhishek.lohit</strong></div>
     </form>
 </div>
 
@@ -1624,17 +1671,10 @@
             <!-- B-Bot always present -->
             <div class="chat-item active" id="chatItemBot">
                 <div class="chat-item-avatar bot-avatar">
-                    <svg viewBox="0 0 48 48" width="30" height="30" fill="none" aria-label="FinTell logo">
-                        <circle cx="24" cy="24" r="23" fill="#002e42"/>
-                        <path d="M13 14h22a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H21l-6 5v-5h-2a3 3 0 0 1-3-3V17a3 3 0 0 1 3-3z" fill="#f2fbfe"/>
-                        <g stroke="#0074a6" stroke-width="1.6" stroke-linecap="round">
-                            <line x1="16" y1="20" x2="32" y2="20"/><line x1="16" y1="20" x2="21" y2="26"/>
-                            <line x1="24" y1="20" x2="21" y2="26"/><line x1="24" y1="20" x2="27" y2="26"/>
-                            <line x1="32" y1="20" x2="27" y2="26"/>
-                        </g>
-                        <circle cx="16" cy="20" r="2.4" fill="#2b9fc9"/><circle cx="24" cy="20" r="2.4" fill="#2b9fc9"/>
-                        <circle cx="32" cy="20" r="2.4" fill="#2b9fc9"/><circle cx="21" cy="26" r="2.4" fill="#002e42"/>
-                        <circle cx="27" cy="26" r="2.4" fill="#002e42"/>
+                    <svg class="brand-mark" viewBox="0 0 120 120" width="26" height="26" fill="none" aria-label="FinTell logo">
+                        <rect x="24" y="16" width="62" height="22" rx="3" fill="#0a3d62"/>
+                        <rect x="24" y="16" width="24" height="90" rx="3" fill="#0a3d62"/>
+                        <rect x="52" y="56" width="46" height="20" rx="3" fill="#16a9e8"/>
                     </svg>
                     <span class="status-online"></span>
                 </div>
@@ -1660,22 +1700,14 @@
             <div class="chat-header-left">
                 <div id="headerStateNormal">
                     <div class="chat-header-avatar">
-                        <svg viewBox="0 0 48 48" width="42" height="42" fill="none" aria-label="FinTell logo">
-                            <circle cx="24" cy="24" r="23" fill="#002e42"/>
-                            <circle cx="24" cy="24" r="21" fill="none" stroke="#2b9fc9" stroke-width="1.4"/>
-                            <path d="M13 14h22a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H21l-6 5v-5h-2a3 3 0 0 1-3-3V17a3 3 0 0 1 3-3z" fill="#f2fbfe"/>
-                            <g stroke="#0074a6" stroke-width="1.6" stroke-linecap="round">
-                                <line x1="16" y1="20" x2="32" y2="20"/><line x1="16" y1="20" x2="21" y2="26"/>
-                                <line x1="24" y1="20" x2="21" y2="26"/><line x1="24" y1="20" x2="27" y2="26"/>
-                                <line x1="32" y1="20" x2="27" y2="26"/>
-                            </g>
-                            <circle cx="16" cy="20" r="2.4" fill="#2b9fc9"/><circle cx="24" cy="20" r="2.4" fill="#2b9fc9"/>
-                            <circle cx="32" cy="20" r="2.4" fill="#2b9fc9"/><circle cx="21" cy="26" r="2.4" fill="#002e42"/>
-                            <circle cx="27" cy="26" r="2.4" fill="#002e42"/>
+                        <svg class="brand-mark" viewBox="0 0 120 120" width="27" height="27" fill="none" aria-label="FinTell logo">
+                            <rect x="24" y="16" width="62" height="22" rx="3" fill="#0a3d62"/>
+                            <rect x="24" y="16" width="24" height="90" rx="3" fill="#0a3d62"/>
+                            <rect x="52" y="56" width="46" height="20" rx="3" fill="#16a9e8"/>
                         </svg>
                     </div>
                     <div class="chat-header-info">
-                        <h3>FinTell</h3>
+                        <h3><span class="brand-fin">Fin</span><span class="brand-tell">Tell</span></h3>
                         <div class="online-status" id="onlineStatus">
                             <span class="dot" id="statusDot"></span>
                             <span id="statusText">Online</span>
@@ -1790,6 +1822,7 @@
 
     <!-- AGENT TRACE PANEL -->
     <aside class="trace-panel collapsed" id="tracePanel">
+      <div class="trace-screen">
         <div class="trace-header">
             <div class="trace-header-title">
                 <span class="th-icon">
@@ -1815,6 +1848,7 @@
                 <p><strong>No query traced yet.</strong><br>Send a message and watch each backend agent's work appear here, step by step.</p>
             </div>
         </div>
+      </div>
     </aside>
 </div>
 
@@ -2234,7 +2268,7 @@
                     } else if (evt.type === "token") {
                         ensureBubble();                              // Level 2: typing effect
                         answer += evt.text;
-                        assistantBubble.innerHTML = linkify(escapeHtml(answer)).replace(/\n/g, '<br>');
+                        assistantBubble.innerHTML = formatReply(answer);
                         chatBoard.scrollTop = chatBoard.scrollHeight;
                     } else if (evt.type === "final") {
                         finalPayload = evt;
@@ -2264,7 +2298,7 @@
 
             const replyTs = formatTime(new Date());
             ensureBubble();
-            assistantBubble.innerHTML = linkify(escapeHtml(cleanReply)).replace(/\n/g, '<br>') + noteHtml;
+            assistantBubble.innerHTML = formatReply(cleanReply) + noteHtml;
 
             const tsDiv = document.createElement("div");
             tsDiv.className = "msg-timestamp left";
@@ -2300,7 +2334,7 @@
                 ? answer
                 : (error.message || "Sorry, I encountered an error. Please try again.");
             if (assistantBubble) {
-                assistantBubble.innerHTML = linkify(escapeHtml(errText)).replace(/\n/g, '<br>');
+                assistantBubble.innerHTML = formatReply(errText);
             } else {
                 chatBoard.innerHTML += `
                     <div class="message assistant">${escapeHtml(errText)}</div>
@@ -2352,6 +2386,14 @@
             return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" class="msg-link">'
                 + display + '</a>' + trail;
         });
+    }
+
+    // Full render pipeline for an assistant reply: escape -> linkify URLs ->
+    // render **bold** (markdown the model sometimes emits) -> line breaks.
+    function formatReply(text) {
+        let html = linkify(escapeHtml(text || ""));
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); // **bold**
+        return html.replace(/\n/g, '<br>');
     }
 
     // ===== SUGGESTION CHIPS =====
@@ -2581,7 +2623,7 @@
         const items = [];
         if (metrics.latency != null) items.push(["⏱", metrics.latency + "s"]);
         if (metrics.total_tokens != null) items.push(["⛁", metrics.total_tokens + " tok"]);
-        if (metrics.model_cost_with_cache != null) items.push(["$", "$" + metrics.model_cost_with_cache]);
+        if (metrics.cached_tokens != null) items.push(["⚡", metrics.cached_tokens + " cached"]);
         if (metrics.model_used) items.push(["", metrics.model_used]);
         items.forEach(([sym, val]) => {
             const chip = el("span", "metric-chip");

@@ -172,7 +172,7 @@ def _metric_dict(metric: Any) -> dict | None:
         "model_used": metric.get("model_used"),
         "total_tokens": metric.get("total_tokens"),
         "latency": metric.get("latency"),
-        "model_cost_with_cache": metric.get("model_cost_with_cache"),
+        "cached_tokens": metric.get("cached_tokens"),
     }
 
 
