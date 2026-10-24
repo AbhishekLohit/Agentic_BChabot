@@ -1,39 +1,33 @@
 from typing import Any
 from logging import Logger
-from clients.openai_client import get_openai_llm
-from app_models import AgentMetrics, FallbackResponse, Graph_State,SuprivisorResponse
-from langchain_openai import ChatOpenAI
-from datetime import datetime
+from app_models import FallbackResponse, Graph_State,SuprivisorResponse
 import time
 
 from utils import agent_utils
 
 async def suprivisor_agent(
     state: Graph_State,
-    llm: ChatOpenAI,
+    llm: Any,
     prompt: str,
     logger: Logger
 )-> Graph_State:
     logger.info("Executing suprivisor agent.")
     # Render the final prompt string using .format()
     try:
-        input_query = state.context_builder_response.user_query
-        # final_prompt = prompt.format(
-        #                         input_query=input_query
-        #                     )
+        # The context builder already split the user input into one or more
+        # self-contained queries. The supervisor must ONLY classify each of them —
+        # it must NOT split or merge them further.
+        input_queries = state.context_builder_response.contextual_queries
 
         messages = [
-                {"role": "system", "content": prompt.template},
+                {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
                 {"role": "user", "content": f"""
-                                    input_query: {input_query}"""}
+                                    input_queries: {input_queries}"""}
         ]
         # Send the prompt to the model directly (no chain)
         structured_llm = llm.with_structured_output(SuprivisorResponse,include_raw=True)
         start_time = time.time()
-        response_raw = await structured_llm.ainvoke(
-                messages,
-                prompt_cache_key="supervisor-v2"
-            )
+        response_raw = await structured_llm.ainvoke(messages)
         # response_raw = await structured_llm.ainvoke(final_prompt)
         end_time = time.time()
         latency = end_time - start_time
@@ -55,7 +49,8 @@ async def suprivisor_agent(
                         Input Tokens: {metric_metadata.input_tokens},
                         Output Tokens: {metric_metadata.output_tokens},
                         Total Tokens: {metric_metadata.total_tokens},
-                        Cached Tokens: {metric_metadata.cached_tokens}""")
+                        Cached Tokens (read): {metric_metadata.cached_tokens},
+                        Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
 
         # ✅ Update state
         # state.agent_metrics = AgentMetrics(
@@ -70,16 +65,20 @@ async def suprivisor_agent(
         state.agent_metrics["suprivisor"] = metric_metadata
 
         # Update the state with classified queries
-        foodsql_queries = []
+        banksql_queries = []
+        help_center_queries = []
         out_of_scope = []
 
         for sub in state.suprivisor_response.classified_sub_queries:
-            if sub.class_label == "FoodSQL":
-                foodsql_queries.append(sub.sub_query)
+            if sub.class_label == "BankSQL":
+                banksql_queries.append(sub.sub_query)
+            elif sub.class_label == "HelpCenter":
+                help_center_queries.append(sub.sub_query)
             else:
                 out_of_scope.append(sub.sub_query)
 
-        state.foodsql_queries = foodsql_queries
+        state.banksql_queries = banksql_queries
+        state.help_center_queries = help_center_queries
         state.out_of_scope_queries = out_of_scope
         
 
@@ -89,7 +88,7 @@ async def suprivisor_agent(
             fallback_flag=True,
             fallback_node="supervisor",
             fallback_reason="exception",
-            fallback_message="exception in supervisor agent"
+            fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         state.fallback_response = fallback_response
     

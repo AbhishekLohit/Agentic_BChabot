@@ -1,16 +1,13 @@
 from typing import Any
 from logging import Logger
-from clients.openai_client import get_openai_llm
-from app_models import AgentMetrics, FallbackResponse, Graph_State,ContextBuilderResponse,Metrics
-from langchain_openai import ChatOpenAI
+from app_models import FallbackResponse, Graph_State,ContextBuilderResponse
 from datetime import datetime
-import json
-import time   # ✅ ADDED
-from utils import agent_utils 
+import time
+from utils import agent_utils
 
 async def context_builder_agent(
     state: Graph_State,
-    llm: ChatOpenAI,
+    llm: Any,
     prompt: str,
     logger: Logger
 )-> Graph_State:
@@ -20,9 +17,11 @@ async def context_builder_agent(
         input_query = state.input_request.user_query
         logger.info(f"Chat history in context builder agent: {state.chat_history}")
     
+        today_str = datetime.now().strftime("%Y-%m-%d")
         messages = [
-            {"role": "system", "content": prompt.template},
+            {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral", "ttl": "1h"}}]},
             {"role": "user", "content": f"""
+                                Today's date: {today_str}
                                 Latest user question: {input_query}
                                 Chat history: {state.chat_history}"""}
         ]
@@ -32,10 +31,7 @@ async def context_builder_agent(
         # ✅ START TIME
         start_time = time.time()
 
-        response_raw = await structured_llm.ainvoke(
-            messages,
-            prompt_cache_key="context-builder-v2"
-        )
+        response_raw = await structured_llm.ainvoke(messages)
 
         # ✅ END TIME
         end_time = time.time()
@@ -55,7 +51,8 @@ async def context_builder_agent(
                         Input Tokens: {metric_metadata.input_tokens},
                         Output Tokens: {metric_metadata.output_tokens},
                         Total Tokens: {metric_metadata.total_tokens},
-                        Cached Tokens: {metric_metadata.cached_tokens}""")
+                        Cached Tokens (read): {metric_metadata.cached_tokens},
+                        Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
 
         # ✅ Update state
         # ✅ FIX: Store in dict
@@ -81,7 +78,7 @@ async def context_builder_agent(
             fallback_flag=True,
             fallback_node="context_builder",
             fallback_reason="exception",
-            fallback_message="exception in context builder agent"
+            fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         state.fallback_response = fallback_response
     

@@ -1,30 +1,28 @@
-# ...existing code...
 from langgraph.graph import StateGraph, START, END
 from app_models import SubGraph_State
 from typing import Any
-from agents.context_builder import context_builder_agent
-from agents.supervisor import suprivisor_agent
-from agents.text2sql_generator import text2sql_generator_agent    
-from agents.sql_execution import execute_query  
-from agents.response_generator import response_generator_agent 
+from agents.text2sql_generator import text2sql_generator_agent
+from agents.sql_execution import execute_query
 from agents.fallback import fallback_agent
 from agents.sql_correction import sql_correction
-from langchain_openai import ChatOpenAI,OpenAIEmbeddings
+from typing import Any as LLMType
 from app_models import Prompts
 from logging import Logger
 
 class Agent_SubGraph:
-    def __init__(self, 
-                 openai_llm:ChatOpenAI, 
+    def __init__(self,
+                 openai_llm:LLMType,
                  prompts:Prompts,
                  logger: Logger,
-                 db_conn: Any
+                 db_conn: Any,
+                 redis_client: Any = None,
                  ):
         self.llm = openai_llm
         self.prompts = prompts
         self.app = self._workflow()
         self.logger = logger
         self.db_conn = db_conn
+        self.redis_client = redis_client
 
     def _workflow(self):
         builder = StateGraph(SubGraph_State)
@@ -70,16 +68,17 @@ class Agent_SubGraph:
    
     async def _text2sql_generator(self, state: SubGraph_State):
         """
-        Text2SQL generator node: placeholder that ensures the text2sql_generator_response
-        field exists on the Graph_State and sets it to None for now.
-        Replace with real text2sql generation logic when ready.
+        Text2SQL generator node: checks the SQL query cache first; falls back to
+        LLM generation on a cache miss and writes the result back to the cache.
         """
-        await text2sql_generator_agent(state,
-                              self.llm,
-                              self.prompts.text2sqlgenerator_prompt,
-                              self.logger
+        await text2sql_generator_agent(
+            state,
+            self.llm,
+            self.prompts.text2sqlgenerator_prompt,
+            self.logger,
+            redis_client=self.redis_client,
+            db_conn=self.db_conn,
         )
-        # self.logger.info(f"Context builder response: {state.context_builder_response}")
         return state
         # return {
         #     "text2sql_generator_response": state.text2sql_generator_response,

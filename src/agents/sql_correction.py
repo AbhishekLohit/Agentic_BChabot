@@ -1,16 +1,14 @@
 import time
 from typing import Any
 from logging import Logger
-from clients.openai_client import get_openai_llm
-from app_models import AgentMetrics, FallbackResponse, Graph_State,SqlCorrectionResponse, SubGraph_State
-from langchain_openai import ChatOpenAI
+from app_models import FallbackResponse, SqlCorrectionResponse, SubGraph_State
 
 from utils import agent_utils
 
 
 async def sql_correction(
     state: SubGraph_State,
-    llm: ChatOpenAI,
+    llm: Any,
     prompt: str,
     logger: Logger
 )-> SubGraph_State  :
@@ -22,7 +20,7 @@ async def sql_correction(
         #                         sql_query=sql_query
         #                     )
         messages = [
-                {"role": "system", "content": prompt.template},
+                {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
                 {"role": "user", "content": f"""
                                     sql_query: {sql_query}"""}
             ]
@@ -30,18 +28,13 @@ async def sql_correction(
         structured_llm = llm.with_structured_output(SqlCorrectionResponse,include_raw=True)
         # ✅ START TIME
         start_time = time.time()
-        # response_raw = await structured_llm.ainvoke(final_prompt)
-        response_raw = await structured_llm.ainvoke(
-                messages,
-                prompt_cache_key="sql-correction-v2"
-        )
+        response_raw = await structured_llm.ainvoke(messages)
         # ✅ END TIME
         end_time = time.time()
         latency = end_time - start_time
         
         sql_correction_response = response_raw["parsed"]
         response_message  = response_raw["raw"]   # AIMessage
-        state.sql_correction_response = sql_correction_response
         logger.info(f"Sql correction response: {sql_correction_response}\n")
 
         metric_metadata = agent_utils.agent_metrics(response_message,latency)
@@ -54,40 +47,29 @@ async def sql_correction(
                         Input Tokens: {metric_metadata.input_tokens},
                         Output Tokens: {metric_metadata.output_tokens},
                         Total Tokens: {metric_metadata.total_tokens},
-                        Cached Tokens: {metric_metadata.cached_tokens}""")
+                        Cached Tokens (read): {metric_metadata.cached_tokens},
+                        Cache Creation Tokens (write): {metric_metadata.cache_creation_tokens}""")
 
-        # ✅ Update state
-        # state.agent_metrics = AgentMetrics(
-        #     context_builder_metrics=None,
-        #     suprivisor_metrics=None,
-        #     classification_metrics=None,
-        #     text2sql_generator_metrics=None,
-        #     response_generator_metrics=None,
-        #     sql_corection_metrics=metric_metadata
-        # )
         state.agent_metrics["sql_correction"] = metric_metadata
 
-        # Update the state with classified queries
-        foodsql_queries = []
-        out_of_scope = []
+        # ✅ Write corrected SQL back into the active query so execution reruns it
+        if state.text2sql_generator_response:
+            state.text2sql_generator_response.sql_query = sql_correction_response.corrected_sql_query
+            logger.info(f"Corrected SQL written to state: {sql_correction_response.corrected_sql_query}")
 
-        for sub in state.suprivisor_response.classified_sub_queries:
-            if sub.class_label == "FoodSQL":
-                foodsql_queries.append(sub.sub_query)
-            else:
-                out_of_scope.append(sub.sub_query)
+        # ✅ Set loop guard — prevents a second correction attempt if execution fails again
+        state.sql_query_correction = True
 
-        state.foodsql_queries = foodsql_queries
-        state.out_of_scope_queries = out_of_scope
-        
+        # ✅ Clear the fallback so _sql_query_correction router sends flow back to sql_execution
+        state.fallback_response = None
 
     except Exception as e:
-        logger.exception(f"Error in supervisor agent: {str(e)}")
+        logger.exception(f"Error in sql correction agent: {str(e)}")
         fallback_response = FallbackResponse(
             fallback_flag=True,
             fallback_node="sql_correction",
             fallback_reason="exception",
-            fallback_message="exception in sql correction agent"
+            fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         state.fallback_response = fallback_response
     
