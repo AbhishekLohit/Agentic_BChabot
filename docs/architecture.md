@@ -18,27 +18,20 @@ flowchart TD
     %% ================= CLIENTS =================
     subgraph CLIENTS["Clients"]
         UI["Chat UI — index.html<br/>(SSE streaming, agent-trace panel)"]
-        SIM["simulator.py — Rich CLI"]
-        VOICEIN["Microphone / audio upload"]
     end
 
     %% ================= API LAYER =================
     subgraph API["FastAPI — app.py"]
         EP_PROCESS["POST /process<br/>(Redis-backed, JSON)"]
         EP_STREAM["POST /process-stream<br/>(SSE: step / token / final)"]
-        EP_DEBUG["POST /process-debug<br/>(no Redis, full state)"]
-        EP_VOICE["POST /process-voice<br/>(Whisper transcribe → /process)"]
         PREP["_prepare_request()<br/>history seed + summarise → Graph_State + build graph"]
         TRACE["_build_agent_trace()<br/>+ _metric_dict()"]
     end
 
     UI --> EP_STREAM
     UI -.fallback.-> EP_PROCESS
-    SIM --> EP_PROCESS
-    VOICEIN --> EP_VOICE --> EP_PROCESS
     EP_PROCESS --> PREP
     EP_STREAM --> PREP
-    EP_DEBUG --> PREP
     PREP --> GSTART
 
     %% ================= OUTER GRAPH =================
@@ -90,7 +83,7 @@ flowchart TD
     classDef io fill:#eef7ee,stroke:#2e7d32,color:#1b3d1b;
     class GUARD,CB,SUP,HELP,FB,JOIN,VIZ,RESP,SUBGRAPH agent;
     class R_GUARD,R_CB,R_SUP,R_AFTSQL router;
-    class UI,SIM,VOICEIN io;
+    class UI io;
 ```
 
 > **Note on routing:** `_supervisor_router` picks a single primary route; when a message
@@ -147,7 +140,7 @@ Every agent is `async fn(state, llm, prompt, logger) → state`, calls the LLM, 
 | help_center | agents/help_center_agent.py | **streamed plain text** (`llm.astream`) | help_center_prompt.yml |
 | visualization_agent | agents/visualization_agent.py | structured output | visualization_agent_prompt.yml |
 | response_generator | agents/response_generator.py | **streamed plain text** (`llm.astream`) | response_generator_prompt.yml |
-| fallback | agents/fallback.py | — | fallback_prompt.yml |
+| fallback | agents/fallback.py | — | — |
 
 ---
 
@@ -160,13 +153,12 @@ flowchart LR
         S_PROMPTS["prompts — get_all_prompts()"]
         S_REDIS["redis_client"]
         S_DB["sqlite_db — transactions.db"]
-        S_EMB["llm_embeddings — OpenAI text-embedding-3-small"]
         S_HELP["help_store — HelpStore (Chroma)"]
         S_SET["app_settings"]
     end
 
     subgraph DI["dependencies.py (request-scoped)"]
-        D["get_llm / get_prompts / get_logging /<br/>get_redis_client / get_db_conn /<br/>get_llm_embeddings / get_help_store"]
+        D["get_llm / get_prompts / get_logging /<br/>get_redis_client / get_db_conn"]
     end
 
     subgraph GRAPHS["Graph construction (per request)"]
@@ -180,14 +172,12 @@ flowchart LR
         CHROMA[("Chroma help_store/<br/>collection: barclays_help")]
         LLMP{{"LLM provider<br/>Anthropic claude-sonnet-4-6<br/>(openai / gemini / groq swappable)"}}
         EMBP{{"OpenAI Embeddings"}}
-        WHISPER{{"Whisper whisper-1"}}
     end
 
     S_LLM --> D
     S_PROMPTS --> D
     S_REDIS --> D
     S_DB --> D
-    S_EMB --> D
     S_HELP --> D
     D --> AG
     D --> ASG
@@ -198,9 +188,7 @@ flowchart LR
     ASG --- SQLITE
     S_DB --- SQLITE
     S_HELP --- CHROMA
-    S_EMB --- EMBP
     S_HELP -.embeds queries.-> EMBP
-    EP_VOICE2["/process-voice"] --- WHISPER
 
     %% persistence touchpoints
     AG -.save chat history.-> REDIS

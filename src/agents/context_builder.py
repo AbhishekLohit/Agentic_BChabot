@@ -1,8 +1,7 @@
 from typing import Any
 from logging import Logger
-from app_models import AgentMetrics, FallbackResponse, Graph_State,ContextBuilderResponse,Metrics
+from app_models import FallbackResponse, Graph_State,ContextBuilderResponse
 from datetime import datetime
-import json
 import time
 from utils import agent_utils
 

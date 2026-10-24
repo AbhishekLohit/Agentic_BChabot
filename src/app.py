@@ -1,28 +1,24 @@
-from fastapi import Depends, FastAPI, Request, UploadFile, File
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 import json
+import os
 from contextlib import asynccontextmanager
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 import utils.db_utils as db_utils
-from clients.llm_client import get_configured_llm, get_openai_embeddings
+from clients.llm_client import get_configured_llm
 from app_models import (
                 UIUserRequest,
                 Graph_State,
-                ResponseGeneratorResponse,
                 ChatMessage,
-                UIUserRequestDebug,
-                Text2SqlGeneratorResponse,
-                FallbackResponse,
                 )
 from app_setting import AppSettings
 from utils.file_utils import (
                             get_all_prompts,
                             save_chat_history,
                             save_raw_chat_history,
-                            get_chat_history,
-                            get_vectordb_data)
+                            get_chat_history)
 from agents.history_summarizer import summarize_chat_history
 from utils import agent_utils
 from dependencies import (
@@ -30,10 +26,7 @@ from dependencies import (
                     get_prompts, 
                     get_logging,
                     get_redis_client,
-                    get_db_conn,
-                    get_user_data,
-                    get_llm_embeddings,
-                    get_help_store
+                    get_db_conn
                     )
 from agent_graph import Agent_Graph
 from agent_subraph import Agent_SubGraph
@@ -42,12 +35,10 @@ from typing import Annotated, Any
 from logging_setup import setup_logging
 from app_models import Prompts
 from logging import Logger
-from datetime import datetime
 from pydantic import BaseModel
 import uvicorn
 import redis
 import sqlite3
-import re
 import hmac
 
 limiter = Limiter(key_func=get_remote_address)
@@ -55,7 +46,6 @@ limiter = Limiter(key_func=get_remote_address)
 
 def _resolve_path(path: str) -> str:
     """Resolve a possibly-relative path against the project root (parent of src/)."""
-    import os
     if os.path.isabs(path):
         return path
     project_root = os.path.dirname(os.path.dirname(__file__))
@@ -74,7 +64,6 @@ async def lifespan(app: FastAPI):
         os.environ["LANGCHAIN_PROJECT"] = app_settings.LANGCHAIN_PROJECT
 
     llm = get_configured_llm()
-    llm_embeddings = get_openai_embeddings(model="text-embedding-3-small")
     prompts = get_all_prompts(app_settings)
     logger = setup_logging()
 
@@ -128,7 +117,6 @@ async def lifespan(app: FastAPI):
     app.state.logger = logger
     app.state.redis_client = redis_client
     app.state.sqlite_db = db_conn
-    app.state.llm_embeddings = llm_embeddings
     app.state.help_store = help_store
     app.state.app_settings = app_settings
 
@@ -141,9 +129,6 @@ async def lifespan(app: FastAPI):
    
 app = FastAPI(title="Banking chatbot", lifespan=lifespan)
 
-from fastapi.responses import HTMLResponse
-import os
-
 TECHNICAL_FALLBACK_MESSAGE = (
     "I'm sorry, but I'm currently unable to process your request due to a "
     "technical issue. Please try again later."
@@ -153,11 +138,6 @@ TECHNICAL_FALLBACK_MESSAGE = (
 class LoginRequest(BaseModel):
     user_id: str
     password: str
-
-
-def _rows_as_strings(cursor: sqlite3.Cursor, rows: list[tuple]) -> list[str]:
-    columns = [col[0] for col in cursor.description or []]
-    return [str(dict(zip(columns, row))) for row in rows]
 
 
 def _metric_dict(metric: Any) -> dict | None:
@@ -347,152 +327,6 @@ def _build_agent_trace(response: dict) -> list[dict]:
     return trace
 
 
-def _local_transaction_fallback(
-    input_request: UIUserRequest,
-    db_conn: sqlite3.Connection,
-) -> tuple[str, list[str], str] | None:
-    """Answer common dashboard prompts directly from SQLite when the LLM provider is unavailable."""
-    query_text = input_request.user_query.strip()
-    query_lower = query_text.lower()
-    customer_id = input_request.customer_id
-    cursor = db_conn.cursor()
-
-    try:
-        if query_lower in {"hi", "hello", "hey", "hii", "good morning", "good afternoon", "good evening"}:
-            return (
-                "Hi, I'm ready to help with your transactions. You can ask about spending by category, merchant history, card type, country, or highest transaction.",
-                [],
-                "",
-            )
-
-        spend_words = ["spend", "spending", "spent", "suspended", "spended"]
-        asks_about_spend = any(word in query_lower for word in spend_words)
-
-        if asks_about_spend and "last month" in query_lower:
-            today = datetime.now()
-            last_month_year = today.year
-            last_month = today.month - 1
-            if last_month == 0:
-                last_month = 12
-                last_month_year -= 1
-
-            sql_query = """
-                SELECT SUM(amount_usd) AS total_spent
-                FROM transactions
-                WHERE customer_id = ?
-                  AND year = ?
-                  AND month = ?
-            """
-            cursor.execute(sql_query, (customer_id, last_month_year, last_month))
-            total = cursor.fetchone()[0] or 0.0
-            month_name = datetime(last_month_year, last_month, 1).strftime("%B %Y")
-            return (
-                f"You spent a total of ${total:,.2f} last month ({month_name}).",
-                [str({"total_spent": total, "year": last_month_year, "month": last_month})],
-                sql_query,
-            )
-
-        category = None
-        for candidate in AppSettings().MERCHANT_CATEGORIES:
-            if candidate.lower() in query_lower:
-                category = candidate
-                break
-
-        if category and asks_about_spend:
-            sql_query = """
-                SELECT SUM(amount_usd) AS total_spent
-                FROM transactions
-                WHERE customer_id = ?
-                  AND LOWER(merchant_system_category1_name) = LOWER(?)
-            """
-            cursor.execute(sql_query, (customer_id, category))
-            total = cursor.fetchone()[0] or 0.0
-            return (
-                f"You spent a total of ${total:,.2f} on {category}.",
-                [str({"total_spent": total})],
-                sql_query,
-            )
-
-        if "highest" in query_lower and "transaction" in query_lower:
-            sql_query = """
-                SELECT transaction_id, transaction_date, amount_usd, merchant_brand_name,
-                       merchant_system_category1_name
-                FROM transactions
-                WHERE customer_id = ? AND year = ?
-                ORDER BY amount_usd DESC
-                LIMIT 1
-            """
-            cursor.execute(sql_query, (customer_id, datetime.now().year))
-            rows = cursor.fetchall()
-            if rows:
-                row = dict(zip([col[0] for col in cursor.description], rows[0]))
-                return (
-                    f"Your highest transaction this year was ${row['amount_usd']:,.2f} at {row['merchant_brand_name']} on {row['transaction_date']}.",
-                    [str(row)],
-                    sql_query,
-                )
-
-        if "premium debit" in query_lower:
-            sql_query = """
-                SELECT transaction_id, transaction_date, amount_usd, merchant_brand_name,
-                       merchant_system_category1_name, country, channel, card_type
-                FROM transactions
-                WHERE customer_id = ? AND LOWER(card_type) = 'premium debit'
-                ORDER BY transaction_date DESC
-                LIMIT 50
-            """
-            cursor.execute(sql_query, (customer_id,))
-            rows = cursor.fetchall()
-            result_rows = _rows_as_strings(cursor, rows)
-            total = sum((dict_row.get("amount_usd") or 0.0) for dict_row in [dict(zip([col[0] for col in cursor.description], row)) for row in rows])
-            return (
-                f"I found {len(rows)} recent Premium Debit transactions totaling ${total:,.2f}.",
-                result_rows,
-                sql_query,
-            )
-
-        country_match = re.search(r"\bin\s+([a-zA-Z ]+)\??$", query_text)
-        if country_match and "transaction" in query_lower:
-            country = country_match.group(1).strip()
-            sql_query = """
-                SELECT transaction_id, transaction_date, amount_usd, merchant_brand_name,
-                       merchant_system_category1_name, country, channel, card_type
-                FROM transactions
-                WHERE customer_id = ? AND LOWER(country) = LOWER(?)
-                ORDER BY transaction_date DESC
-                LIMIT 50
-            """
-            cursor.execute(sql_query, (customer_id, country))
-            rows = cursor.fetchall()
-            return (
-                f"I found {len(rows)} recent transactions in {country}.",
-                _rows_as_strings(cursor, rows),
-                sql_query,
-            )
-
-        if category and "transaction" in query_lower:
-            sql_query = """
-                SELECT transaction_id, transaction_date, amount_usd, merchant_brand_name,
-                       merchant_system_category1_name, country, channel, card_type
-                FROM transactions
-                WHERE customer_id = ?
-                  AND LOWER(merchant_system_category1_name) = LOWER(?)
-                ORDER BY transaction_date DESC
-                LIMIT 50
-            """
-            cursor.execute(sql_query, (customer_id, category))
-            rows = cursor.fetchall()
-            return (
-                f"I found {len(rows)} recent {category} transactions.",
-                _rows_as_strings(cursor, rows),
-                sql_query,
-            )
-
-    finally:
-        cursor.close()
-
-    return None
-
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     base_dir = os.path.dirname(__file__)
@@ -575,7 +409,6 @@ async def _prepare_request(request, input_request, openai_llm, prompts, logger, 
         chat_history = chat_history,
         customer_id = input_request.customer_id,
         context_builder_response = None,
-        entity_extraction_response= None,
         suprivisor_response = None,
         text2sql_generator_response= None,
         database_query_results = None,
@@ -783,92 +616,6 @@ async def process_stream(
     )
 
 
-@app.post("/process-debug")
-async def process_debug(
-    input_request: UIUserRequestDebug,
-    openai_llm: Annotated[Any, Depends(get_llm)],  # type: ignore
-    prompts: Annotated[Prompts, Depends(get_prompts)],  # type: ignore
-    logger: Annotated[Logger, Depends(get_logging)],  # type: ignore
-    db_conn: Annotated[any, Depends(get_db_conn)],  # type: ignore
-    help_store: Annotated[Any, Depends(get_help_store)],  # type: ignore
-):
-
-    # 🔥 Use chat history directly from request
-    chat_history = input_request.chat_history
-    input_request_debug = UIUserRequest(
-        user_query=input_request.user_query,
-        customer_id=input_request.customer_id,
-        session_id=input_request.session_id
-    )
-
-    logger.info(f"[DEBUG] Chat history received: {chat_history}")
-
-    graph_state = Graph_State(
-        input_request=input_request_debug,
-        chat_history=chat_history,
-        customer_id=input_request.customer_id,
-        context_builder_response=None,
-        entity_extraction_response=None,
-        suprivisor_response=None,
-        text2sql_generator_response=None,
-        database_query_results=None,
-        banksql_queries=None,
-        out_of_scope_queries=None,
-        fallback_response=None,
-        response_generation_response=None,
-        agent_metrics=None
-    )
-
-    agent_subgraph = Agent_SubGraph(
-        openai_llm=openai_llm,
-        prompts=prompts,
-        logger=logger,
-        db_conn=db_conn,
-        redis_client=None,   # debug endpoint has no Redis; SQLite-only cache
-    )
-
-    agent_graph = Agent_Graph(
-        openai_llm=openai_llm,
-        prompts=prompts,
-        logger=logger,
-        agent_subgraph=agent_subgraph,
-        help_store=help_store
-    )
-
-    try:
-        logger.info("[DEBUG] Invoking agent graph")
-
-        response = await agent_graph.app.ainvoke(graph_state)
-
-        response_gen = response.get("response_generation_response")
-        generated_response = getattr(response_gen, "generated_response", None)
-        if generated_response == TECHNICAL_FALLBACK_MESSAGE:
-            local_response = _local_transaction_fallback(input_request_debug, db_conn)
-            if local_response:
-                answer, rows, sql_query = local_response
-                response["database_query_results"] = rows
-                response["text2sql_generator_response"] = Text2SqlGeneratorResponse(
-                    user_query=input_request.user_query,
-                    sql_query=sql_query.strip()
-                )
-                response["response_generation_response"] = ResponseGeneratorResponse(
-                    generated_response=answer
-                )
-                response["fallback_response"] = FallbackResponse(
-                    fallback_flag=False,
-                    fallback_node="local_sql_fallback",
-                    fallback_reason="llm_unavailable",
-                    fallback_message=None
-                )
-
-        return response
-
-    except Exception as e:
-        logger.exception("[DEBUG] Error while invoking agent graph")
-        return {"error": "internal_error", "details": str(e)}
-
-
-
 @app.get("/health")
 async def health(db_conn: Annotated[any, Depends(get_db_conn)], redis_client: Annotated[any, Depends(get_redis_client)]):
     redis_ok = False
@@ -912,72 +659,6 @@ async def clear_chat_history_endpoint(
     deleted = db_utils.delete_other_sessions(db_conn, customer_id, keep_session_id or "")
     return JSONResponse({"status": "success", "deleted_sessions": deleted})
 
-
-@app.post("/process-voice")
-async def process_voice(
-    file: UploadFile = File(...),
-    openai_llm: Annotated[Any, Depends(get_llm)] = None,
-    prompts: Annotated[Prompts, Depends(get_prompts)] = None,
-    logger: Annotated[Logger, Depends(get_logging)] = None,
-    redis_client: Annotated[any, Depends(get_redis_client)] = None,
-    db_conn: Annotated[any, Depends(get_db_conn)] = None,
-):
-    """
-    Endpoint that accepts binary audio upload, transcribes it using Whisper,
-    and runs it through the chatbot pipeline.
-    """
-    logger.info(f"Received voice upload request: filename={file.filename}")
-    
-    # Save the uploaded file temporarily
-    temp_file_name = f"temp_{file.filename}"
-    with open(temp_file_name, "wb") as f:
-        f.write(await file.read())
-        
-    try:
-        from openai import AsyncOpenAI
-        from app_setting import AppSettings
-        settings = AppSettings()
-        api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not found. Please configure it in your environment.")
-            
-        # Transcribe with Whisper
-        client = AsyncOpenAI(api_key=api_key)
-        with open(temp_file_name, "rb") as audio:
-            transcription = await client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio
-            )
-            
-        transcribed_text = transcription.text
-        logger.info(f"Whisper transcription completed: '{transcribed_text}'")
-        
-        # Build UIUserRequest matching standard payload
-        from app_models import UIUserRequest
-        request_data = UIUserRequest(
-            customer_id="Cust_0410",
-            session_id="sess_voice_upload",
-            user_query=transcribed_text
-        )
-        
-        # Invoke standard process endpoint logic
-        return await process(
-            input_request=request_data,
-            openai_llm=openai_llm,
-            prompts=prompts,
-            logger=logger,
-            redis_client=redis_client,
-            db_conn=db_conn
-        )
-    except Exception as e:
-        logger.exception("Error during voice query processing")
-        return {"error": "voice_processing_failed", "details": str(e)}
-    finally:
-        # Clean up temporary audio file
-        if os.path.exists(temp_file_name):
-            os.remove(temp_file_name)
-
-from pydantic import BaseModel
 
 class SettingsUpdateRequest(BaseModel):
     llm_provider: str

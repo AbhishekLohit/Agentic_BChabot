@@ -1,7 +1,7 @@
 import sqlite3
 import re
 from logging import Logger
-from app_models import FallbackResponse, Graph_State, Text2SqlGeneratorResponse
+from app_models import FallbackResponse, Graph_State
 
 # Hard ceiling on how many rows a single query may return to the user. Detail
 # transaction lists are capped to the most recent MAX_RESULT_ROWS rows.

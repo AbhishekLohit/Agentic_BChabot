@@ -1,11 +1,9 @@
-from email import message
 from logging import Logger
 import hashlib
 import re
 import time
-from app_models import AgentMetrics, FallbackResponse, Graph_State, SubGraph_State, Text2SqlGeneratorResponse
+from app_models import FallbackResponse, SubGraph_State, Text2SqlGeneratorResponse
 from typing import Any
-import sqlite3
 
 from utils import agent_utils
 from utils import db_utils
@@ -16,31 +14,6 @@ def _make_cache_key(customer_id: str, nl_query: str) -> str:
     digest = hashlib.sha256(f"{customer_id}:{norm}".encode()).hexdigest()[:16]
     return f"qcache:{customer_id}:{digest}"
 
-
-def execute_query(
-    sql_query: str,
-    db_conn: any,
-    logger: Logger
-) -> list[str]:
-    """
-    Execute the given SQL query and return results as a string.
-    """
-    cursor = db_conn.cursor()
-    try:
-        cursor.execute(sql_query)
-        if sql_query.strip().lower().startswith("select"):
-            # Return results as list of dicts
-            columns = [col[0] for col in cursor.description]
-            results = [str(dict(zip(columns, row))) for row in cursor.fetchall()]
-            return results
-        else:
-            db_conn.commit()
-            return ["invalid_query"]
-    except sqlite3.Error as e:
-        logger.info(f"SQL Error: {e}")
-        return ["wrong_query"]
-    finally:
-        cursor.close()
 
 async def text2sql_generator_agent(
     state: SubGraph_State,

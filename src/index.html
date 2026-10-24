@@ -580,50 +580,6 @@
             height: 18px;
         }
 
-        /* Voice Toggle in header */
-        .voice-toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            color: #6b7280;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .voice-toggle-checkbox {
-            appearance: none;
-            width: 34px;
-            height: 18px;
-            background: #e5e7eb;
-            border-radius: 20px;
-            position: relative;
-            outline: none;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .voice-toggle-checkbox:checked {
-            background: linear-gradient(135deg, #0074a6, #2b9fc9);
-        }
-
-        .voice-toggle-checkbox::before {
-            content: '';
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #ffffff;
-            border-radius: 50%;
-            top: 3px;
-            left: 3px;
-            transition: left 0.3s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-        }
-
-        .voice-toggle-checkbox:checked::before {
-            left: 19px;
-        }
-
         /* Chat Messages Area */
         .chat-board {
             flex: 1;
@@ -854,45 +810,6 @@
             height: 20px;
         }
 
-        /* Mic Button */
-        .mic-btn {
-            width: 40px;
-            height: 40px;
-            border: none;
-            background: transparent;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #94a3b8;
-            transition: all 0.3s;
-            flex-shrink: 0;
-        }
-
-        .mic-btn:hover {
-            color: #0074a6;
-            background: #e3f4fa;
-        }
-
-        .mic-btn.active {
-            background: linear-gradient(135deg, #0074a6, #2b9fc9);
-            color: #fff;
-            animation: mic-pulse 1.5s infinite;
-        }
-
-        @keyframes mic-pulse {
-            0% { box-shadow: 0 0 0 0 rgba(0,116,166,0.4); }
-            70% { box-shadow: 0 0 0 14px rgba(0,116,166,0); }
-            100% { box-shadow: 0 0 0 0 rgba(0,116,166,0); }
-        }
-
-        .mic-btn svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-        }
-
         /* Send Button */
         .send-btn {
             width: 44px;
@@ -919,100 +836,6 @@
             width: 18px;
             height: 18px;
             fill: currentColor;
-        }
-
-        /* ===== VOICE LISTENING OVERLAY ===== */
-        .listening-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 30px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .listening-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .listening-overlay h3 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .listening-overlay p {
-            color: #6b7280;
-            font-size: 0.9rem;
-            height: 20px;
-        }
-
-        .waveform {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            height: 80px;
-        }
-
-        .wave-bar {
-            width: 5px;
-            height: 15px;
-            background: linear-gradient(to top, #0074a6, #2b9fc9);
-            border-radius: 10px;
-            animation: quiet 1.2s ease-in-out infinite;
-        }
-
-        .listening-overlay.active .wave-bar {
-            animation: bounce 1.2s ease-in-out infinite;
-        }
-
-        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
-        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
-        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
-        .wave-bar:nth-child(5) { animation-delay: 0.6s; }
-        .wave-bar:nth-child(6) { animation-delay: 0.75s; }
-        .wave-bar:nth-child(7) { animation-delay: 0.9s; }
-
-        @keyframes bounce {
-            0%, 100% { height: 15px; }
-            50% { height: 75px; }
-        }
-        @keyframes quiet {
-            0%, 100% { height: 15px; }
-            50% { height: 25px; }
-        }
-
-        .listening-overlay-close {
-            position: absolute;
-            top: 25px;
-            right: 30px;
-            width: 40px;
-            height: 40px;
-            background: #e3f4fa;
-            border: none;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            color: #0074a6;
-            transition: all 0.3s;
-        }
-
-        .listening-overlay-close:hover {
-            background: #e3f4fa;
-            color: #005a82;
         }
 
         /* ===== LOGIN OVERLAY ===== */
@@ -1194,11 +1017,6 @@
             color: #ef4444;
             font-size: 0.82rem;
             margin: 14px 0 0;
-        }
-
-        /* ===== STATUS DOT (for voice states) ===== */
-        .status-dot-indicator {
-            display: none;
         }
 
         /* ===== RESPONSIVE ===== */
@@ -1764,26 +1582,6 @@
         <!-- History View (replaces chatBoard when active) -->
         <div id="historyView" class="history-view"></div>
 
-        <!-- Voice Listening Overlay -->
-        <div id="listeningOverlay" class="listening-overlay">
-            <button id="overlayClose" class="listening-overlay-close">
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                </svg>
-            </button>
-            <h3>Listening to your voice...</h3>
-            <div class="waveform">
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-            </div>
-            <p id="liveTranscript">Say something like: "Show my grocery transactions"</p>
-        </div>
-
         <!-- Suggested Questions -->
         <div class="suggestions-row" id="suggestionsRow">
             <button class="suggestion-chip" onclick="useChip(this)">What did I spend last month?</button>
@@ -1800,13 +1598,6 @@
 
             <button class="input-action-btn" title="Attachment">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-            </button>
-
-            <button id="micBtn" class="mic-btn" title="Tap to Speak">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
             </button>
 
             <button onclick="sendMessage()" class="send-btn" title="Send Message" id="sendBtn">
@@ -1858,19 +1649,11 @@
     Agent Trace
 </button>
 
-<!-- Hidden status dot for voice state tracking -->
-<div id="statusDotHidden" class="status-dot-indicator"></div>
-
 <script>
     const chatBoard = document.getElementById("chatBoard");
     const userInput = document.getElementById("userInput");
-    const micBtn = document.getElementById("micBtn");
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
-    const ttsToggle = document.getElementById("ttsToggle");
-    const listeningOverlay = document.getElementById("listeningOverlay");
-    const liveTranscript = document.getElementById("liveTranscript");
-    const overlayClose = document.getElementById("overlayClose");
     const loginOverlay = document.getElementById("loginOverlay");
     const loginForm = document.getElementById("loginForm");
     const loginUserId = document.getElementById("loginUserId");
@@ -1887,10 +1670,6 @@
     const chatInputArea = document.querySelector(".chat-input-area");
     const historyView = document.getElementById("historyView");
 
-    let recognition = null;
-    let isListening = false;
-    let isSpeaking = false;
-    let isVoiceQuery = false;
     let currentUserId = localStorage.getItem("fintell_user_id") || "";
 
     const SESSION_IDLE_MS = 30 * 60 * 1000; // 30 minutes — matches backend REDIS_TTL
@@ -2035,132 +1814,6 @@
         suggestionsRow.style.display = "flex";
     });
 
-    // Speech Recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-
-        recognition.onstart = () => {
-            isListening = true;
-            isVoiceQuery = true;
-            micBtn.classList.add("active");
-            listeningOverlay.classList.add("active");
-            statusDot.style.background = "#ef4444";
-            statusDot.style.boxShadow = "0 0 8px #ef4444";
-            statusText.textContent = "Listening...";
-            liveTranscript.textContent = "Say something...";
-            stopSynthesis();
-        };
-
-        recognition.onresult = (event) => {
-            let finalTranscript = '';
-            let interimTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            const currentTranscript = finalTranscript || interimTranscript;
-            userInput.value = currentTranscript;
-            liveTranscript.textContent = currentTranscript;
-        };
-
-        recognition.onend = () => {
-            isListening = false;
-            micBtn.classList.remove("active");
-            listeningOverlay.classList.remove("active");
-            statusDot.style.background = "#22c55e";
-            statusDot.style.boxShadow = "none";
-            statusText.textContent = "Online";
-
-            const val = userInput.value.trim();
-            if (val) {
-                sendMessage();
-            }
-        };
-
-        recognition.onerror = (event) => {
-            console.error("Speech Recognition Error:", event.error);
-            isListening = false;
-            micBtn.classList.remove("active");
-            listeningOverlay.classList.remove("active");
-            statusDot.style.background = "#22c55e";
-            statusDot.style.boxShadow = "none";
-            statusText.textContent = "Online";
-            if (event.error !== 'no-speech') {
-                liveTranscript.textContent = "Error occurred: " + event.error;
-            }
-        };
-
-        micBtn.onclick = () => {
-            if (isListening) {
-                recognition.stop();
-            } else {
-                recognition.start();
-            }
-        };
-
-        overlayClose.onclick = () => {
-            if (isListening) {
-                recognition.abort();
-            }
-        };
-
-    } else {
-        console.warn("Speech Recognition API is not supported in this browser.");
-        micBtn.style.display = "none";
-    }
-
-    // Text-to-Speech
-    function speakReply(text) {
-        // TTS option removed from the UI — keep this a safe no-op.
-        if (!ttsToggle || !ttsToggle.checked || !window.speechSynthesis) return;
-
-        const cleanedText = text.replace(/\[System Notification:[^\]]+\]/g, '').trim();
-        stopSynthesis();
-
-        const utterance = new SpeechSynthesisUtterance(cleanedText);
-        utterance.lang = 'en-US';
-
-        utterance.onstart = () => {
-            isSpeaking = true;
-            statusDot.style.background = "#3b82f6";
-            statusDot.style.boxShadow = "0 0 8px #3b82f6";
-            statusText.textContent = "Speaking...";
-        };
-
-        utterance.onend = () => {
-            isSpeaking = false;
-            statusDot.style.background = "#22c55e";
-            statusDot.style.boxShadow = "none";
-            statusText.textContent = "Online";
-        };
-
-        utterance.onerror = (e) => {
-            console.error("Speech Synthesis Error:", e);
-            isSpeaking = false;
-            statusDot.style.background = "#22c55e";
-            statusDot.style.boxShadow = "none";
-            statusText.textContent = "Online";
-        };
-
-        window.speechSynthesis.speak(utterance);
-    }
-
-    function stopSynthesis() {
-        if (window.speechSynthesis) {
-            window.speechSynthesis.cancel();
-            isSpeaking = false;
-            statusDot.style.background = "#22c55e";
-            statusDot.style.boxShadow = "none";
-        }
-    }
-
     // Send Chat Message
     async function sendMessage() {
         if (!currentUserId) {
@@ -2169,11 +1822,6 @@
         }
         const queryText = userInput.value.trim();
         if (!queryText) return;
-
-        const currentVoiceQuery = isVoiceQuery;
-        isVoiceQuery = false;
-
-        stopSynthesis();
 
         const now = new Date();
         const ts = formatTime(now);
@@ -2321,7 +1969,6 @@
             chatPreview.textContent = cleanReply.substring(0, 40) + (cleanReply.length > 40 ? "..." : "");
             chatItemTime.textContent = replyTs;
 
-            speakReply(cleanReply);
             saveSession(currentSessionId); // reset idle timer on every successful exchange
 
         } catch (error) {

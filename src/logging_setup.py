@@ -1,7 +1,4 @@
-# app.py
 import logging
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
 import os
 # -------------------------------
 # STEP 1️⃣ Setup logging function

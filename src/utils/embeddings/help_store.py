@@ -5,9 +5,6 @@ Thin wrapper around a dedicated Chroma collection holding the Barclays help-cent
 knowledge base. Used both by the offline ingest script
 (src/clients/barclays_help_ingest.py) and at runtime by the help_center agent.
 
-Kept separate from the legacy food-ordering `chroma_store/` /
-generate_embeddings_chroma.py on purpose — different collection, different domain.
-
 Imports assume `src/` is on sys.path (true when the app is run via `python src/app.py`;
 the ingest script adds it explicitly).
 """

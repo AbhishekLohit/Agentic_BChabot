@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, Request
+from fastapi import Request
 
 def get_llm(requests: Request) :
     return requests.app.state.llm
@@ -14,12 +14,3 @@ def get_redis_client(requests: Request):
 
 def get_db_conn(requests: Request):
     return requests.app.state.sqlite_db
-
-def get_user_data(requests: Request):
-    return requests.app.state.user_data
-
-def get_llm_embeddings(requests: Request):
-    return requests.app.state.llm_embeddings
-
-def get_help_store(requests: Request):
-    return requests.app.state.help_store
