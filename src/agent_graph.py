@@ -11,6 +11,7 @@ from agents.fallback import fallback_agent
 from agents.visualization_agent import visualization_agent
 from agents.sql_correction import sql_correction
 from agents.guardrails import input_guardrail_node
+from agents.help_agent import help_agent
 from typing import Any as LLMType
 from app_models import Prompts
 from logging import Logger
@@ -21,11 +22,13 @@ class Agent_Graph:
                  openai_llm:LLMType,
                  prompts:Prompts,
                  logger: Logger,
-                 agent_subgraph: Agent_SubGraph
+                 agent_subgraph: Agent_SubGraph,
+                 help_vector_store: Any
                  ):
         self.llm = openai_llm
         self.prompts = prompts
         self.agent_subgraph = agent_subgraph
+        self.help_vector_store = help_vector_store
         self.app = self._workflow()
         self.logger = logger
 
@@ -35,6 +38,7 @@ class Agent_Graph:
         builder.add_node("guardrail", self._guardrail)
         builder.add_node("context_builder", self._context_builder)
         builder.add_node("suprivisor", self._suprivisor_agent)
+        builder.add_node("help_agent", self._help_agent)
         builder.add_node("sql_generation", self.agent_subgraph.app)
         builder.add_node("response_generator", self._response_generator_agent)
         builder.add_node("visualization_agent", self._visualization_agent_node)
@@ -65,12 +69,21 @@ class Agent_Graph:
             self._supervisor_router,
             {
                 "sql_generation": "sql_generation",
+                "help_agent": "help_agent",
                 "fallback": "fallback",
                 END: END,
             }
         )
         # BankSQL pipeline
         builder.add_edge("sql_generation", "join")
+        builder.add_conditional_edges(
+            "help_agent",
+            self._help_router,
+            {
+                "fallback": "fallback",
+                END: END,
+            }
+        )
         builder.add_edge("fallback", "join")
         builder.add_edge("join", "visualization_agent")
         builder.add_edge("visualization_agent", "response_generator")
@@ -119,18 +132,27 @@ class Agent_Graph:
         routes = []
 
         banksql = state.banksql_queries or []
+        help_queries = state.help_queries or []
         out_of_scope = state.out_of_scope_queries or []
 
-        if len(banksql) == 1:
+        if len(banksql) == 1 and not help_queries and not out_of_scope:
             routes.append("sql_generation")
 
-        if len(out_of_scope) > 0 or len(banksql) > 1:
+        if len(help_queries) == 1 and not banksql and not out_of_scope:
+            routes.append("help_agent")
+
+        if out_of_scope or len(banksql) + len(help_queries) > 1:
             routes.append("fallback")
 
         if not routes:
             routes.append(END)
 
         return routes
+
+    def _help_router(self, state: Graph_State) -> str:
+        if state.fallback_response and state.fallback_response.fallback_flag:
+            return "fallback"
+        return END
     
     def _context_builder_router(self, state: Graph_State) -> list[str]:
         routes = []
@@ -141,6 +163,16 @@ class Agent_Graph:
             routes.append("suprivisor")
 
         return routes
+
+    async def _help_agent(self, state: Graph_State) -> Graph_State:
+        await help_agent(
+            state,
+            self.llm,
+            self.prompts.help_agent_prompt,
+            self.help_vector_store,
+            self.logger,
+        )
+        return state
     
     
     async def _visualization_agent_node(self, state: Graph_State) -> Graph_State:

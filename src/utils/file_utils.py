@@ -27,6 +27,7 @@ def get_all_prompts(appsettings:AppSettings
     return Prompts(
         context_builder_prompt = read_prompt_file(appsettings.context_builder_prompt_path),
         suprivisor_prompt = read_prompt_file(appsettings.suprivisor_prompt_path),
+        help_agent_prompt = read_prompt_file(appsettings.help_agent_prompt_path),
         text2sqlgenerator_prompt = read_prompt_file(appsettings.text2sql_generator_prompt_path),
         responsegenerator_prompt= read_prompt_file(appsettings.response_generator_prompt_path),
         fallback_prompt= read_prompt_file(appsettings.fallback_prompt_path),

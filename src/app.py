@@ -12,6 +12,7 @@ from app_models import (
                 FallbackResponse,
                 )
 from app_setting import AppSettings
+from utils.embeddings.help_document_store import create_help_vector_store
 from utils.file_utils import (
                             get_all_prompts,
                             save_chat_history,
@@ -24,7 +25,8 @@ from dependencies import (
                     get_redis_client,
                     get_db_conn,
                     get_user_data,
-                    get_llm_embeddings
+                    get_llm_embeddings,
+                    get_help_vector_store
                     )
 from agent_graph import Agent_Graph
 from agent_subraph import Agent_SubGraph
@@ -45,7 +47,8 @@ async def lifespan(app: FastAPI):
 
     app_settings = AppSettings()
     llm = get_configured_llm()
-    llm_embeddings = get_openai_embeddings(model="text-embedding-3-small")
+    llm_embeddings = get_openai_embeddings(model=app_settings.EMBED_MODEL)
+    help_vector_store = create_help_vector_store(llm_embeddings, app_settings)
     prompts = get_all_prompts(app_settings)
     logger = setup_logging()
     
@@ -73,6 +76,7 @@ async def lifespan(app: FastAPI):
     app.state.redis_client = redis_client
     app.state.sqlite_db = db_conn
     app.state.llm_embeddings = llm_embeddings
+    app.state.help_vector_store = help_vector_store
     # app.state.user_data = user_data
     # Connect DB or load your LangGraph workflow here
     # app.state.graph = MyLangGraphSupervisor()
@@ -284,6 +288,7 @@ async def process(
     logger: Annotated[Logger,Depends(get_logging)], # type: ignore
     redis_client: Annotated[any,Depends(get_redis_client)], # type: ignore
     db_conn: Annotated[any,Depends(get_db_conn)], # type: ignore
+    help_vector_store: Annotated[Any, Depends(get_help_vector_store)],
 
 
 ):
@@ -309,6 +314,7 @@ async def process(
         text2sql_generator_response= None,
         database_query_results = None,
         banksql_queries= None,
+        help_queries=None,
         out_of_scope_queries= None,
         fallback_response = None,
         response_generation_response = None,
@@ -321,7 +327,8 @@ async def process(
     agent_graph = Agent_Graph(openai_llm=openai_llm,
                               prompts=prompts,
                               logger= logger,
-                              agent_subgraph=agent_subgraph)
+                              agent_subgraph=agent_subgraph,
+                              help_vector_store=help_vector_store)
     
     try:
         
@@ -367,6 +374,7 @@ async def process_debug(
     prompts: Annotated[Prompts, Depends(get_prompts)],  # type: ignore
     logger: Annotated[Logger, Depends(get_logging)],  # type: ignore
     db_conn: Annotated[any, Depends(get_db_conn)],  # type: ignore
+    help_vector_store: Annotated[Any, Depends(get_help_vector_store)],
 ):
     
     # 🔥 Use chat history directly from request
@@ -389,6 +397,7 @@ async def process_debug(
         text2sql_generator_response=None,
         database_query_results=None,
         banksql_queries=None,
+        help_queries=None,
         out_of_scope_queries=None,
         fallback_response=None,
         response_generation_response=None,
@@ -406,7 +415,8 @@ async def process_debug(
         openai_llm=openai_llm,
         prompts=prompts,
         logger=logger,
-        agent_subgraph=agent_subgraph
+        agent_subgraph=agent_subgraph,
+        help_vector_store=help_vector_store
     )
 
     try:

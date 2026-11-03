@@ -13,6 +13,7 @@ class AppSettings(BaseSettings):
     TEMPERATURE: float = 0.2
     MAX_TOKENS: int = 1500
     context_builder_prompt_path: str = "context_builder_prompt.yml"
+    help_agent_prompt_path: str = "help_agent_prompt.yml"
     text2sql_entity_extractor_prompt_path: str = "text2sql_entity_extractor_prompt.yml"
     text2sql_generator_prompt_path: str = "text2sql_generator.yml"
     suprivisor_prompt_path: str = "suprivisor_prompt.yml"
@@ -24,6 +25,8 @@ class AppSettings(BaseSettings):
     visualization_agent_prompt_path: str = "visualization_agent_prompt.yml"
     db_path: str = "transactions.db"
     EMBED_MODEL: str = "text-embedding-3-small"
+    HELP_DOCUMENTS_DIR: str = "data/help_documents"
+    HELP_CHROMA_DIR: str = "chroma_store/help_documents"
 
     merchant_name_query: str = "SELECT DISTINCT merchant_brand_name FROM transactions WHERE customer_id = ?;"
     merchant_category1_query: str = "SELECT DISTINCT merchant_system_category1_name FROM transactions WHERE customer_id = ?;"

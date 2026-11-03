@@ -16,7 +16,8 @@ FALLBACK_MESSAGES = {
     "out_of_scope_only": (
         "I’m not able to help with the following request(s):\n\n"
         "{invalid_items}\n\n"
-        "You can ask me about your transactions, spending by category, merchant history, or card usage."
+        "You can ask about your transactions or bank services and policies covered "
+        "by the help documents."
     ),
 
     "mixed_valid_invalid": (
@@ -43,7 +44,10 @@ async def fallback_agent(
 
     # Render the final prompt string using .format()
     try:
-        valid = getattr(state, "banksql_queries", []) or []
+        valid = (
+            (getattr(state, "banksql_queries", []) or [])
+            + (getattr(state, "help_queries", []) or [])
+        )
         invalid = getattr(state, "out_of_scope_queries", []) or []
 
         # 1️⃣ Exception

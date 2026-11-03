@@ -8,6 +8,7 @@ from langchain_core.prompts import BasePromptTemplate
 class Prompts(BaseModel):
     context_builder_prompt: BasePromptTemplate
     suprivisor_prompt: BasePromptTemplate
+    help_agent_prompt: BasePromptTemplate
     text2sqlgenerator_prompt: BasePromptTemplate
     responsegenerator_prompt: BasePromptTemplate
     fallback_prompt: BasePromptTemplate
@@ -32,7 +33,7 @@ class ContextBuilderResponse(BaseModel):
 
 class ClassifiedSubQuery(BaseModel):
     sub_query: str
-    class_label: Literal["BankSQL","Out_of_scope"]
+    class_label: Literal["BankSQL","HelpDoc","Out_of_scope"]
 
 class SuprivisorResponse(BaseModel):
     classified_sub_queries : list[ClassifiedSubQuery]
@@ -152,6 +153,7 @@ class Graph_State(BaseModel):
     database_query_results: list[str] | None
     sql_query_correction: bool = False
     banksql_queries: list[str] | None
+    help_queries: list[str] | None
     out_of_scope_queries: list[str] | None
     fallback_response: FallbackResponse | None
     response_generation_response: ResponseGeneratorResponse | None
