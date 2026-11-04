@@ -7,8 +7,8 @@ class AppSettings(BaseSettings):
     GROQ_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4o-mini"
-    GEMINI_MODEL: str = "gemini-1.5-flash"
-    GROQ_MODEL: str = "llama3-70b-8192"
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
     ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
     TEMPERATURE: float = 0.2
     MAX_TOKENS: int = 1500
@@ -24,7 +24,8 @@ class AppSettings(BaseSettings):
     test_data_validation_prompt_path: str = "test_data_validation_prompt.yml"
     visualization_agent_prompt_path: str = "visualization_agent_prompt.yml"
     db_path: str = "transactions.db"
-    EMBED_MODEL: str = "text-embedding-3-small"
+    EMBED_MODEL: str = "text-embedding-3-small"  # used only when EMBEDDING_PROVIDER = "openai"
+    EMBEDDING_PROVIDER: str = "local"  # "local" (free, offline) or "openai"
     HELP_DOCUMENTS_DIR: str = "data/help_documents"
     HELP_CHROMA_DIR: str = "chroma_store/help_documents"
 

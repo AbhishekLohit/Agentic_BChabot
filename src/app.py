@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
-from clients.llm_client import get_configured_llm, get_openai_embeddings
+from clients.llm_client import get_configured_llm, get_embeddings
 from app_models import (
                 UIUserRequest,
                 Graph_State,
@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
 
     app_settings = AppSettings()
     llm = get_configured_llm()
-    llm_embeddings = get_openai_embeddings(model=app_settings.EMBED_MODEL)
+    llm_embeddings = get_embeddings(app_settings.EMBEDDING_PROVIDER)
     help_vector_store = create_help_vector_store(llm_embeddings, app_settings)
     prompts = get_all_prompts(app_settings)
     logger = setup_logging()

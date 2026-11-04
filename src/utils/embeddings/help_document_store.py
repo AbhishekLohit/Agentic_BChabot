@@ -27,6 +27,7 @@ def create_help_vector_store(embeddings: Any, settings: AppSettings) -> Chroma:
         collection_name="help_documents",
         embedding_function=embeddings,
         persist_directory=str(persist_directory),
+        collection_metadata={"hnsw:space": "cosine"},
     )
 
 
@@ -110,12 +111,15 @@ def ingest_help_documents(settings: AppSettings, embeddings: Any) -> int:
 
 
 def main() -> None:
-    from clients.llm_client import get_openai_embeddings
+    from clients.llm_client import get_embeddings
 
     settings = AppSettings()
-    embeddings = get_openai_embeddings(model=settings.EMBED_MODEL)
+    embeddings = get_embeddings(settings.EMBEDDING_PROVIDER)
     count = ingest_help_documents(settings, embeddings)
-    print(f"Indexed {count} chunks from {settings.HELP_DOCUMENTS_DIR}.")
+    print(
+        f"Indexed {count} chunks from {settings.HELP_DOCUMENTS_DIR} "
+        f"using {settings.EMBEDDING_PROVIDER} embeddings."
+    )
 
 
 if __name__ == "__main__":
