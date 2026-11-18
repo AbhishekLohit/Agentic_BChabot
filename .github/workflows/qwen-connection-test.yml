@@ -1,0 +1,92 @@
+
+name: Qwen API Connection Test
+
+on:
+  push:
+    branches:
+      - feature/evaluation-framework
+    paths:
+      - .github/workflows/qwen-connection-test.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-qwen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Test Qwen API securely
+        env:
+          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+          QWEN_CA_CERT_B64: ${{ secrets.QWEN_CA_CERT_B64 }}
+        run: |
+          python - <<'PY'
+          import os
+          import ssl
+          import json
+          import base64
+          import tempfile
+          import urllib.request
+          import urllib.error
+
+          key = os.environ.get("QWEN_API_KEY")
+          cert_b64 = os.environ.get("QWEN_CA_CERT_B64")
+
+          if not key or not cert_b64:
+              raise RuntimeError("Required GitHub secrets are missing")
+
+          with tempfile.TemporaryDirectory() as folder:
+              cert_path = os.path.join(folder, "vm07-ca.crt")
+
+              with open(cert_path, "wb") as f:
+                  f.write(base64.b64decode(cert_b64, validate=True))
+
+              context = ssl.create_default_context(
+                  cafile=cert_path
+              )
+
+              payload = {
+                  "model": "Qwen/Qwen3-8B",
+                  "messages": [
+                      {
+                          "role": "user",
+                          "content": "Reply with the word READY."
+                      }
+                  ],
+                  "max_tokens": 64
+              }
+
+              request = urllib.request.Request(
+                  "https://103.42.50.41:1031/v1/chat/completions",
+                  data=json.dumps(payload).encode("utf-8"),
+                  headers={
+                      "Authorization": f"Bearer {key}",
+                      "Content-Type": "application/json"
+                  },
+                  method="POST"
+              )
+
+              try:
+                  with urllib.request.urlopen(
+                      request,
+                      context=context,
+                      timeout=90
+                  ) as response:
+                      result = json.load(response)
+
+                  assert result.get("choices"), (
+                      "No model response received"
+                  )
+
+                  print("Qwen API connection successful")
+                  print("Authentication and TLS verification passed")
+                  print("Model response received successfully")
+
+              except urllib.error.HTTPError as error:
+                  print(f"API returned HTTP {error.code}")
+                  raise
+
+          PY
