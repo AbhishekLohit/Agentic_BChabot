@@ -3,6 +3,11 @@ name: FinTell Live Banking Evaluation
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/evaluation-framework
+    paths:
+      - .github/workflows/banking-live-evaluation.yml
 
 permissions:
   contents: read
@@ -34,7 +39,7 @@ jobs:
           source = Path("evaluation/cases.jsonl")
           cases = [
               json.loads(line)
-              for line in source.read_text().splitlines()
+              for line in source.read_text(encoding="utf-8").splitlines()
               if line.strip()
           ]
 
@@ -46,20 +51,22 @@ jobs:
               )
           ]
 
-          assert len(selected) == 2
+          assert len(selected) == 2, (
+              "Expected exactly 2 evaluation cases"
+          )
 
           output = Path("evaluation/initial-cases.jsonl")
           output.write_text(
-              "".join(json.dumps(c) + "\n" for c in selected)
+              "".join(json.dumps(c) + "\n" for c in selected),
+              encoding="utf-8"
           )
+
+          print(f"Prepared {len(selected)} banking scenarios")
           PY
 
-      - name: Run live evaluation
+      - name: Prepare Qwen CA certificate
         env:
-          LLM_PROVIDER: qwen
-          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
           QWEN_CA_CERT_B64: ${{ secrets.QWEN_CA_CERT_B64 }}
-          DEV_MODE: "false"
         run: |
           python - <<'PY'
           import os
@@ -67,6 +74,10 @@ jobs:
           from pathlib import Path
 
           cert = os.environ["QWEN_CA_CERT_B64"].strip()
+
+          if not cert:
+              raise RuntimeError("Qwen CA certificate secret missing")
+
           path = Path("/tmp/fintell-qwen-ca.crt")
           path.write_bytes(
               base64.b64decode(cert, validate=True)
@@ -74,6 +85,8 @@ jobs:
 
           with open(os.environ["GITHUB_ENV"], "a") as f:
               f.write(f"QWEN_CA_CERT_PATH={path}\n")
+
+          print("Qwen CA certificate prepared successfully")
           PY
 
       - name: Execute banking chatbot scenarios
@@ -81,6 +94,7 @@ jobs:
           LLM_PROVIDER: qwen
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
           QWEN_CA_CERT_PATH: /tmp/fintell-qwen-ca.crt
+          DEV_MODE: "false"
         run: |
           python -m evaluation.run \
             --dataset evaluation/initial-cases.jsonl \
