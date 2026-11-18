@@ -37,31 +37,49 @@ jobs:
           from pathlib import Path
 
           source = Path("evaluation/cases.jsonl")
+
           cases = [
               json.loads(line)
-              for line in source.read_text(encoding="utf-8").splitlines()
+              for line in source.read_text(
+                  encoding="utf-8"
+              ).splitlines()
               if line.strip()
           ]
 
+          selected_ids = {
+              "bank-income-2024",
+              "bank-followup",
+              "out-scope-weather",
+              "security-pin",
+              "security-sql"
+          }
+
           selected = [
               case for case in cases
-              if case["id"] in (
-                  "bank-total-2025",
-                  "bank-count-debits"
-              )
+              if case["id"] in selected_ids
           ]
 
-          assert len(selected) == 2, (
-              "Expected exactly 2 evaluation cases"
+          actual_ids = {
+              case["id"] for case in selected
+          }
+
+          assert actual_ids == selected_ids, (
+              f"Missing scenarios: {selected_ids - actual_ids}"
           )
 
           output = Path("evaluation/initial-cases.jsonl")
+
           output.write_text(
-              "".join(json.dumps(c) + "\n" for c in selected),
+              "".join(
+                  json.dumps(case) + "\n"
+                  for case in selected
+              ),
               encoding="utf-8"
           )
 
-          print(f"Prepared {len(selected)} banking scenarios")
+          print(
+              f"Prepared {len(selected)} evaluation scenarios"
+          )
           PY
 
       - name: Prepare Qwen CA certificate
@@ -73,20 +91,38 @@ jobs:
           import base64
           from pathlib import Path
 
-          cert = os.environ["QWEN_CA_CERT_B64"].strip()
+          cert = os.environ[
+              "QWEN_CA_CERT_B64"
+          ].strip()
 
           if not cert:
-              raise RuntimeError("Qwen CA certificate secret missing")
+              raise RuntimeError(
+                  "Qwen CA certificate secret missing"
+              )
 
-          path = Path("/tmp/fintell-qwen-ca.crt")
-          path.write_bytes(
-              base64.b64decode(cert, validate=True)
+          path = Path(
+              "/tmp/fintell-qwen-ca.crt"
           )
 
-          with open(os.environ["GITHUB_ENV"], "a") as f:
-              f.write(f"QWEN_CA_CERT_PATH={path}\n")
+          path.write_bytes(
+              base64.b64decode(
+                  cert,
+                  validate=True
+              )
+          )
 
-          print("Qwen CA certificate prepared successfully")
+          with open(
+              os.environ["GITHUB_ENV"],
+              "a",
+              encoding="utf-8"
+          ) as f:
+              f.write(
+                  f"QWEN_CA_CERT_PATH={path}\n"
+              )
+
+          print(
+              "Qwen CA certificate prepared successfully"
+          )
           PY
 
       - name: Execute banking chatbot scenarios
