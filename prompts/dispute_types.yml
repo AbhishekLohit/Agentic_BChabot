@@ -1,0 +1,116 @@
+# Question sets for the Disputes subagent, one entry per dispute reason.
+#
+# This is configuration, not a prompt: adding or changing a reason is an edit here,
+# not a new agent. Code decides the order (common "before" slots, the reason's own
+# slots, then common "after" slots) and asks at most two unanswered ones per turn.
+#
+# Question text may use {merchant}, {amount} and {date} (filled from the transaction).
+# visa_code is for reference only and is not used by the code.
+# Reason ids must match DisputeReason in src/app_models.py.
+
+common_slots:
+  before:
+    - id: description
+      question: "In a sentence or two, what happened?"
+  after:
+    - id: contacted_merchant
+      question: "Have you already contacted {merchant} about this? If so, what did they say?"
+    - id: evidence
+      question: "Do you have anything that backs this up, such as a receipt, order confirmation, emails or photos? Just tell me what you have."
+
+types:
+  duplicate_charge:
+    label: Duplicate charge
+    visa_code: "12.6"
+    menu_text: "I was charged twice for the same thing"
+    description: "The same purchase was charged more than once."
+    uses_common_slots: true
+    slots:
+      - id: extra_charge
+        question: "Which charge do you think is the extra one? The payment I'm looking at is {amount} to {merchant} on {date}."
+      - id: intended_twice
+        question: "Did you mean to buy twice, for example two items or two bookings?"
+      - id: reversal_promised
+        question: "Has {merchant} said a reversal is on its way? If so, by when?"
+
+  wrong_amount:
+    label: Wrong amount
+    visa_code: "12.5"
+    menu_text: "I was charged the wrong amount"
+    description: "The amount taken is different from what the customer agreed or expected to pay."
+    uses_common_slots: true
+    slots:
+      - id: expected_amount
+        question: "What amount did you expect to pay?"
+      - id: amount_basis
+        question: "What is that based on, for example a quote, receipt, menu price or booking confirmation?"
+      - id: difference_reason
+        question: "Do you know why the amount is different, such as a tip, fee or currency conversion?"
+
+  refund_not_received:
+    label: Refund not received
+    visa_code: "13.6"
+    menu_text: "I returned or cancelled something and haven't had my refund"
+    description: "The customer returned goods or cancelled a service and the refund has not arrived."
+    uses_common_slots: true
+    slots:
+      - id: returned_item
+        question: "What did you return or cancel, and on what date?"
+      - id: refund_promised
+        question: "What refund amount and date did {merchant} promise you?"
+      - id: refund_reference
+        question: "Do you have a return tracking number or a refund reference from {merchant}?"
+
+  goods_not_received:
+    label: Goods or services not received
+    visa_code: "13.1"
+    menu_text: "I never received the goods or service"
+    description: "The customer paid but the goods or service never arrived or was never provided."
+    uses_common_slots: true
+    slots:
+      - id: order_date
+        question: "When did you place the order or book the service?"
+      - id: promised_delivery
+        question: "When was it due to arrive or be provided?"
+      - id: tracking_status
+        question: "Do you have tracking details or a delivery status? What does it say?"
+
+  not_as_described:
+    label: Not as described or faulty
+    visa_code: "13.3"
+    menu_text: "What I got wasn't as described, or it's faulty"
+    description: "The goods or service arrived but were faulty, damaged or different from what was advertised."
+    uses_common_slots: true
+    slots:
+      - id: advertised_vs_received
+        question: "What was advertised, and what did you actually receive?"
+      - id: received_date
+        question: "When did you receive it?"
+      - id: return_attempt
+        question: "Did you try to return it or get a replacement? What happened?"
+
+  cancelled_subscription:
+    label: Charged after cancelling
+    visa_code: "13.2"
+    menu_text: "I was charged after cancelling a subscription"
+    description: "A subscription or recurring payment kept charging after the customer cancelled it."
+    uses_common_slots: true
+    slots:
+      - id: cancel_date
+        question: "When did you cancel, and how (website, email, phone)?"
+      - id: cancel_proof
+        question: "Do you have a cancellation confirmation, such as an email or reference number?"
+      - id: charged_after
+        question: "Which payments were taken after you cancelled?"
+
+  unrecognised:
+    label: Unrecognised payment
+    visa_code: ""
+    menu_text: "I don't recognise this payment"
+    description: "The customer does not recognise the payment at all. This is triage, not a dispute type: it ends as recognised or as suspected fraud."
+    uses_common_slots: false
+    slots:
+      - id: others_use_card
+        question: "Does anyone else use your card, such as a partner, family member or additional cardholder?"
+      - id: card_in_possession
+        question: "Is your card still with you?"

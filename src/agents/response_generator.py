@@ -1,15 +1,67 @@
 from typing import Any
 from logging import Logger
+from agents.disputes.workflow import plain_reply as dispute_plain_reply
 from app_models import FallbackResponse, Graph_State,ResponseGeneratorResponse
 import time
 
 from utils import agent_utils
 
+
+async def _dispute_reply(state: Graph_State, llm: Any, prompt: Any, logger: Logger) -> str:
+    """Put the Disputes agent's result into words. The agent has already decided what
+    happens; this only phrases it, and falls back to a plain fixed wording if the model
+    is unavailable."""
+    result = state.dispute_result
+    if prompt is None:
+        return dispute_plain_reply(result)
+
+    user_block = f"status: {result.status}\nsummary:\n{result.summary}\n"
+    if result.status == "suspected_fraud":
+        user_block += f"hand_off_message: {result.data.get('handoff_message', '')}\n"
+    # Whether this message continues a dispute that was already open, so the reply does not greet
+    # the customer again. The chat history is deliberately NOT passed: it can hold earlier chats
+    # (even other sessions) and the reply must take every fact from the summary alone.
+    user_block += f"dispute_in_progress: {'yes' if state.dispute_open else 'no'}\n"
+    if state.pipeline_query:
+        user_block += (
+            f'another_request_answered_separately: "{state.pipeline_query}"\n'
+        )
+    user_block += f"customer_message: {state.input_request.user_query}"
+    messages = [
+        {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral", "ttl": "1h"}}]},
+        {"role": "user", "content": user_block},
+    ]
+    try:
+        start_time = time.time()
+        gathered = None
+        async for chunk in llm.astream(messages):
+            gathered = chunk if gathered is None else gathered + chunk
+        latency = time.time() - start_time
+        text = agent_utils.message_to_text(gathered).strip()
+        try:
+            if state.agent_metrics is not None:
+                agent_utils.record_metric(state.agent_metrics, "dispute_reply", agent_utils.agent_metrics(gathered, latency))
+        except Exception as metric_err:
+            logger.warning(f"Dispute reply metrics unavailable: {metric_err}")
+    except Exception:
+        logger.exception("Dispute reply writer failed; using the plain wording.")
+        return dispute_plain_reply(result)
+
+    if not text:
+        return dispute_plain_reply(result)
+    # The case ID is the one fact the customer must not lose to rephrasing.
+    case_id = result.data.get("case_id")
+    if result.status == "filed" and case_id and case_id not in text:
+        text += f"\nYour case ID is {case_id}."
+    return text
+
+
 async def response_generator_agent(
     state: Graph_State,
     llm: Any,
     prompt: str,
-    logger: Logger
+    logger: Logger,
+    dispute_prompt: Any = None,
 )-> Graph_State:
     logger.info("Executing response generation agent.")
     # Render the final prompt string using .format()
@@ -17,6 +69,10 @@ async def response_generator_agent(
         final_message = []
         if state.fallback_response:
             final_message.append(state.fallback_response.fallback_message)
+
+        # A dispute turn: the Disputes agent decided what happens, this puts it in words.
+        if state.dispute_result:
+            final_message.append(await _dispute_reply(state, llm, dispute_prompt, logger))
 
         # Help-centre answers are produced (with source links) by the help_center
         # agent itself — just pass them through to the final reply. No extra LLM call.
@@ -65,8 +121,15 @@ async def response_generator_agent(
                 logger.warning(f"Response generator metrics unavailable: {metric_err}")
 
             final_message.append(generated_text)
+
+        # After a side question asked mid-dispute: say the dispute is still open.
+        if state.dispute_reminder:
+            final_message.append(state.dispute_reminder)
+        # Dispute replies are paragraphs, so they are set apart from the other answers by a
+        # blank line. Every other reply keeps the single newline it always had.
+        separator = "\n\n" if (state.dispute_result or state.dispute_reminder) else "\n"
         # Update the state with the response generator response
-        state.response_generation_response = ResponseGeneratorResponse(generated_response="\n".join(final_message))
+        state.response_generation_response = ResponseGeneratorResponse(generated_response=separator.join(final_message))
         logger.info(f"Response generation response: {final_message}\n")
     except Exception as e:
         logger.exception(f"Error in response generator agent: {str(e)}")

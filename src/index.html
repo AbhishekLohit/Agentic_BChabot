@@ -2250,7 +2250,9 @@
         sql_execution: '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
         visualization_agent: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
         response_generator: '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
-        fallback: '<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
+        fallback: '<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+        dispute_gate: '<path d="M3 12h6"/><path d="M15 12h6"/><circle cx="12" cy="12" r="3"/>',
+        disputes: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>'
     };
 
     function nodeIcon(agent) {
@@ -2311,6 +2313,30 @@
                 row.appendChild(el("span", null, c.sub_query || ""));
                 frag.appendChild(row);
             });
+        }
+
+        if (step.agent === "dispute_gate") {
+            frag.appendChild(el("div", "trace-field-label", "Message"));
+            const kinds = {
+                dispute: "Belongs to the open dispute",
+                side_question: "Unrelated question. The dispute stays open",
+                both: "Reply to the dispute plus an unrelated question",
+                new_dispute: "A different dispute. The old draft was dropped"
+            };
+            frag.appendChild(el("div", "trace-text", kinds[d.message_kind] || d.message_kind || ""));
+            if (d.side_question) {
+                frag.appendChild(el("div", "trace-field-label", "Unrelated part"));
+                frag.appendChild(el("div", "trace-text", d.side_question));
+            }
+        }
+
+        if (step.agent === "disputes") {
+            frag.appendChild(el("div", "trace-field-label", "Dispute status"));
+            frag.appendChild(el("div", "trace-text", d.status || ""));
+            if (d.summary) {
+                frag.appendChild(el("div", "trace-field-label", "What the agent decided"));
+                frag.appendChild(el("pre", "trace-rows", d.summary));
+            }
         }
 
         if (step.agent === "text2sql_generator" && d.sql_query) {

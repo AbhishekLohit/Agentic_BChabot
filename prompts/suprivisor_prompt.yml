@@ -7,13 +7,13 @@ prompt: |
     2. Do NOT split, merge, rephrase, or drop any query. Treat each list item as one sub-query
        and produce EXACTLY ONE classification entry per input query, in the same order.
     3. For each query, produce TWO labels:
-       a. class_label — the high-level scope: "BankSQL", "HelpCenter", or "Out_of_scope".
+       a. class_label — the high-level scope: "BankSQL", "HelpCenter", "Dispute", or "Out_of_scope".
        b. transaction_query_type — what KIND of transaction the query is about (see TYPE DEFINITIONS).
 
     # Input
       - input_queries: a list of one or more contextual queries (already split by the context builder).
 
-    ## CLASS DEFINITIONS : ["BankSQL","HelpCenter","Out_of_scope"]
+    ## CLASS DEFINITIONS : ["BankSQL","HelpCenter","Dispute","Out_of_scope"]
 
 
     # CLASS 1 — "BankSQL"
@@ -59,7 +59,30 @@ prompt: |
       - "How do I dispute a transaction?"             → HelpCenter (a procedure)
       - "List my transactions at Amazon"              → BankSQL (their own data)
 
-    # CLASS 3 — "Out_of_scope"
+    # CLASS 3 — "Dispute"
+      The customer is REPORTING A PROBLEM with a specific card payment and wants it put right,
+      or says they want to raise or continue a dispute about it. The assistant then collects the
+      details and raises the case.
+
+      Typical Identifiers/Keywords:
+      - "I want to dispute the payment to ...", "raise a dispute", "dispute this transaction".
+      - "I was charged twice by ...", "they took the wrong amount", "charged more than the quote".
+      - "I never got my refund from ...", "I returned it but there is no refund".
+      - "I never received the goods/service I paid for", "it arrived faulty / not as described".
+      - "I was charged after I cancelled my subscription".
+      - "I don't recognise this payment", "there is a payment I didn't make".
+      Examples:
+      "I want to dispute my last payment to Acme"
+      "Great Northern Hotel charged me the wrong amount"
+      "I don't recognise the Top Man payment on 5 April"
+
+      IMPORTANT — distinguishing Dispute from HelpCenter and BankSQL:
+      - "How do I dispute a transaction?"              → HelpCenter (asks for the procedure)
+      - "I want to dispute my Acme payment"            → Dispute (wants the case raised)
+      - "Show me my payments to Acme"                  → BankSQL (just looking at their data)
+      - "Acme charged me twice, can you sort it?"      → Dispute
+
+    # CLASS 4 — "Out_of_scope"
       Any question unrelated to BOTH the customer's banking transaction data AND
       Barclays help/how-to topics:
       - general knowledge, chit-chat, other companies, unrelated tasks.
@@ -84,10 +107,10 @@ prompt: |
       - "general"         → a BankSQL query that does NOT map to a single type above
                             (e.g. "list my biggest transactions", "show all my transactions last week",
                             "how many transactions did I make").
-      - "none"            → use for Out_of_scope AND HelpCenter sub-queries (no transaction is being queried).
+      - "none"            → use for Out_of_scope, HelpCenter AND Dispute sub-queries (no transaction is being queried).
 
     Rules:
-      - Out_of_scope AND HelpCenter sub-queries ALWAYS get transaction_query_type = "none".
+      - Out_of_scope, HelpCenter AND Dispute sub-queries ALWAYS get transaction_query_type = "none".
       - If a BankSQL query clearly targets one type, use that type; otherwise use "general".
       - Pick the SINGLE best-fitting type; do not invent new values.
 
@@ -99,7 +122,7 @@ prompt: |
       "sub_queries": [
         {{
           "query": "...",
-          "classification": "BankSQL" | "HelpCenter" | "Out_of_scope",
+          "classification": "BankSQL" | "HelpCenter" | "Dispute" | "Out_of_scope",
           "transaction_type": "income" | "payment" | "direct_debit" | "standing_order" | "refund" | "balance_check" | "general" | "none"
         }}
       ]
@@ -250,6 +273,53 @@ prompt: |
           "query": "How much did I pay in standing orders last month?",
           "classification": "BankSQL",
           "transaction_type": "standing_order"
+        }}
+      ]
+    }}
+
+    # Example 9 — the customer wants a payment disputed
+    input_queries: ["I want to dispute my most recent payment to Great Northern Hotel."]
+
+    Output:
+    {{
+      "sub_queries": [
+        {{
+          "query": "I want to dispute my most recent payment to Great Northern Hotel.",
+          "classification": "Dispute",
+          "transaction_type": "none"
+        }}
+      ]
+    }}
+
+    # Example 10 — a HOW-TO about disputes is a HelpCenter question, not a Dispute
+    input_queries: ["How do I dispute a transaction?"]
+
+    Output:
+    {{
+      "sub_queries": [
+        {{
+          "query": "How do I dispute a transaction?",
+          "classification": "HelpCenter",
+          "transaction_type": "none"
+        }}
+      ]
+    }}
+
+    # Example 11 — mixed: a dispute AND a data question, already split
+    input_queries: ["I was charged twice by Acme on 3 May 2026.", "What is my current balance?"]
+
+    Output:
+    {{
+      "sub_queries": [
+        {{
+          "query": "I was charged twice by Acme on 3 May 2026.",
+          "classification": "Dispute",
+          "transaction_type": "none"
+        }},
+        {{
+          "query": "What is my current balance?",
+          "classification": "BankSQL",
+          "transaction_type": "balance_check"
         }}
       ]
     }}

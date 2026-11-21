@@ -30,6 +30,7 @@ from dependencies import (
                     )
 from agent_graph import Agent_Graph
 from agent_subraph import Agent_SubGraph
+from agents.disputes.registry import load_dispute_registry
 from utils.embeddings.help_store import HelpStore
 from typing import Annotated, Any
 from logging_setup import setup_logging
@@ -83,6 +84,15 @@ async def lifespan(app: FastAPI):
         logger.warning("Help store unavailable — help-centre answers disabled: %s", e)
         help_store = None
 
+    # Per-reason question sets for the Disputes agent. If the file is missing or invalid
+    # the graph runs without disputes (a dispute request gets the out-of-scope reply).
+    try:
+        dispute_registry = load_dispute_registry(app_settings.dispute_types_path)
+        logger.info("Dispute registry loaded (%s reasons).", len(dispute_registry.types))
+    except Exception as e:
+        logger.warning("Dispute registry unavailable — dispute handling disabled: %s", e)
+        dispute_registry = None
+
     # Graceful Redis fallback — app starts even when Redis is unavailable
     try:
         redis_client = redis.from_url(
@@ -118,6 +128,7 @@ async def lifespan(app: FastAPI):
     app.state.redis_client = redis_client
     app.state.sqlite_db = db_conn
     app.state.help_store = help_store
+    app.state.dispute_registry = dispute_registry
     app.state.app_settings = app_settings
 
     yield
@@ -156,6 +167,24 @@ def _metric_dict(metric: Any) -> dict | None:
     }
 
 
+def _sum_metrics(metrics: dict, *names: str) -> dict | None:
+    """Combine the metrics of agents that can run more than once in a request
+    (stored as name, name_2, name_3, ...)."""
+    items = [
+        _metric_dict(m) for key, m in metrics.items()
+        if any(key == n or key.startswith(f"{n}_") for n in names)
+    ]
+    items = [m for m in items if m]
+    if not items:
+        return None
+    return {
+        "model_used": items[0].get("model_used"),
+        "total_tokens": sum(m.get("total_tokens") or 0 for m in items),
+        "latency": round(sum(m.get("latency") or 0 for m in items), 3),
+        "cached_tokens": sum(m.get("cached_tokens") or 0 for m in items),
+    }
+
+
 def _build_agent_trace(response: dict) -> list[dict]:
     """Assemble an ordered, UI-friendly trace of what each backend agent did.
 
@@ -187,6 +216,25 @@ def _build_agent_trace(response: dict) -> list[dict]:
         "metrics": metric("guardrail"),
     })
 
+    # 1b) Dispute gate: only shown when a dispute was already open for this session
+    gate_kind = response.get("dispute_gate_kind")
+    gate_open = gate_kind is not None
+    if gate_open:
+        gate_summaries = {
+            "dispute": "Reply to the open dispute",
+            "side_question": "Unrelated question while a dispute is open",
+            "both": "Reply to the dispute plus an unrelated question",
+            "new_dispute": "Customer started a different dispute",
+        }
+        trace.append({
+            "agent": "dispute_gate",
+            "title": "Dispute Gate",
+            "status": "ok",
+            "summary": gate_summaries.get(gate_kind, str(gate_kind)),
+            "details": {"message_kind": gate_kind, "side_question": response.get("pipeline_query")},
+            "metrics": _sum_metrics(metrics, "disputes_extraction"),
+        })
+
     # 2) Context builder
     cb = response.get("context_builder_response")
     if cb is not None:
@@ -214,18 +262,37 @@ def _build_agent_trace(response: dict) -> list[dict]:
         bank = response.get("banksql_queries") or []
         help_q = response.get("help_center_queries") or []
         oos = response.get("out_of_scope_queries") or []
+        disp = response.get("dispute_queries") or []
         trace.append({
             "agent": "supervisor",
             "title": "Supervisor",
             "status": "ok",
-            "summary": f"{len(bank)} bank quer{'y' if len(bank) == 1 else 'ies'}, {len(help_q)} help, {len(oos)} out-of-scope",
+            "summary": (
+                f"{len(bank)} bank quer{'y' if len(bank) == 1 else 'ies'}, {len(help_q)} help, "
+                + (f"{len(disp)} dispute, " if disp else "")
+                + f"{len(oos)} out-of-scope"
+            ),
             "details": {
                 "classified": classified,
                 "banksql_queries": list(bank),
                 "help_center_queries": list(help_q),
+                "dispute_queries": list(disp),
                 "out_of_scope_queries": list(oos),
             },
             "metrics": metric("suprivisor"),
+        })
+
+    # 3a) Disputes agent
+    dispute = response.get("dispute_result")
+    if dispute is not None:
+        trace.append({
+            "agent": "disputes",
+            "title": "Disputes",
+            "status": "fallback" if dispute.status == "error" else "ok",
+            "summary": f"Status: {dispute.status}",
+            "details": {"status": dispute.status, "summary": dispute.summary, "data": dispute.data},
+            # the gate already accounts for its own extraction call
+            "metrics": _sum_metrics(metrics, *(("dispute_reply",) if gate_open else ("disputes_extraction", "dispute_reply"))),
         })
 
     # 3b) Help centre (RAG) branch
@@ -427,7 +494,10 @@ async def _prepare_request(request, input_request, openai_llm, prompts, logger, 
                               prompts=prompts,
                               logger=logger,
                               agent_subgraph=agent_subgraph,
-                              help_store=request.app.state.help_store)
+                              help_store=request.app.state.help_store,
+                              db_conn=db_conn,
+                              settings=app_settings,
+                              dispute_registry=request.app.state.dispute_registry)
     return app_settings, chat_history, graph_state, agent_graph
 
 
@@ -514,6 +584,7 @@ _STREAM_STEP_LABELS = {
     "sql_generation": "Looking up your transactions",
     "help_center": "Searching the Barclays help centre",
     "visualization_agent": "Preparing a chart",
+    "dispute_agent": "Reviewing your dispute",
     "response_generator": "Writing your answer",
     "fallback": "Preparing a response",
 }
@@ -543,6 +614,7 @@ async def process_stream(
 
     async def event_gen():
         final_state: dict = {}
+        streamed = ""   # the token text sent so far
         try:
             async for mode, chunk in agent_graph.app.astream(
                 graph_state, stream_mode=["updates", "messages", "values"]
@@ -563,6 +635,7 @@ async def process_stream(
                     if meta.get("langgraph_node") in ("response_generator", "help_center"):
                         text = agent_utils.message_to_text(msg_chunk)
                         if text:
+                            streamed += text
                             yield _sse({"type": "token", "text": text})
 
             # ---- Stream complete: assemble final answer + persist (mirrors /process) ----
@@ -570,6 +643,12 @@ async def process_stream(
             final_chat_response = (
                 resp_obj.generated_response if resp_obj else TECHNICAL_FALLBACK_MESSAGE
             )
+
+            # Text added to the reply after the model finished (the "your dispute is still
+            # open" reminder after a side question) is not model output, so it was not
+            # streamed. Send that tail so the live text matches the final reply.
+            if streamed and len(final_chat_response) > len(streamed) and final_chat_response.startswith(streamed):
+                yield _sse({"type": "token", "text": final_chat_response[len(streamed):]})
 
             save_chat_history(
                 redis_client, input_request.customer_id, input_request.session_id,

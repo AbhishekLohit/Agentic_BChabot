@@ -67,6 +67,7 @@ async def suprivisor_agent(
         # Update the state with classified queries
         banksql_queries = []
         help_center_queries = []
+        dispute_queries = []
         out_of_scope = []
 
         for sub in state.suprivisor_response.classified_sub_queries:
@@ -74,11 +75,14 @@ async def suprivisor_agent(
                 banksql_queries.append(sub.sub_query)
             elif sub.class_label == "HelpCenter":
                 help_center_queries.append(sub.sub_query)
+            elif sub.class_label == "Dispute":
+                dispute_queries.append(sub.sub_query)
             else:
                 out_of_scope.append(sub.sub_query)
 
         state.banksql_queries = banksql_queries
         state.help_center_queries = help_center_queries
+        state.dispute_queries = dispute_queries
         state.out_of_scope_queries = out_of_scope
         
 

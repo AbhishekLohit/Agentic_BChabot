@@ -20,6 +20,18 @@ def message_to_text(message) -> str:
     return str(content)
 
 
+def record_metric(agent_metrics: dict, name: str, metric) -> str:
+    """Store `metric` under `name`, suffixing _2, _3... when the name is already taken
+    (an agent can run more than once in one request). Returns the key used."""
+    key = name
+    n = 2
+    while key in agent_metrics:
+        key = f"{name}_{n}"
+        n += 1
+    agent_metrics[key] = metric
+    return key
+
+
 def agent_metrics(
         response_message: dict,
         latency: float

@@ -14,7 +14,9 @@ async def context_builder_agent(
     logger.info("Executing context builder agent.")
     
     try:
-        input_query = state.input_request.user_query
+        # pipeline_query is set when part of the message was a reply to an open dispute and
+        # only the rest should go through the normal pipeline.
+        input_query = state.pipeline_query or state.input_request.user_query
         logger.info(f"Chat history in context builder agent: {state.chat_history}")
     
         today_str = datetime.now().strftime("%Y-%m-%d")

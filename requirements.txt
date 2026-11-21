@@ -113,3 +113,4 @@ openpyxl
 beautifulsoup4
 lxml
 langchain-text-splitters
+pytest
