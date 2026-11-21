@@ -44,7 +44,6 @@ flowchart TD
         HELP["help_center<br/>RAG: HelpStore.search →<br/>strict-RAG answer + source links"]
         FB["fallback<br/>only node that emits a<br/>user-visible error message"]
         JOIN["join<br/>branch synchronisation"]
-        VIZ["visualization_agent<br/>decide chart + build Plotly JSON<br/>(skips if no data / fallback)"]
         RESP["response_generator<br/>rephrase SQL result + pass through<br/>help answer → final reply"]
         GEND(["END"])
     end
@@ -72,7 +71,7 @@ flowchart TD
     R_AFTSQL -->|no| JOIN
     HELP --> JOIN
     FB --> JOIN
-    JOIN --> VIZ --> RESP --> GEND
+    JOIN --> RESP --> GEND
 
     GEND --> TRACE
     TRACE --> UI
@@ -81,7 +80,7 @@ flowchart TD
     classDef agent fill:#e8f4fd,stroke:#0074a6,stroke-width:1px,color:#103040;
     classDef router fill:#fff4e6,stroke:#d98324,stroke-width:1px,color:#7a4a10;
     classDef io fill:#eef7ee,stroke:#2e7d32,color:#1b3d1b;
-    class GUARD,CB,SUP,HELP,FB,JOIN,VIZ,RESP,SUBGRAPH agent;
+    class GUARD,CB,SUP,HELP,FB,JOIN,RESP,SUBGRAPH agent;
     class R_GUARD,R_CB,R_SUP,R_AFTSQL router;
     class UI io;
 ```
@@ -138,7 +137,6 @@ Every agent is `async fn(state, llm, prompt, logger) → state`, calls the LLM, 
 | sql_execution | agents/sql_execution.py | — (DB call) | — |
 | sql_correction | agents/sql_correction.py | structured output | sql_correction.yml |
 | help_center | agents/help_center_agent.py | **streamed plain text** (`llm.astream`) | help_center_prompt.yml |
-| visualization_agent | agents/visualization_agent.py | structured output | visualization_agent_prompt.yml |
 | response_generator | agents/response_generator.py | **streamed plain text** (`llm.astream`) | response_generator_prompt.yml |
 | fallback | agents/fallback.py | — | — |
 

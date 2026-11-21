@@ -17,7 +17,6 @@ class AppSettings(BaseSettings):
     suprivisor_prompt_path: str = "suprivisor_prompt.yml"
     response_generator_prompt_path: str = "response_generator_prompt.yml"
     sql_correction_prompt_path: str = "sql_correction.yml"
-    visualization_agent_prompt_path: str = "visualization_agent_prompt.yml"
     history_summarizer_prompt_path: str = "history_summarizer_prompt.yml"
     help_center_prompt_path: str = "help_center_prompt.yml"
     db_path: str = "transactions.db"

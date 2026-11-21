@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-A FastAPI + LangGraph backend for a **banking-transactions chatbot** (Barclays-style "FinTell"). It accepts a natural-language user query, runs it through a security guardrail, splits/classifies it, then either (a) generates SQL against a single SQLite `transactions` table, executes it, and optionally builds a Plotly chart, or (b) answers a how-to question from a Barclays help-centre RAG store. The result is rephrased into a chat reply.
+A FastAPI + LangGraph backend for a **banking-transactions chatbot** (Barclays-style "FinTell"). It accepts a natural-language user query, runs it through a security guardrail, splits/classifies it, then either (a) generates SQL against a single SQLite `transactions` table, executes it, or (b) answers a how-to question from a Barclays help-centre RAG store. The result is rephrased into a chat reply.
 
 The default LLM provider is **Anthropic** (`claude-sonnet-4-6`), set by `LLM_PROVIDER` in [src/app_setting.py](src/app_setting.py). The provider is hot-swappable at runtime via `POST /update-settings` — supported values are `"openai"`, `"anthropic"`, `"gemini"`, `"groq"`. `text-embedding-3-small` (OpenAI) is the embedding model used by the help-centre store.
 
@@ -44,7 +44,7 @@ There is no test suite. `tests/data/` only holds hand-curated evaluation dataset
 
 `POST /process` and `POST /process-stream` share `_prepare_request()` in [src/app.py](src/app.py), which loads chat history (Redis, seeded from the last 24h of SQLite messages for a fresh conversation, summarised once there are ≥5 prior user turns), builds a `Graph_State`, and compiles the graphs per request. There are **two** graphs:
 
-- **Outer graph** ([src/agent_graph.py](src/agent_graph.py)) — `guardrail → {context_builder | fallback} → suprivisor → {sql_generation subgraph | help_center | fallback | END} → (help_center if the message also had a help query) → join → visualization_agent → response_generator → END`. Routing is in `_guardrail_router`, `_context_builder_router`, `_supervisor_router`, and `_after_sql_router`.
+- **Outer graph** ([src/agent_graph.py](src/agent_graph.py)) — `guardrail → {context_builder | fallback} → suprivisor → {sql_generation subgraph | help_center | fallback | END} → (help_center if the message also had a help query) → join → response_generator → END`. Routing is in `_guardrail_router`, `_context_builder_router`, `_supervisor_router`, and `_after_sql_router`.
 - **Inner subgraph** ([src/agent_subraph.py](src/agent_subraph.py)) — `sql_generation → sql_execution → {END | sql_correction → sql_execution | fallback}`. `sql_correction` runs at most once: `_sql_execution_router` checks `state.sql_query_correction` to avoid an infinite loop.
 
 The outer graph **adds the subgraph as a node** (`builder.add_node("sql_generation", self.agent_subgraph.app)`), so both states must remain field-compatible where they overlap. `Graph_State` and `SubGraph_State` are both defined in [src/app_models.py](src/app_models.py); changes to fields the subgraph reads/writes (e.g. `text2sql_generator_response`, `database_query_results`, `sql_query_correction`, `banksql_queries`, `agent_metrics`) must be made in both models.
@@ -66,7 +66,6 @@ Each agent is a stand-alone async function in `src/agents/` that takes `(state, 
 | `sql_execution` | [src/agents/sql_execution.py](src/agents/sql_execution.py) | Runs the SQL; auto-adds/clamps `LIMIT` to `MAX_RESULT_ROWS` (20). |
 | `sql_correction` | [src/agents/sql_correction.py](src/agents/sql_correction.py) | Repairs a failed SQL query (runs at most once). |
 | `help_center` | [src/agents/help_center_agent.py](src/agents/help_center_agent.py) | Strict-RAG answer from `HelpStore` (Chroma, `help_store/`); grounded "couldn't find it" reply when nothing clears the similarity threshold. |
-| `visualization_agent` | [src/agents/visualization_agent.py](src/agents/visualization_agent.py) | Decides whether to chart; builds Plotly JSON from SQL results. Skipped on fallback / no data. |
 | `response_generator` | [src/agents/response_generator.py](src/agents/response_generator.py) | Rephrases SQL results (and passes through help answers) into the final reply. |
 | `fallback` | [src/agents/fallback.py](src/agents/fallback.py) | Turns `state.fallback_response` into a user-visible message (no LLM, no prompt). |
 | `history_summarizer` | [src/agents/history_summarizer.py](src/agents/history_summarizer.py) | Not a graph node; called from `_prepare_request` to compress long chat history. |
@@ -109,6 +108,6 @@ Prompts live as YAML in `prompts/*.yml` with a single `prompt:` key. [src/utils/
 - **The misspelling `suprivisor` (instead of `supervisor`) is load-bearing.** It appears in the prompt filename, the `Prompts.suprivisor_prompt` field, the agent module/function names, and the `Graph_State.suprivisor_response` field. Don't "fix" it as part of an unrelated change.
 - `Agent_Graph.__init__` sets `self.logger = logger` **after** `self.app = self._workflow()`, but `_workflow` doesn't use the logger so this works. Don't reorder so a node method that needs the logger gets called during compile.
 - `SubGraph_State.agent_metrics` is expected to already be a dict when the subgraph starts. In the normal flow the `guardrail` agent initializes `agent_metrics = {}`. If you add a graph path that reaches the subgraph without going through `guardrail`, initialize it yourself.
-- `_supervisor_router` picks a single primary route (BankSQL first, else help, else fallback); `_after_sql_router` chains help_center after the SQL branch so the two never write the shared `agent_metrics` channel concurrently. The `join` node synchronises before `visualization_agent`.
+- `_supervisor_router` picks a single primary route (BankSQL first, else help, else fallback); `_after_sql_router` chains help_center after the SQL branch so the two never write the shared `agent_metrics` channel concurrently. The `join` node synchronises before `response_generator`.
 - Prompt-cache hints: agents send the system prompt with `cache_control` (ephemeral, 1h). Edit prompt text freely, but expect the first call afterwards to be a cache miss.
 - The LLM client (`clients/llm_client.py`) supports `openai`, `anthropic`, `gemini`, `groq`; each reads its own API key from the environment. Embeddings always use OpenAI regardless of the chat provider.

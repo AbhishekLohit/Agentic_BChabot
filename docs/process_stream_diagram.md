@@ -29,7 +29,6 @@ flowchart TD
         HELP["help_center<br/>strict-RAG answer (streams tokens)"]
         FB["fallback<br/>user-visible error"]
         JOIN["join"]
-        VIZ["visualization_agent<br/>Plotly JSON (skips if no data)"]
         RESP["response_generator<br/>final reply (streams tokens)"]
         GEND(["END"])
     end
@@ -89,7 +88,7 @@ flowchart TD
     rAFT -->|no| JOIN
     HELP --> JOIN
     FB --> JOIN
-    JOIN --> VIZ --> RESP --> GEND
+    JOIN --> RESP --> GEND
 
     %% --------- help RAG ---------
     HELP -->|search| CHROMA
@@ -102,7 +101,6 @@ flowchart TD
     SUP -.-> LLM
     T2S -.-> LLM
     CORR -.-> LLM
-    VIZ -.-> LLM
     HELP -.token stream.-> LLM
     RESP -.token stream.-> LLM
 
@@ -126,7 +124,7 @@ flowchart TD
     classDef router fill:#fff4e6,stroke:#d98324,color:#7a4a10;
     classDef svc fill:#eef7ee,stroke:#2e7d32,color:#1b3d1b;
     classDef sse fill:#f3e8fd,stroke:#7c3aed,color:#3b1d6e;
-    class GUARD,CB,SUP,HELP,FB,JOIN,VIZ,RESP,T2S,EXEC,CORR,SFB agent;
+    class GUARD,CB,SUP,HELP,FB,JOIN,RESP,T2S,EXEC,CORR,SFB agent;
     class rG,rCB,rSUP,rAFT,rEX router;
     class REDIS,SQLDB,CHROMA,EMB,LLM svc;
     class EVSTEP,EVTOK,EVFIN sse;

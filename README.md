@@ -1,7 +1,7 @@
 # FinTell — Banking Transactions Chatbot
 
 FastAPI + LangGraph backend with a single-page chat UI. Users ask natural-language questions about
-their transactions (answered via text-to-SQL over SQLite, with optional Plotly charts) or about
+their transactions (answered via text-to-SQL over SQLite) or about
 Barclays help-centre topics (answered via RAG over a Chroma store).
 
 ## Run locally

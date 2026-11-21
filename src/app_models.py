@@ -9,7 +9,6 @@ class Prompts(BaseModel):
     text2sqlgenerator_prompt: BasePromptTemplate
     responsegenerator_prompt: BasePromptTemplate
     sql_correction_prompt: BasePromptTemplate
-    visualization_prompt: BasePromptTemplate
     history_summarizer_prompt: BasePromptTemplate
     help_center_prompt: BasePromptTemplate
 

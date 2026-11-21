@@ -24,7 +24,6 @@ def get_all_prompts(appsettings:AppSettings
         text2sqlgenerator_prompt = read_prompt_file(appsettings.text2sql_generator_prompt_path),
         responsegenerator_prompt= read_prompt_file(appsettings.response_generator_prompt_path),
         sql_correction_prompt= read_prompt_file(appsettings.sql_correction_prompt_path),
-        visualization_prompt= read_prompt_file(appsettings.visualization_agent_prompt_path),
         history_summarizer_prompt= read_prompt_file(appsettings.history_summarizer_prompt_path),
         help_center_prompt= read_prompt_file(appsettings.help_center_prompt_path),
     )

@@ -5,7 +5,6 @@ from agents.context_builder import context_builder_agent
 from agents.supervisor import suprivisor_agent
 from agents.response_generator import response_generator_agent
 from agents.fallback import fallback_agent
-from agents.visualization_agent import visualization_agent
 from agents.guardrails import input_guardrail_node
 from agents.help_center_agent import help_center_agent
 from typing import Any as LLMType
@@ -37,7 +36,6 @@ class Agent_Graph:
         builder.add_node("sql_generation", self.agent_subgraph.app)
         builder.add_node("help_center", self._help_center_agent_node)
         builder.add_node("response_generator", self._response_generator_agent)
-        builder.add_node("visualization_agent", self._visualization_agent_node)
         builder.add_node("fallback", self._fallback)
         builder.add_node("join", self._join)
 
@@ -84,8 +82,7 @@ class Agent_Graph:
         )
         builder.add_edge("help_center", "join")
         builder.add_edge("fallback", "join")
-        builder.add_edge("join", "visualization_agent")
-        builder.add_edge("visualization_agent", "response_generator")
+        builder.add_edge("join", "response_generator")
         builder.add_edge("response_generator", END)
 
         app = builder.compile()
@@ -182,15 +179,6 @@ class Agent_Graph:
             self.llm,
             self.prompts.help_center_prompt,
             self.help_store,
-            self.logger,
-        )
-        return state
-
-    async def _visualization_agent_node(self, state: Graph_State) -> Graph_State:
-        await visualization_agent(
-            state,
-            self.llm,
-            self.prompts.visualization_prompt,
             self.logger,
         )
         return state
