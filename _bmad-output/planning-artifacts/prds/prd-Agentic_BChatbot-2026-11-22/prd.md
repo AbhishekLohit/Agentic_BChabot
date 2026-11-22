@@ -64,7 +64,7 @@ For the demo, that means a presenter never sees a Chart where one doesn't belong
 - **Data Point** — One plotted value: a Category or a Time Point together with its amount.
 - **SQL Sub-query** — One transaction question that the supervisor split out of the user's message for text-to-SQL. FinTell answers all of a request's SQL Sub-queries with one combined SQL statement.
 - **Result** — The rows returned by the request's one SQL statement. There is at most one Result per request.
-- **Raw Transaction List** — A Result in which each row is one transaction rather than an aggregate (for example "my last 10 payments"), including any Result that the row cap has truncated.
+- **Raw Transaction List** — A Result in which each row is one transaction rather than an aggregate (for example "my last 10 payments"). A Result that the row cap truncated counts as one only if it isn't a Category comparison or Time Point trend. A truncated comparison or trend has more than 20 Data Points, so it reports `too_many_categories` or `too_many_time_points`.
 - **Explicit Chart Request** — A user message that asks for a visual in so many words: "chart", "graph", "plot", "visualise"/"visualize", or a named chart type ("bar", "line", "pie"…). "Show my…" or "trend" on its own is not an Explicit Chart Request.
 - **Chart Eligibility Rules** — The fixed rules in §4.1 that decide whether a Chart is shown and which type.
 - **Chart Decision** — The outcome of applying the Chart Eligibility Rules to one request: a chart type (bar or line), or "no chart" with a Skip Reason.
@@ -118,6 +118,7 @@ FinTell shows no Chart when any case below applies. When more than one applies, 
 - Each case in the table gives no Chart and the stated Skip Reason. Where cases overlap, the reported Skip Reason follows the table order (for example, an empty Result after a fallback reports `fallback`).
 - In every case, the Text Reply comes from the unchanged response flow using the same Result. The only added text is the FR-5 note.
 - A supervisor error that ends with no Reply at all is a known baseline defect (spine AD-7). It is exempt from this table and from FR-14 until that defect is fixed.
+- A Result of only 1–2 rows that isn't a Raw Transaction List reports `too_few_points`, even if its shape would otherwise be `unsuitable_shape`. For example, "current balance" and "income vs spending" both report `too_few_points`. The exact order used for dataset labels is the decision table in spine AD-20.
 
 #### FR-4: Bar Chart and Line Chart only
 
@@ -190,10 +191,10 @@ Every Chart has a title, labelled axes and USD amounts. Realizes UJ-1, UJ-2.
 
 #### FR-9: Placement and theme
 
-The Chart is shown directly under the Text Reply it belongs to, and follows the UI's current light or dark theme.
+The Chart is shown directly under the Text Reply it belongs to, and uses the UI's existing colour tokens. The UI has one light palette today; a dark theme is not in scope.
 
 **Consequences (testable):**
-- Switching theme leaves the Chart readable (axes, labels and the plotted series stay visible).
+- The Chart's colours come from the UI's existing tokens, so axes, labels and the plotted series are readable on the chat background.
 - The Chart fits the chat column at 1280 px browser width without horizontal scrolling. Phone-width layout is not a v1 target.
 
 #### FR-10: Streaming behaviour

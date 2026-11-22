@@ -1,0 +1,326 @@
+<title>FinTell Chart Path</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: one reading column (~72ch) with wide panels for the table and diagrams; ledger-like rules, ink-blue accent. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #16202b;
+  --muted: #566476;
+  --rule: #d9dee6;
+  --accent: #1f5f8b;
+  --accent-soft: #e3eef6;
+  --ok: #2e7d4f;
+  --ok-soft: #e4f3ea;
+  --skip: #8a5a12;
+  --skip-soft: #f7ecd9;
+  --err: #a8322d;
+  --err-soft: #f8e3e1;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #18202a; --fg: #e4e9ef; --muted: #9aa8b8; --rule: #2b3643;
+    --accent: #7db7e0; --accent-soft: #1d3346; --ok: #7cc79a; --ok-soft: #1b3326;
+    --skip: #e0b36a; --skip-soft: #3a2c15; --err: #ee8e88; --err-soft: #3d1f1d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #18202a; --fg: #e4e9ef; --muted: #9aa8b8; --rule: #2b3643;
+  --accent: #7db7e0; --accent-soft: #1d3346; --ok: #7cc79a; --ok-soft: #1b3326;
+  --skip: #e0b36a; --skip-soft: #3a2c15; --err: #ee8e88; --err-soft: #3d1f1d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 4rem;
+}
+main { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 3rem; }
+.prose { max-width: 70ch; }
+header { padding-block: 3rem 0; display: flex; flex-direction: column; gap: .75rem; border-bottom: 1px solid var(--rule); padding-bottom: 2rem; }
+.eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(2rem, 5vw, 2.9rem); line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.6rem; line-height: 1.2; margin: 0 0 .5rem; text-wrap: balance; }
+h3 { font-size: 1rem; font-weight: 600; margin: 0 0 .35rem; }
+p { margin: 0 0 .9rem; }
+.lede { font-size: 1.12rem; color: var(--muted); max-width: 62ch; margin: 0; }
+code, .mono { font-family: var(--font-mono); font-size: .88em; }
+code { background: var(--accent-soft); color: var(--fg); padding: .08em .35em; border-radius: 4px; }
+section { display: flex; flex-direction: column; gap: 1rem; }
+.meta { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; font-size: .9rem; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; }
+
+.rules { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.rules li { background: var(--surface); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+.rules .ad { font-family: var(--font-mono); font-size: .75rem; color: var(--accent); letter-spacing: .04em; }
+.rules p { margin: 0; font-size: .95rem; color: var(--muted); }
+
+.diagram { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+pre.mermaid { margin: 0; background: transparent; }
+
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 1.5rem; align-items: start; }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+
+.samples { display: flex; flex-direction: column; gap: .5rem; }
+.sample {
+  text-align: left; font: inherit; font-size: .95rem; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 8px; padding: .7rem .85rem; cursor: pointer; display: flex; flex-direction: column; gap: .15rem;
+}
+.sample:hover { border-color: var(--accent); }
+.sample:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sample[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.sample .q { font-weight: 500; }
+.sample .r { font-family: var(--font-mono); font-size: .78rem; color: var(--muted); overflow-wrap: anywhere; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+td.n { font-family: var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; width: 2.5rem; }
+td.out { white-space: nowrap; }
+tr.hit td { background: var(--accent-soft); }
+tr.hit td.n { color: var(--accent); font-weight: 500; }
+tr.passed td { color: var(--muted); }
+.pill { display: inline-block; font-family: var(--font-mono); font-size: .78rem; padding: .1rem .5rem; border-radius: 999px; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.skip { background: var(--skip-soft); color: var(--skip); }
+.pill.err { background: var(--err-soft); color: var(--err); }
+
+.verdict { border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .4rem; }
+.verdict .line { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.verdict p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+.contracts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.contract { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.1rem; min-width: 0; display: flex; flex-direction: column; gap: .5rem; }
+.contract pre { margin: 0; font-family: var(--font-mono); font-size: .8rem; line-height: 1.5; overflow-x: auto; color: var(--fg); }
+.contract .owner { font-size: .85rem; color: var(--muted); }
+
+.owners { width: 100%; }
+.owners td:first-child { font-weight: 500; white-space: nowrap; }
+
+ol.steps { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: .4rem; }
+ul.plain { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .35rem; }
+.assume { font-family: var(--font-mono); font-size: .75rem; color: var(--skip); background: var(--skip-soft); padding: .05rem .4rem; border-radius: 4px; }
+footer { color: var(--muted); font-size: .85rem; border-top: 1px solid var(--rule); padding-top: 1rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<main>
+  <header>
+    <span class="eyebrow">FinTell · Transaction Charts · architecture walkthrough</span>
+    <h1>The chart path, end to end</h1>
+    <p class="lede">How a bar or line chart gets under a FinTell reply, which code owns each piece, and why a chart can never cost the user their answer.</p>
+    <div class="meta">
+      <span>Source <b>ARCHITECTURE-SPINE.md</b> (AD-17 to AD-25)</span>
+      <span>PRD <b>prd-Agentic_BChatbot-2026-11-22</b></span>
+      <span>Updated <b>22 Nov 2026</b></span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Five rules to keep in your head</h2>
+    <ul class="rules">
+      <li><span class="ad">AD-17</span><h3>One code-only node</h3><p><code>chart_builder</code> runs on every path, between <code>join</code> and <code>response_generator</code>. It makes no LLM, SQL or network calls, so the first streamed token is not delayed.</p></li>
+      <li><span class="ad">AD-18</span><h3>It never touches the fallback</h3><p>Any failure becomes <code>chart_error</code> on its own field. The Text Reply is unchanged.</p></li>
+      <li><span class="ad">AD-20</span><h3>The SQL carries the shape</h3><p>Fixed column names such as <code>category</code> + <code>spending</code>, or <code>period</code> + <code>balance</code>. They are cached with the SQL, so cold and warm runs agree.</p></li>
+      <li><span class="ad">AD-21</span><h3>The note is code, not prose</h3><p>One fixed string per skip reason, added by <code>response_generator</code> only when the user asked for a chart.</p></li>
+      <li><span class="ad">AD-23</span><h3>The UI owns the look</h3><p>The backend sends points and labels. The browser picks colours from its own tokens and draws nothing if anything looks wrong.</p></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Where it sits in the graph</h2>
+    <p class="prose">Every route converges at <code>join</code> before the reply is written. That is why the chart decision can see every outcome, fallbacks included, and still finish before the reply streams. It also lets the no-chart note go into the reply text.</p>
+    <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    G[guardrail] --> CB[context_builder] --> SUP[suprivisor]
+    SUP -->|BankSQL| SQL[sql_generation subgraph]
+    SUP -->|help only| HC[help_center]
+    SUP -->|out of scope| FB[fallback]
+    G -->|violation| FB
+    SQL -->|also help| HC
+    SQL --> J[join]
+    HC --> J
+    FB --> J
+    J --> CH["chart_builder<br/>code-only · optional"]
+    CH --> RG[response_generator]
+    RG --> OUT["envelope<br/>response · visualization · agent_trace"]
+</pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>Try the decision table</h2>
+    <p class="prose">The rules check ten rows in order, and the first match wins. Pick a question to see which row it lands on. The same table is used to label the evaluation dataset.</p>
+    <div class="split">
+      <div class="samples" id="samples" role="group" aria-label="Sample questions"></div>
+      <div style="display:flex;flex-direction:column;gap:1rem;min-width:0">
+        <div class="verdict" id="verdict" aria-live="polite"></div>
+        <div class="table-wrap">
+          <table id="dtable">
+            <thead><tr><th>#</th><th>Condition</th><th>Outcome</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The contracts between stories</h2>
+    <p class="prose">These shapes are fixed so that the people building the prompts, the rules, the trace, the UI and the eval runner can't drift apart.</p>
+    <div class="contracts">
+      <div class="contract">
+        <h3>SQL output columns</h3>
+<pre>label  merchant | category | subcategory | period
+value  spending | income | net | balance
+opt.   period_start, period_end
+
+period = strftime('%Y' | '%Y-%m' |
+                  '%G-W%V' | '%Y-%m-%d')</pre>
+        <span class="owner">Owned by the text2sql and sql_correction prompts, together with the constants in <code>chart_rules</code>.</span>
+      </div>
+      <div class="contract">
+        <h3>ChartResponse (state)</h3>
+<pre>decision         bar | line | none
+skip_reason      SkipReason | None
+explicit_request bool
+spec             ChartSpec | None
+
+ChartSpec  chart_type, title,
+           x_label, y_label,
+           points[{label, value}]</pre>
+        <span class="owner">Written only by <code>chart_builder</code>. Labels are display-ready and points arrive in plot order.</span>
+      </div>
+      <div class="contract">
+        <h3>Trace entry</h3>
+<pre>agent    "chart_builder"
+status   ok | skipped | error
+details  decision, skip_reason,
+         explicit_request,
+         note_appended, point_count,
+         title
+metrics  null</pre>
+        <span class="owner">Built by <code>_build_agent_trace</code>. The eval runner reads only this and <code>visualization.chart_type</code>.</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Who owns what</h2>
+    <div class="table-wrap">
+      <table class="owners">
+        <thead><tr><th>Piece</th><th>Owner</th><th>Never</th></tr></thead>
+        <tbody>
+          <tr><td>Eligibility rules, pattern, notes, titles</td><td><code>utils/chart_rules.py</code></td><td>Copied into any other module</td></tr>
+          <tr><td><code>chart_response</code></td><td><code>agents/chart_builder.py</code></td><td>Written by any other stage</td></tr>
+          <tr><td>Reply text, including the note</td><td><code>response_generator</code></td><td>Note worded by the LLM</td></tr>
+          <tr><td><code>visualization</code> envelope value</td><td>One shared helper in <code>app.py</code></td><td>Built differently by the two endpoints</td></tr>
+          <tr><td>Colours, axes, layout</td><td><code>index.html</code></td><td>Sent from the backend</td></tr>
+          <tr><td>Persistence</td><td>The shell</td><td>Charts or decisions saved anywhere</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="prose">
+    <h2>Before the demo</h2>
+    <ol class="steps">
+      <li>Run <code>shift</code> and rebuild <code>transactions.db</code>. The data currently ends on 13 June 2026, so "last month" returns nothing.</li>
+      <li>After the prompt changes, run <code>DELETE FROM query_cache</code> and delete the Redis <code>qcache:*</code> keys.</li>
+      <li>Start the app with <code>HISTORY_LOOKBACK_HOURS=0</code> for evaluation runs, and give every request a fresh <code>session_id</code>.</li>
+      <li>Run the dataset cold, then warm, then on <code>/process-stream</code>, then with <code>CHART_FAULT_INJECTION=true</code>. Do one more run with <code>CHART_FEATURE_ENABLED=false</code> as the latency baseline. Keep to 18 requests a minute or fewer.</li>
+    </ol>
+  </section>
+
+  <section class="prose">
+    <h2>Still to confirm</h2>
+    <p>These calls were made on the fast path and are safe to build against. Change them in review if they're wrong.</p>
+    <ul class="plain">
+      <li><span class="assume">ASSUMPTION</span> The <code>chart_builder</code> step shows no progress label while it runs.</li>
+      <li><span class="assume">ASSUMPTION</span> "No chart" or "without a graph" doesn't count as an Explicit Chart Request. A bare "pie" counts only in a phrase like "as a pie" or "pie chart".</li>
+      <li><span class="assume">ASSUMPTION</span> The supervisor drops presentation words from sub-queries. The guardrail prompt stays unchanged.</li>
+      <li><span class="assume">ASSUMPTION</span> Plotly.js stays at 2.35.2 for v1. Upstream is on 4.3.0.</li>
+      <li><span class="assume">ASSUMPTION</span> Two settings: <code>CHART_FEATURE_ENABLED</code> and <code>CHART_FAULT_INJECTION</code>. The eval runner lives at <code>scripts/eval_charts.py</code>.</li>
+    </ul>
+  </section>
+
+  <footer>Full rules, as-is exceptions and deferred items are in ARCHITECTURE-SPINE.md. The reasons behind each decision are in its .memlog.md.</footer>
+</main>
+
+<script>
+(function () {
+  var rows = [
+    ["Something on the chart path threw an exception", "chart_error", "err"],
+    ["A fallback was set on any path", "fallback", "skip"],
+    ["No transaction sub-query (help only)", "no_transaction_data", "skip"],
+    ["Result empty, or all values null", "empty_result", "skip"],
+    ["Per-transaction column present, or truncated without the column convention", "raw_list", "skip"],
+    ["Not truncated and only 1–2 rows", "too_few_points", "skip"],
+    ["Columns off-convention, duplicate labels, bad values or mixed period grains", "unsuitable_shape", "skip"],
+    ["Categories: truncated or more than 8", "too_many_categories", "skip"],
+    ["Time points: truncated or more than 12", "too_many_time_points", "skip"],
+    ["Otherwise", "bar / line chart", "ok"]
+  ];
+  var samples = [
+    { q: "How much did I spend by category last month?", r: "category, spending · 5 rows", hit: 10, out: "Bar chart", why: "One label column and one value column, with 5 categories (within 3–8).", note: false },
+    { q: "Show my balance trend this year", r: "period ('2026-01'…), balance · 11 rows", hit: 10, out: "Line chart", why: "Monthly periods built with strftime, with the end-of-month balance for each. 11 points is within 3–12.", note: false },
+    { q: "Give me a pie chart of my spending by category", r: "category, spending · 5 rows", hit: 10, out: "Bar chart", why: "The requested type is never read, so a pie request becomes a bar chart. The substitution isn't mentioned.", note: false },
+    { q: "Chart my spending by merchant", r: "merchant, spending · 14 rows", hit: 8, out: "No chart", why: "14 merchants is over the limit of 8. The user asked for a chart, so the note is added.", note: true },
+    { q: "Daily spending across the whole month", r: "period ('2026-05-01'…), spending · 20 rows + cap notice", hit: 9, out: "No chart", why: "The row cap cut it at 20, so it has more than 12 time points. It reports too_many_time_points, not raw_list.", note: false },
+    { q: "Show my last 10 transactions", r: "transaction_id, transaction_date, amount_usd … · 10 rows", hit: 5, out: "No chart", why: "Per-transaction columns mean it's a raw list.", note: false },
+    { q: "What's my current balance?", r: "balance · 1 row", hit: 6, out: "No chart", why: "A single value. Row 6 catches it before the shape check.", note: false },
+    { q: "Spending per category per month", r: "category, period, spending · 18 rows", hit: 7, out: "No chart", why: "Grouped two ways, with two label columns. It is not a single series.", note: false },
+    { q: "How do I reset my PIN?", r: "help only · no SQL", hit: 3, out: "No chart", why: "There is no transaction data to chart.", note: false },
+    { q: "Plot my income vs spending (chart path failure injected)", r: "CHART_FAULT_INJECTION=true", hit: 1, out: "No chart", why: "The failure stays on the chart's own field. The reply is untouched and gets no note.", note: false }
+  ];
+
+  var tbody = document.querySelector("#dtable tbody");
+  rows.forEach(function (r, i) {
+    var tr = document.createElement("tr");
+    tr.innerHTML = '<td class="n">' + (i + 1) + '</td><td></td><td class="out"><span class="pill ' + r[2] + '"></span></td>';
+    tr.children[1].textContent = r[0];
+    tr.querySelector(".pill").textContent = r[1];
+    tbody.appendChild(tr);
+  });
+
+  var box = document.getElementById("samples");
+  var verdict = document.getElementById("verdict");
+  var buttons = [];
+
+  function select(idx) {
+    var s = samples[idx];
+    buttons.forEach(function (b, i) { b.setAttribute("aria-pressed", i === idx ? "true" : "false"); });
+    Array.prototype.forEach.call(tbody.children, function (tr, i) {
+      tr.classList.toggle("hit", i + 1 === s.hit);
+      tr.classList.toggle("passed", i + 1 < s.hit);
+    });
+    var cls = s.out === "No chart" ? (s.hit === 1 ? "err" : "skip") : "ok";
+    verdict.innerHTML = '<div class="line"><span class="pill ' + cls + '"></span><strong></strong></div><p></p><p class="mono" style="font-size:.8rem"></p>';
+    verdict.querySelector(".pill").textContent = "row " + s.hit;
+    verdict.querySelector("strong").textContent = s.out + (s.out === "No chart" ? " — " + rows[s.hit - 1][1] : "");
+    verdict.querySelectorAll("p")[0].textContent = s.why;
+    verdict.querySelectorAll("p")[1].textContent = "note_appended: " + s.note;
+  }
+
+  samples.forEach(function (s, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "sample";
+    b.id = "sample-" + i;
+    b.innerHTML = '<span class="q"></span><span class="r"></span>';
+    b.querySelector(".q").textContent = s.q;
+    b.querySelector(".r").textContent = s.r;
+    b.addEventListener("click", function () { select(i); });
+    box.appendChild(b);
+    buttons.push(b);
+  });
+  select(0);
+})();
+</script>
