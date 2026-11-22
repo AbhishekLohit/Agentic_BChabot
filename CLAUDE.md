@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A FastAPI + LangGraph backend for a **banking-transactions chatbot**. It accepts a natural-language user query, runs it through security guardrails, classifies/decomposes it, generates SQL against a single SQLite `transactions` table, executes the query, optionally produces a Plotly chart, and rephrases the result into a chat reply. The repo was migrated from a food-ordering chatbot to a banking one; some stale food/restaurant references still exist in comments, in `data/schema_notes.md`, in `utils/agent_utils.py` (`FIELD_TO_INDEX_KEY`), and in the test-data-generation scenarios — treat those as legacy unless explicitly being reused.
 
-The default LLM provider is **Anthropic** (`claude-sonnet-4-6`), set by `LLM_PROVIDER` in [src/app_setting.py](src/app_setting.py). The provider is hot-swappable at runtime via `POST /update-settings` — supported values are `"openai"`, `"anthropic"`, `"gemini"`, `"groq"`. `text-embedding-3-small` (OpenAI) is the embedding model used for non-runtime utilities.
+The default LLM provider is **Anthropic** (`claude-sonnet-4-6`), set by `LLM_PROVIDER` in [src/app_setting.py](src/app_setting.py). The provider is hot-swappable at runtime via `POST /update-settings` — supported values are `"openai"`, `"qwen"`, `"anthropic"`, `"gemini"`, `"groq"`. Qwen uses the OpenAI-compatible client with `QWEN_API_KEY`, `QWEN_API_BASE_URL`, `QWEN_MODEL`, and `QWEN_CA_CERT`. `text-embedding-3-small` (OpenAI) is the embedding model used for non-runtime utilities.
 
 ## Common commands
 
@@ -46,7 +46,7 @@ python tests/test_data_generation.py
 python tests/test_process_debug.py
 ```
 
-`.env` at the repo root must contain the API key for whichever provider is active (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`). The file is gitignored and read by `clients/llm_client.py` via `python-dotenv`.
+`.env` at the repo root must contain the API key for whichever provider is active (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QWEN_API_KEY`). For Qwen, it must also point `QWEN_CA_CERT` to the assigned CA certificate file. The file is gitignored and read by `clients/llm_client.py` via `python-dotenv`.
 
 There is no test framework wired up — `tests/test_*.py` files are integration drivers (HTTP clients, eval harnesses, dataset generators), **not** pytest suites. Don't try to run them with `pytest`.
 
@@ -118,5 +118,5 @@ Prompts live as YAML in `prompts/*.yml` with a single `prompt:` key. [src/utils/
 - `_supervisor_router` can return **multiple routes** simultaneously (e.g. both `sql_generation` and `fallback` when there are multiple banksql queries). LangGraph fans these out; the `join` node synchronises them before `visualization_agent`.
 - `transactions.db` is checked into the repo (~880KB). `orders.db` (~13MB) is the legacy food-ordering DB and is unused by the current code path; leave it alone unless intentionally removing legacy assets.
 - The `data/embeddings_data/` FAISS indices and `chroma_store/` are leftovers from the food-ordering version. The current banking flow does not load any vector store at runtime — `get_vectordb_data` in `file_utils.py` exists but is not called from `lifespan`.
-- The LLM client (`clients/llm_client.py`) supports four providers: `openai`, `anthropic`, `gemini`, `groq`. The active provider is determined by `AppSettings.LLM_PROVIDER` (default `"anthropic"`). Each provider reads its own API key from the environment. Embeddings always use OpenAI regardless of the chat provider.
+- The LLM client (`clients/llm_client.py`) supports `openai`, `qwen`, `anthropic`, `gemini`, and `groq`. The active provider is determined by `AppSettings.LLM_PROVIDER` (default `"anthropic"`). Each provider reads its own API key from the environment. Qwen uses an OpenAI-compatible endpoint and its configured CA certificate. Embeddings always use OpenAI regardless of the chat provider and are optional at runtime.
 - `dashboard.py` is a minimal Streamlit app that renders `src/index.html` inside a full-screen iframe — it is just a UI shell and does not contain application logic.

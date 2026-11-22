@@ -3,6 +3,10 @@ from pydantic_settings import BaseSettings
 class AppSettings(BaseSettings):
     LLM_PROVIDER: str = "anthropic"
     OPENAI_API_KEY: str | None = None
+    QWEN_API_KEY: str | None = None
+    QWEN_API_BASE_URL: str = "https://103.42.50.41:1031/v1"
+    QWEN_MODEL: str = "Qwen/Qwen3-8B"
+    QWEN_CA_CERT: str | None = None
     GEMINI_API_KEY: str | None = None
     GROQ_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None

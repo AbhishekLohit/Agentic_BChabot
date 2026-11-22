@@ -137,6 +137,27 @@ https://your-app-name.up.railway.app
 ```
 That's it — the client opens it and sees the chat UI directly. No Streamlit needed since FastAPI already serves `index.html` at `GET /`.
 
+## Run locally with Qwen3-8B
+
+The app can use the assigned OpenAI-compatible Qwen endpoint for chat. Copy `.env.example` to `.env` and set:
+
+```dotenv
+LLM_PROVIDER=qwen
+QWEN_API_KEY=your_rotated_qwen_api_key
+QWEN_API_BASE_URL=https://103.42.50.41:1031/v1
+QWEN_MODEL=Qwen/Qwen3-8B
+QWEN_CA_CERT=C:\Users\yourname\Downloads\vm07-ca.crt
+```
+
+Download the CA certificate assigned to your group and set `QWEN_CA_CERT` to its actual path. The app uses that certificate for both synchronous and asynchronous HTTPS requests. Keep `.env` local; it is ignored by Git. An `OPENAI_API_KEY` is not required for Qwen chat, but OpenAI-dependent embeddings/help-centre retrieval and voice transcription remain unavailable without it.
+
+Install dependencies and start the backend from the repository root:
+
+```powershell
+pip install -r requirements.txt
+python src/app.py
+```
+
 ---
 
 ## Quick Checklist Before First Demo

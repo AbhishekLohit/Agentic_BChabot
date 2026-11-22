@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, Request, UploadFile, File
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.responses import JSONResponse, StreamingResponse
 import json
 from contextlib import asynccontextmanager
@@ -73,25 +73,36 @@ async def lifespan(app: FastAPI):
         os.environ["LANGCHAIN_API_KEY"] = app_settings.LANGCHAIN_API_KEY
         os.environ["LANGCHAIN_PROJECT"] = app_settings.LANGCHAIN_PROJECT
 
-    llm = get_configured_llm()
-    llm_embeddings = get_openai_embeddings(model="text-embedding-3-small")
-    prompts = get_all_prompts(app_settings)
     logger = setup_logging()
+    llm = get_configured_llm()
 
-    # Barclays help-centre RAG store. Opening the persisted Chroma dir is cheap;
-    # if the KB hasn't been built yet (or fails to open) the help branch degrades
-    # gracefully to a "couldn't find it" reply rather than crashing startup.
-    try:
-        help_store = HelpStore(
-            persist_directory=_resolve_path(app_settings.help_store_dir),
-            collection_name=app_settings.help_collection,
-            model=app_settings.EMBED_MODEL,
-            top_k=app_settings.help_top_k,
-            threshold=app_settings.help_similarity_threshold,
+    openai_api_key = app_settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+    if openai_api_key:
+        llm_embeddings = get_openai_embeddings(model="text-embedding-3-small")
+    else:
+        llm_embeddings = None
+        logger.info(
+            "OpenAI-dependent embeddings, help-centre retrieval, and voice transcription "
+            "are disabled because no OpenAI API key is configured."
         )
-        logger.info("Help store loaded (%s chunks).", help_store.count())
-    except Exception as e:
-        logger.warning("Help store unavailable — help-centre answers disabled: %s", e)
+
+    prompts = get_all_prompts(app_settings)
+
+    if openai_api_key:
+        # HelpStore uses OpenAI embeddings independently of the chat provider.
+        try:
+            help_store = HelpStore(
+                persist_directory=_resolve_path(app_settings.help_store_dir),
+                collection_name=app_settings.help_collection,
+                model=app_settings.EMBED_MODEL,
+                top_k=app_settings.help_top_k,
+                threshold=app_settings.help_similarity_threshold,
+            )
+            logger.info("Help store loaded (%s chunks).", help_store.count())
+        except Exception as e:
+            logger.warning("Help store unavailable — help-centre answers disabled: %s", e)
+            help_store = None
+    else:
         help_store = None
 
     # Graceful Redis fallback — app starts even when Redis is unavailable
@@ -639,7 +650,8 @@ async def process(
             now,
         )
         db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "user", input_request.user_query, now)
-        db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
+        if final_chat_response:
+            db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
         agent_metrics = response.get("agent_metrics")
         if agent_metrics:
             db_utils.save_metrics(db_conn, input_request.customer_id, input_request.session_id, agent_metrics, now)
@@ -745,7 +757,8 @@ async def process_stream(
             now = db_utils.now_iso()
             db_utils.upsert_session(db_conn, input_request.session_id, input_request.customer_id, input_request.user_query, now)
             db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "user", input_request.user_query, now)
-            db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
+            if final_chat_response:
+                db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
             metrics = final_state.get("agent_metrics")
             if metrics:
                 db_utils.save_metrics(db_conn, input_request.customer_id, input_request.session_id, metrics, now)
@@ -926,6 +939,15 @@ async def process_voice(
     Endpoint that accepts binary audio upload, transcribes it using Whisper,
     and runs it through the chatbot pipeline.
     """
+    from app_setting import AppSettings
+    settings = AppSettings()
+    api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Voice transcription is unavailable without an OpenAI API key. Text chat with Qwen is unaffected.",
+        )
+
     logger.info(f"Received voice upload request: filename={file.filename}")
     
     # Save the uploaded file temporarily
@@ -935,11 +957,6 @@ async def process_voice(
         
     try:
         from openai import AsyncOpenAI
-        from app_setting import AppSettings
-        settings = AppSettings()
-        api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not found. Please configure it in your environment.")
             
         # Transcribe with Whisper
         client = AsyncOpenAI(api_key=api_key)

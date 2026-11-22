@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 from pydantic import BaseModel,Field, field_validator
 from langchain_core.messages import BaseMessage
 from datetime import datetime
@@ -81,7 +81,7 @@ class ResponseGeneratorResponse(BaseModel):
 
 class VisualizationDecision(BaseModel):
     should_visualize: bool
-    chart_type: str  # "bar" | "line" | "pie" | "table" | "none"
+    chart_type: Literal["bar", "line", "pie", "none"]
     chart_title: str
     x_field: str | None
     y_field: str | None
@@ -162,7 +162,8 @@ class Graph_State(BaseModel):
     entity_extraction_response: Text2SqlEntityExtractionResponse | None
     suprivisor_response: SuprivisorResponse | None
     text2sql_generator_response: Text2SqlGeneratorResponse | None
-    database_query_results: list[str] | None
+    database_query_results: list[dict[str, Any]] | None
+    database_results_truncated: bool = False
     sql_query_correction: bool = False
     banksql_queries: list[str] | None
     out_of_scope_queries: list[str] | None
@@ -171,11 +172,13 @@ class Graph_State(BaseModel):
     fallback_response: FallbackResponse | None
     response_generation_response: ResponseGeneratorResponse | None
     visualization_response: VisualizationResponse | None = None
+    visualization_only: bool = False
     agent_metrics: dict[str, Metrics]  | None
 
 class SubGraph_State(BaseModel):
     text2sql_generator_response: Text2SqlGeneratorResponse | None
-    database_query_results: list[str] | None
+    database_query_results: list[dict[str, Any]] | None
+    database_results_truncated: bool = False
     sql_query_correction: bool = False
     fallback_response: FallbackResponse | None
     banksql_queries: list[str] | None
