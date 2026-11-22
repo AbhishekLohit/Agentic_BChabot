@@ -12,4 +12,5 @@ copy .env.example .env      # then add ANTHROPIC_API_KEY and OPENAI_API_KEY (emb
 python src/app.py           # http://localhost:8000
 ```
 
-Redis is optional. See [CLAUDE.md](CLAUDE.md) for the architecture, agents, endpoints and data pipeline.
+Redis is optional. See [AGENTS.md](AGENTS.md) for commands, conventions and pitfalls, and
+[docs/architecture.md](docs/architecture.md) for diagrams and the agent, endpoint and data-layout reference.
