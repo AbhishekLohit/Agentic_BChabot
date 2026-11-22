@@ -45,11 +45,13 @@ jobs:
 
   live-context-builder:
     needs: offline-validation
-    # On the feature branch, one explicit commit marker triggers a THREE-case pilot.
-    # Once this workflow exists on the default branch, use Run workflow instead.
+    # Feature-branch commit markers: pilot (3 cases) or next ten distinct cases.
+    # Manual dispatch becomes available once the workflow is on the default branch.
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.run_live == true) ||
-      (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-context-pilot]'))
+      (github.event_name == 'push' &&
+        (contains(github.event.head_commit.message, '[run-context-pilot]') ||
+         contains(github.event.head_commit.message, '[run-context-next10]')))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     concurrency:
@@ -85,13 +87,25 @@ jobs:
           LLM_PROVIDER: qwen
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
           CASE_LIMIT: ${{ github.event_name == 'push' && '3' || inputs.case_count }}
+          NEXT_TEN: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[run-context-next10]') }}
         run: |
-          python -m evaluation.context_builder_run \
-            --live \
-            --as-of 2026-11-22 \
-            --limit "$CASE_LIMIT" \
-            --delay 2 \
-            --output evaluation/results/context_builder_report.json
+          if [ "$NEXT_TEN" = "true" ]; then
+            # Run CB004-CB013; do not re-use the three completed pilot cases.
+            python -m evaluation.context_builder_run \
+              --live \
+              --as-of 2026-11-22 \
+              --ids CB004 CB005 CB006 CB007 CB008 CB009 CB010 CB011 CB012 CB013 \
+              --limit 10 \
+              --delay 2 \
+              --output evaluation/results/context_builder_report.json
+          else
+            python -m evaluation.context_builder_run \
+              --live \
+              --as-of 2026-11-22 \
+              --limit "$CASE_LIMIT" \
+              --delay 2 \
+              --output evaluation/results/context_builder_report.json
+          fi
       - name: Upload report for manual review
         if: always()
         uses: actions/upload-artifact@v4
