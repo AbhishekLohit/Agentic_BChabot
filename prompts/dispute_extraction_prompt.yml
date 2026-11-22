@@ -60,8 +60,10 @@ prompt: |
     chosen_transaction_id
       Only when stage is choosing_transaction: the id from candidate_payments that the
       customer picked ("the second one", "the 36.67 one", "the Tesco one"). It must be copied
-      exactly from candidate_payments. If they did not clearly pick one, return null. If they
-      say it is none of them, use intent decline. If they give corrected details instead,
+      exactly from candidate_payments. If they did not clearly pick one, return null. If the
+      listed payments are identical (same merchant, amount and date) and the customer just
+      agrees ("yes", "either one", "take one of those", "raise it"), return null with intent
+      confirm: any of them is the same charge. If they say it is none of them, use intent decline. If they give corrected details instead,
       return those in transaction_date, merchant_hint and transaction_amount.
 
     reason

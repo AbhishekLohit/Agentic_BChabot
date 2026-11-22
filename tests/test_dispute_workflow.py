@@ -236,11 +236,60 @@ def test_more_than_three_pounds_out_or_another_day_finds_nothing(db, registry, s
     assert "exactly right" in r.summary and "£3.00" in r.summary
 
 
-def test_two_exact_matches_are_listed_rather_than_guessed(db, registry, settings, add_txn):
+def test_identical_exact_matches_are_shown_once_with_the_count(db, registry, settings, add_txn):
     add_txn("T1", "2026-11-01", 20.0, merchant="Acme")
     add_txn("T2", "2026-11-01", 20.0, merchant="Acme")
-    r = flow(db, registry, settings).turn("dispute it", ext(amount=20.0, on="2026-11-01", merchant="Acme"))
-    assert r.status == "needs_transaction_choice" and len(r.data["options"]) == 2
+    f = flow(db, registry, settings)
+    r = f.turn("dispute it", ext(amount=20.0, on="2026-11-01", merchant="Acme"))
+    assert r.status == "needs_payment_confirmation" and r.data["identical_count"] == 2
+    assert "charged 2 times" in r.summary and f.draft()["transaction_id"] is None   # still needs a yes
+
+
+def test_a_yes_to_identical_charges_picks_one_of_them(db, registry, settings, add_txn):
+    add_txn("T1", "2026-11-01", 20.0, merchant="Acme")
+    add_txn("T2", "2026-11-01", 20.0, merchant="Acme")
+    f = flow(db, registry, settings)
+    f.turn("charged twice", ext(amount=20.0, on="2026-11-01", merchant="Acme"))
+    r = f.turn("yes, take one of those", ext(intent="confirm"))
+    assert r.status != "needs_transaction_choice"
+    assert f.draft()["transaction_id"] in ("T1", "T2") and f.draft()["candidates"] == []
+
+
+def test_a_yes_to_identical_charges_skips_one_already_disputed(db, registry, settings, add_txn):
+    add_txn("T1", "2026-11-01", 20.0, merchant="Acme")
+    add_txn("T2", "2026-11-01", 20.0, merchant="Acme")
+    db_utils.create_dispute(db, "C1", "S0", "T2", "duplicate_charge", {})
+    f = flow(db, registry, settings)
+    f.turn("charged twice", ext(amount=20.0, on="2026-11-01", merchant="Acme"))
+    f.turn("yes", ext(intent="confirm"))
+    assert f.draft()["transaction_id"] == "T1"
+
+
+def test_a_yes_that_repeats_the_same_details_still_picks_an_identical_charge(db, registry, settings, add_txn):
+    add_txn("T1", "2026-11-01", 20.0, merchant="Acme")
+    add_txn("T2", "2026-11-01", 20.0, merchant="Acme")
+    f = flow(db, registry, settings)
+    f.turn("charged twice", ext(amount=20.0, on="2026-11-01", merchant="Acme"))
+    # the model repeats the details it already knows alongside the yes
+    r = f.turn("yes", ext(intent="confirm", amount=20.0, on="2026-11-01", merchant="Acme"))
+    assert r.status != "needs_transaction_choice" and f.draft()["transaction_id"] in ("T1", "T2")
+
+
+def test_a_yes_that_repeats_the_same_details_confirms_a_shown_payment(db, registry, settings, add_txn):
+    add_txn("T1", "2026-11-01", 20.0, merchant="Acme")
+    f = flow(db, registry, settings)
+    f.turn("dispute it", ext(amount=20.0, on="2026-11-01", merchant="Acme"))
+    f.turn("yes", ext(intent="confirm", amount=20.0, on="2026-11-01", merchant="Acme"))
+    assert f.draft()["transaction_id"] == "T1"
+
+
+def test_a_yes_to_different_payments_still_needs_a_pick(db, registry, settings, add_txn):
+    add_txn("A", "2026-11-01", 37.00, merchant="Acme")
+    add_txn("B", "2026-11-01", 35.50, merchant="Acme")
+    f = flow(db, registry, settings)
+    f.turn("dispute it", ext(amount=36.67, on="2026-11-01", merchant="Acme"))
+    r = f.turn("yes", ext(intent="confirm"))
+    assert r.status == "needs_transaction_choice" and f.draft()["transaction_id"] is None
 
 
 def test_picking_from_the_list_is_the_confirmation(db, registry, settings, add_txn):
@@ -909,3 +958,15 @@ def test_not_eligible_results_name_the_payment_so_the_reply_never_has_to_guess(d
         assert r.status == "not_eligible" and r.data["code"] == code
         assert merchant in r.summary and merchant in r.data["transaction"]
         assert "The payment in question is" in r.summary
+
+
+def test_an_identical_list_from_an_older_draft_accepts_any_agreement(db, registry, settings, add_txn):
+    add_txn("T1", "2026-11-01", 20.0, merchant="Acme")
+    add_txn("T2", "2026-11-01", 20.0, merchant="Acme")
+    f = flow(db, registry, settings)
+    draft = DisputeDraft(payment_amount=20.0, payment_date="2026-11-01", merchant_hint="Acme",
+                         candidates=[{"transaction_id": i, "date": "2026-11-01", "merchant": "Acme",
+                                      "amount": 20.0, "type": "payment"} for i in ("T1", "T2")])
+    db_utils.save_dispute_draft(db, "C1", "S1", draft.model_dump_json())
+    f.turn("both are duplicates, raise case", ext(intent="provide_info", amount=20.0, on="2026-11-01", merchant="Acme"))
+    assert f.draft()["transaction_id"] in ("T1", "T2")

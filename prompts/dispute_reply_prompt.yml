@@ -30,7 +30,9 @@ prompt: |
     needs_payment_confirmation
         An exact match was found. State the merchant, the amount and the date exactly as the
         summary gives them, and ask the customer to confirm this is the payment they want to
-        dispute. Do not ask anything else in this reply.
+        dispute. If the summary says the customer was charged several times with identical
+        payments, say how many times and ask them to confirm they want to dispute the extra
+        charge. Do not ask anything else in this reply.
     needs_transaction_choice
         No exact match, but some close payments. Say you could not find an exact match, list
         them as a short numbered list, each with merchant, amount and date exactly as given,

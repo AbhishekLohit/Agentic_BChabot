@@ -121,6 +121,14 @@ def _candidate(txn: dict) -> dict:
     }
 
 
+def _identical(candidates: list[dict]) -> bool:
+    """Two or more listed payments with the same date, merchant and amount: the same charge
+    taken more than once, so there is nothing to tell them apart."""
+    return len(candidates) > 1 and len(
+        {(c["date"], round(float(c["amount"]), 2), str(c["merchant"]).lower()) for c in candidates}
+    ) == 1
+
+
 def _candidate_line(c: dict) -> str:
     suffix = "" if c.get("type") == "payment" else f" ({str(c.get('type')).replace('_', ' ')})"
     return f"£{c['amount']:,.2f} to {c['merchant']} on {c['date']}{suffix}"
@@ -395,29 +403,46 @@ def _need_transaction_result(
     )
 
 
-def _payment_confirmation_result(txn: dict) -> DisputeResult:
-    """The exact match, shown with its merchant, amount and date for a yes or no."""
+def _payment_confirmation_result(txn: dict, identical: int = 1) -> DisputeResult:
+    """The exact match, shown with its merchant, amount and date for a yes or no. `identical` > 1:
+    the same payment was found that many times (the same charge taken more than once)."""
     text = checks.describe(txn)
-    return DisputeResult(
-        status="needs_payment_confirmation",
-        summary=(
+    if identical > 1:
+        summary = (
+            f"The customer was charged {identical} times with identical payments: {text}, "
+            f"{identical} times.\nShow the merchant, the amount and the date, say it was charged "
+            f"{identical} times, and ask the customer to confirm they want to dispute the extra charge."
+        )
+    else:
+        summary = (
             f"An exact match was found for the date, merchant and amount the customer gave: {text}.\n"
             "Show the merchant, the amount and the date, and ask the customer to confirm this is the "
             "payment they want to dispute."
-        ),
+        )
+    return DisputeResult(
+        status="needs_payment_confirmation",
+        summary=summary,
         needs_user_input=True,
         data={"transaction": text, "merchant": txn["merchant_brand_name"],
               "amount": f"£{float(txn['amount_usd']):,.2f}",
-              "date": str(txn["transaction_date"])[:10], "transaction_id": txn["transaction_id"]},
+              "date": str(txn["transaction_date"])[:10], "transaction_id": txn["transaction_id"],
+              "identical_count": identical},
     )
 
 
 def _choice_result(draft: DisputeDraft) -> DisputeResult:
-    """No exact match: the closest payments, for the customer to pick one."""
-    lines = [
-        "There is no exact match for the details the customer gave. These are the closest payments "
-        "on that date. Show each with its merchant, amount and date, and ask which one the dispute is about:"
-    ]
+    """No single exact match: the closest payments (or identical ones), for the customer to pick one."""
+    if _identical(draft.candidates):
+        lines = [
+            f"The customer has {len(draft.candidates)} identical payments with the same merchant, amount "
+            "and date, which looks like the same charge taken more than once. Show them, say they are "
+            "identical, and ask the customer to reply yes to dispute one of them (or say which one):"
+        ]
+    else:
+        lines = [
+            "There is no exact match for the details the customer gave. These are the closest payments "
+            "on that date. Show each with its merchant, amount and date, and ask which one the dispute is about:"
+        ]
     lines.extend(f"{i}. {_candidate_line(c)}" for i, c in enumerate(draft.candidates, 1))
     lines.append("If it is none of these, they can say so or give corrected details.")
     return DisputeResult(
@@ -476,6 +501,11 @@ def plain_reply(result: DisputeResult) -> str:
         lines.append("Shall I submit this dispute?")
         return "\n".join(lines)
     if status == "needs_payment_confirmation":
+        if (d.get("identical_count") or 1) > 1:
+            return (
+                f"I found {d['identical_count']} identical payments of {d.get('amount')} to "
+                f"{d.get('merchant')} on {d.get('date')}. Shall I dispute the extra charge?"
+            )
         return (
             f"I found this payment: {d.get('merchant')}, {d.get('amount')}, on {d.get('date')}. "
             "Is this the payment you want to dispute?"
@@ -715,6 +745,7 @@ def _propose(
     session_id: str,
     settings: Any,
     today: date,
+    identical: int = 1,
 ) -> DisputeResult:
     """Show the exact match for a yes or no. If it cannot be disputed, say so now rather than ask
     them to confirm it."""
@@ -730,7 +761,7 @@ def _propose(
         _clear_draft(db_conn, customer_id, session_id)
         return _not_eligible_result(elig, txn, txn["transaction_id"])
     draft.proposed_transaction_id = txn["transaction_id"]
-    return _payment_confirmation_result(txn)
+    return _payment_confirmation_result(txn, identical)
 
 
 def _find_transaction(
@@ -762,7 +793,12 @@ def _find_transaction(
     on_date = _clean_date(ext.transaction_date, today)
     merchant = ext.merchant_hint.strip() if ext.merchant_hint and ext.merchant_hint.strip() else None
     merchant_changed = merchant is not None and merchant.lower() != (draft.merchant_hint or "").lower()
-    gave_new_details = amount is not None or on_date is not None or merchant_changed
+    # Only details that DIFFER from what the draft already holds are new. Models often repeat the
+    # amount, date and merchant from earlier turns (e.g. alongside a "yes"); that is not a new search.
+    amount_changed = amount is not None and (
+        draft.payment_amount is None or abs(amount - float(draft.payment_amount)) >= 0.005)
+    date_changed = on_date is not None and on_date.isoformat() != draft.payment_date
+    gave_new_details = amount_changed or date_changed or merchant_changed
 
     def forget_details(declined: bool) -> DisputeResult:
         draft.payment_amount = None
@@ -780,7 +816,13 @@ def _find_transaction(
             return None
         shown = checks.get_transaction(db_conn, customer_id, draft.proposed_transaction_id)
         if shown is not None and not gave_new_details and ext.intent != "decline":
-            return _payment_confirmation_result(shown)       # not a clear yes or no: ask again
+            same = checks.find_transactions(
+                db_conn, customer_id, float(shown["amount_usd"]),
+                date.fromisoformat(str(shown["transaction_date"])[:10]), shown["merchant_brand_name"],
+                amount_tolerance=0.0, min_merchant_score=settings.DISPUTE_MERCHANT_MATCH, limit=MAX_CANDIDATES,
+            )
+            n = sum(1 for r in same if checks.is_exact_match(r)) or 1
+            return _payment_confirmation_result(shown, n)    # not a clear yes or no: ask again
         draft.proposed_transaction_id = None
         if not gave_new_details:
             return forget_details(declined=True)             # "no, not that one"
@@ -794,7 +836,23 @@ def _find_transaction(
             return None
         if ext.intent == "decline":
             return forget_details(declined=True)             # "none of those"
+        if ext.intent in ("confirm", "provide_info") and _identical(draft.candidates):
+            # Identical charges (e.g. charged twice): any of them is the same payment, so a plain
+            # "yes" / "either one" picks one that is not already disputed. The duplicate pre-check
+            # finds the other charge later.
+            pick = next(
+                (c for c in reversed(draft.candidates)
+                 if not db_utils.has_open_dispute(db_conn, customer_id, c["transaction_id"])),
+                draft.candidates[-1],
+            )
+            draft.transaction_id = pick["transaction_id"]
+            draft.candidates = []
+            return None
         return _choice_result(draft)                         # unclear: show the list again
+
+    # Restating the same date, merchant and amount after a search found nothing means "look again".
+    if not gave_new_details and (amount is not None or on_date is not None or merchant is not None):
+        draft.last_search = None
 
     # 3. Take whatever date, merchant and amount they gave this turn.
     if amount is not None:
@@ -828,6 +886,15 @@ def _find_transaction(
     exact = [r for r in rows if checks.is_exact_match(r)]
     if len(exact) == 1:
         return _propose(draft, exact[0], db_conn, customer_id, session_id, settings, today)
+    if len(exact) > 1 and _identical([_candidate(r) for r in exact]):
+        # The same payment charged more than once (e.g. "charged twice"): nothing tells them apart,
+        # so show it once with the count, for a yes. The duplicate pre-check finds the other charge.
+        pick = next(
+            (r for r in reversed(exact)
+             if not db_utils.has_open_dispute(db_conn, customer_id, r["transaction_id"])),
+            exact[-1],
+        )
+        return _propose(draft, pick, db_conn, customer_id, session_id, settings, today, identical=len(exact))
     draft.candidates = [_candidate(r) for r in rows[: settings.DISPUTE_MAX_CHOICES]]
     return _choice_result(draft)
 
