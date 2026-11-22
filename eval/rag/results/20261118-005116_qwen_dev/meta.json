@@ -1,0 +1,28 @@
+{
+  "label": "qwen_dev",
+  "run_at": "2026-11-18T00:51:16",
+  "stage": "all",
+  "split": "dev",
+  "limit": null,
+  "eval_version": "unfrozen",
+  "options": {
+    "retrieval_mode": "dense",
+    "top_k": 4,
+    "citation_policy": "strict",
+    "generation": "structured"
+  },
+  "index": {
+    "files": 687,
+    "chunks": 800,
+    "chunk_strategy": "fixed",
+    "avg_chunk_chars": 825,
+    "chunk_size": 1200,
+    "chunk_overlap": 200,
+    "embedding_provider": "capstone",
+    "embedding_model": "capstone:bge-small-en-v1.5",
+    "index_seconds": 42.1
+  },
+  "generator": "capstone",
+  "judge": "capstone (temperature 0)",
+  "judge_provider": null
+}

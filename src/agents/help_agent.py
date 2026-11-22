@@ -8,6 +8,7 @@ from app_models import (
     ResponseGeneratorResponse,
 )
 from utils import agent_utils
+from utils.help_rag import build_help_messages, enforce_citations, retrieve_help_context
 
 
 NO_DOCUMENTS_MESSAGE = (
@@ -25,38 +26,17 @@ async def help_agent(
     logger.info("Executing document help agent.")
     try:
         query = state.context_builder_response.user_query
-        results = vector_store.similarity_search_with_relevance_scores(query, k=4)
-        context_parts = []
-        for document, score in results:
-            if score <= 0:
-                continue
-            source = document.metadata.get("source", "unknown")
-            page = document.metadata.get("page")
-            citation = f"{source}, page {page}" if page else source
-            context_parts.append(
-                f"[Source: {citation}]\n{document.page_content}"
-            )
+        # Shared with eval/rag/evaluate.py: retrieval mode, top-k and numbering [1]..[n]
+        # all come from settings (HELP_RETRIEVAL_MODE, HELP_TOP_K).
+        contexts = retrieve_help_context(vector_store, query)
 
-        if not context_parts:
+        if not contexts:
             state.response_generation_response = ResponseGeneratorResponse(
                 generated_response=NO_DOCUMENTS_MESSAGE
             )
             return state
 
-        messages = [
-            {
-                "role": "system",
-                "content": prompt.template,
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Question: {query}\n\n"
-                    f"Retrieved document excerpts:\n"
-                    f"{chr(10).join(context_parts)}"
-                ),
-            },
-        ]
+        messages = build_help_messages(prompt.template, query, contexts)
         structured_llm = llm.with_structured_output(
             ResponseGeneratorResponse,
             include_raw=True,
@@ -64,7 +44,13 @@ async def help_agent(
         start_time = time.time()
         response_raw = await structured_llm.ainvoke(messages)
         latency = time.time() - start_time
-        state.response_generation_response = response_raw["parsed"]
+        # Strict citations: drop citations to excerpts that don't exist, drop sentences
+        # with no valid citation, and refuse if nothing in the answer is supported.
+        final_answer, citation_report = enforce_citations(
+            response_raw["parsed"].generated_response, len(contexts))
+        if citation_report["invalid_citations"] or citation_report["dropped_sentences"] or citation_report["refused"]:
+            logger.info(f"Citation check: {citation_report}")
+        state.response_generation_response = ResponseGeneratorResponse(generated_response=final_answer)
 
         if state.agent_metrics is None:
             state.agent_metrics = {}

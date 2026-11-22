@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "label": "baseline",
+    "run_at": "2026-11-15T20:53:42",
+    "stage": "all",
+    "split": "dev",
+    "limit": null,
+    "eval_version": "v1",
+    "index": {
+      "files": 1,
+      "chunks": 16,
+      "chunk_size": 1200,
+      "chunk_overlap": 200,
+      "embedding_provider": "local",
+      "index_seconds": 1.4
+    },
+    "generator": "capstone",
+    "judge": "capstone (temperature 0)",
+    "judge_provider": null,
+    "rescored_at": "2026-11-15T15:36:34"
+  },
+  "retrieval": {
+    "overall": {
+      "n": 60,
+      "recall@1": 0.7833,
+      "recall@5": 0.9667,
+      "recall@10": 1.0,
+      "group_recall@1": 0.8,
+      "group_recall@5": 0.9667,
+      "group_recall@10": 1.0,
+      "mrr": 0.8836
+    },
+    "by_split": {
+      "dev": {
+        "n": 60,
+        "recall@1": 0.7833,
+        "recall@5": 0.9667,
+        "recall@10": 1.0,
+        "group_recall@1": 0.8,
+        "group_recall@5": 0.9667,
+        "group_recall@10": 1.0,
+        "mrr": 0.8836
+      }
+    },
+    "by_question_type": {
+      "factual": {
+        "n": 10,
+        "recall@1": 0.9,
+        "recall@5": 0.9,
+        "recall@10": 1.0,
+        "group_recall@1": 0.9,
+        "group_recall@5": 0.9,
+        "group_recall@10": 1.0,
+        "mrr": 0.9167
+      },
+      "keyword": {
+        "n": 6,
+        "recall@1": 0.8333,
+        "recall@5": 0.8333,
+        "recall@10": 1.0,
+        "group_recall@1": 0.8333,
+        "group_recall@5": 0.8333,
+        "group_recall@10": 1.0,
+        "mrr": 0.85
+      },
+      "multi_section": {
+        "n": 5,
+        "recall@1": 0.4,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.6,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.8667
+      },
+      "near_miss": {
+        "n": 5,
+        "recall@1": 0.8,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.8,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.9
+      },
+      "paraphrase": {
+        "n": 16,
+        "recall@1": 0.75,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.75,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.8646
+      },
+      "procedural": {
+        "n": 10,
+        "recall@1": 0.7,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.7,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.8083
+      },
+      "reasoning": {
+        "n": 8,
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 1.0,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      }
+    }
+  },
+  "answers": {
+    "n_total": 70,
+    "n_errors": 0,
+    "correctness": {
+      "n": 60,
+      "key_fact_coverage": 0.9583,
+      "all_facts_correct": 0.95
+    },
+    "false_abstention_rate": 0.0333,
+    "abstention_accuracy_unanswerable": 0.9,
+    "n_unanswerable": 10,
+    "faithfulness": 0.9831,
+    "citation_precision": 0.9875,
+    "citation_coverage": 0.7952,
+    "cites_gold_chunk": 0.9483,
+    "context_recall": 0.9667,
+    "correctness_when_evidence_retrieved": {
+      "n": 58,
+      "key_fact_coverage": 0.9741,
+      "all_facts_correct": 0.9655
+    },
+    "correctness_when_evidence_missing": {
+      "n": 2,
+      "key_fact_coverage": 0.5,
+      "all_facts_correct": 0.5
+    },
+    "judge_missing_ids": 0,
+    "refusals_with_citations": 3,
+    "correctness_by_type": {
+      "factual": {
+        "n": 10,
+        "key_fact_coverage": 0.9,
+        "all_facts_correct": 0.9
+      },
+      "keyword": {
+        "n": 6,
+        "key_fact_coverage": 1.0,
+        "all_facts_correct": 1.0
+      },
+      "multi_section": {
+        "n": 5,
+        "key_fact_coverage": 1.0,
+        "all_facts_correct": 1.0
+      },
+      "near_miss": {
+        "n": 5,
+        "key_fact_coverage": 0.8,
+        "all_facts_correct": 0.8
+      },
+      "paraphrase": {
+        "n": 16,
+        "key_fact_coverage": 1.0,
+        "all_facts_correct": 1.0
+      },
+      "procedural": {
+        "n": 10,
+        "key_fact_coverage": 1.0,
+        "all_facts_correct": 1.0
+      },
+      "reasoning": {
+        "n": 8,
+        "key_fact_coverage": 0.9375,
+        "all_facts_correct": 0.875
+      }
+    }
+  }
+}

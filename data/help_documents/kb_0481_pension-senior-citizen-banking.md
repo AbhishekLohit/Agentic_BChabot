@@ -1,0 +1,7 @@
+# Pension & Senior Citizen Banking
+
+Updating a nominee is one of the most important and often overlooked banking tasks. Under RBI guidelines, banks must facilitate nomination changes readily and cannot make the process cumbersome. For updating nominee: (1) The account holder must personally sign the nomination change form (Form DA-1 for savings accounts, DA-3 for cancellation). (2) Most public sector banks allow this via branch visit, but increasingly via net banking/app for tech-savvy users. (3) You will need the new nominee's identity details and relationship. (4) For a minor nominee (if your granddaughter is under 18), you'll also need to appoint a guardian.
+
+1) Visit your bank branch with your passbook, Aadhaar, and your granddaughter's Aadhaar/ID details. 2) Request Form DA-1 (Nomination Form) and fill in your granddaughter's details, date of birth, and your relationship. 3) If she is a minor, fill in the guardian's details (usually you or her parent). 4) Some banks allow nomination update via net banking — check your bank's website under 'Services → Nomination Update'. 5) For Fixed Deposits, check if you have a separate FD receipt — nomination must be updated on each FD separately or the bank's composite form covers all. 6) Keep an acknowledgment copy of the nomination form.
+
+Elderly account holders understand the nomination update process, form names, minor nominee guardian requirement, and the option for online nomination for tech users.

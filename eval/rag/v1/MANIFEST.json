@@ -1,0 +1,37 @@
+{
+  "name": "rag_eval_set",
+  "version": "v1",
+  "status": "frozen",
+  "frozen_on": "2026-11-15",
+  "eval_file": "rag_eval_set.jsonl",
+  "eval_sha256": "0c551fad31c30459deeb4e3fedc6c2aa715ce4dbdf409e94d6cee8ffa907d6be",
+  "corpus": [
+    {
+      "file": "data/help_documents/SBI_Help_QA.pdf",
+      "sha256": "e3d2915bd9cde0479347f79b8c98f168890def4cc4aec2a650ddf167242ebc53"
+    }
+  ],
+  "counts": {
+    "total": 102,
+    "answerable": 87,
+    "by_split": {
+      "dev": 70,
+      "test": 32
+    },
+    "by_type": {
+      "paraphrase": 23,
+      "keyword": 8,
+      "reasoning": 12,
+      "factual": 15,
+      "procedural": 15,
+      "near_miss": 7,
+      "multi_section": 7,
+      "unanswerable": 15
+    }
+  },
+  "rules": [
+    "Tune on 'dev' only; report final numbers on 'test'.",
+    "Do not edit questions or evidence after seeing system outputs; fix mistakes by bumping the version.",
+    "Retrieval hit = a retrieved chunk contains the evidence quote (normalised); a question is fully recalled when every evidence group has at least one hit."
+  ]
+}

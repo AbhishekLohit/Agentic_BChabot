@@ -1,0 +1,7 @@
+# Migrant Worker & Inter-state Banking
+
+Digital wage payments to workers' bank accounts directly are a powerful tool against wage theft. The Payment of Wages Act (1936) has been amended and interpreted to allow electronic payment of wages — under Section 6 of the Act, wages can be paid via bank account transfer. Construction workers under BOCW (Building and Other Construction Workers) Act, and registered workers under e-Shram portal, are specifically eligible to have wages credited directly. Your employer/contractor can be required to pay wages directly to bank accounts. Under the e-Shram scheme, all unorganized workers should have their bank accounts registered.
+
+1) Register on the e-Shram portal (eshram.gov.in) — this creates a formal identity for unorganized workers and enables direct benefit transfers. 2) Open a bank account (Jan Dhan is free) and register your bank account number with your employer formally in writing. 3) Request the contractor in writing to transfer wages to your bank account citing the Payment of Wages Act. 4) If the contractor refuses, approach the Labour Commissioner's office in your working city. 5) Construction workers can also approach the BOCW Board of the state for grievance redressal. 6) Document all wage amounts verbally agreed with witnesses.
+
+Migrant construction workers learn digital wages prevent wage theft, e-Shram registration enables this, and the legal basis to insist on bank account wage payment.

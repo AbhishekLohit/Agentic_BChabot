@@ -1,0 +1,7 @@
+# Feature Phone & Offline UPI
+
+Yes, UPI is available on basic feature phones through two options: (1) *99# (USSD-based): Dial *99# on any mobile phone connected to any network. A text menu opens. You can check balance, send money, and view mini statement. It works without internet. The process is in Hindi and 12 other regional languages. Each session takes 4-5 minutes and may cost a small USSD charge (usually ₹0.50 or less, charged by telecom). (2) UPI 123Pay: A newer, easier option launched in 2022. Call IVR number, use voice prompts to send money without internet. Currently supports P2P transfers, mobile recharge, and some merchant categories. Your phone number must be linked to your bank account as the primary registered number.
+
+1) To use *99#: Dial *99# from the mobile number registered with your bank. Follow the USSD text menus. Select 'Send Money' or 'Check Balance'. 2) For UPI 123Pay IVR: Call 08045163580 (or the number provided by your bank for 123Pay). Follow voice prompts in Hindi or your regional language. 3) Make sure your mobile number is registered with your bank. If not, visit your bank branch to register the SIM. 4) Set a UPI PIN by following the IVR prompts with your debit card details. Transaction limit is ₹10,000 per transaction.
+
+Feature phone farmers learn that *99# and UPI 123Pay enable basic UPI transactions without internet or smartphone, and the step-by-step activation process.

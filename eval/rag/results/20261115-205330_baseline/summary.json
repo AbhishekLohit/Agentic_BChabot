@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "label": "baseline",
+    "run_at": "2026-11-15T20:53:30",
+    "stage": "retrieval",
+    "split": "dev",
+    "limit": null,
+    "eval_version": "v1",
+    "index": {
+      "files": 1,
+      "chunks": 16,
+      "chunk_size": 1200,
+      "chunk_overlap": 200,
+      "embedding_provider": "local",
+      "index_seconds": 1.7
+    }
+  },
+  "retrieval": {
+    "overall": {
+      "n": 60,
+      "recall@1": 0.7833,
+      "recall@5": 0.9667,
+      "recall@10": 1.0,
+      "group_recall@1": 0.8,
+      "group_recall@5": 0.9667,
+      "group_recall@10": 1.0,
+      "mrr": 0.8836
+    },
+    "by_split": {
+      "dev": {
+        "n": 60,
+        "recall@1": 0.7833,
+        "recall@5": 0.9667,
+        "recall@10": 1.0,
+        "group_recall@1": 0.8,
+        "group_recall@5": 0.9667,
+        "group_recall@10": 1.0,
+        "mrr": 0.8836
+      }
+    },
+    "by_question_type": {
+      "factual": {
+        "n": 10,
+        "recall@1": 0.9,
+        "recall@5": 0.9,
+        "recall@10": 1.0,
+        "group_recall@1": 0.9,
+        "group_recall@5": 0.9,
+        "group_recall@10": 1.0,
+        "mrr": 0.9167
+      },
+      "keyword": {
+        "n": 6,
+        "recall@1": 0.8333,
+        "recall@5": 0.8333,
+        "recall@10": 1.0,
+        "group_recall@1": 0.8333,
+        "group_recall@5": 0.8333,
+        "group_recall@10": 1.0,
+        "mrr": 0.85
+      },
+      "multi_section": {
+        "n": 5,
+        "recall@1": 0.4,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.6,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.8667
+      },
+      "near_miss": {
+        "n": 5,
+        "recall@1": 0.8,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.8,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.9
+      },
+      "paraphrase": {
+        "n": 16,
+        "recall@1": 0.75,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.75,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.8646
+      },
+      "procedural": {
+        "n": 10,
+        "recall@1": 0.7,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.7,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.8083
+      },
+      "reasoning": {
+        "n": 8,
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 1.0,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      }
+    }
+  },
+  "answers": null
+}

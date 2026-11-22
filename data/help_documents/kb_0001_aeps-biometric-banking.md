@@ -1,0 +1,7 @@
+# AEPS & Biometric Banking
+
+Biometric authentication failure due to worn fingerprints is a well-documented issue for agricultural workers, construction laborers, and elderly people. It affects 10-15% of rural AEPS transactions. Solutions include: (1) Updating Aadhaar biometrics at an Aadhaar enrollment center — this refreshes your fingerprint data in UIDAI's database and significantly improves recognition. (2) Using iris scan instead of fingerprint — most modern AEPS devices and Aadhaar enrollment centers support iris scan as an alternative. (3) As a medium-term solution, getting a debit card or using UPI on a feature phone via *99# so you're not entirely dependent on biometrics. Biometric update at Aadhaar center is free once in 5 years.
+
+1) Visit the nearest Aadhaar Enrollment/Update Center (check uidai.gov.in for centers). 2) Request biometric update — provide fresh fingerprints from all 10 fingers and iris scan. 3) This update takes 30-90 days to reflect in the system. 4) Meanwhile, ask the AEPS operator to try iris scan if their device supports it. 5) Try using a different finger — sometimes one or two fingers remain better preserved. 6) Ask your bank to issue a RuPay debit card for ATM-based withdrawal as backup.
+
+Agricultural workers and laborers learn that worn fingerprints can be re-enrolled at Aadhaar centers, iris scan is an alternative, and they don't have to be permanently excluded from AEPS banking.

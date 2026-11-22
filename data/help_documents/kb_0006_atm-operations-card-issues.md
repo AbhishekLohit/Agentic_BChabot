@@ -1,0 +1,7 @@
+# ATM Operations & Card Issues
+
+RuPay debit cards are fully usable for online transactions on Indian e-commerce platforms (Amazon, Flipkart, Meesho, Agribazaar, etc.) that accept RuPay. The issue 'card not supported' usually means: (1) The specific merchant doesn't support RuPay (some international payment gateways don't). (2) The card's online transaction feature is disabled by the bank (some banks disable online transactions on PMJDY RuPay cards by default for fraud prevention). (3) You need to enable the 'online payment' feature via your bank's mobile app. (4) For the PMJDY RuPay card, daily online transaction limits are sometimes lower. Most agri-input websites and government e-marketplaces like GeM, eNAM do support RuPay.
+
+1) Call your bank or use their app to check if 'online/e-commerce transactions' are enabled for your RuPay card. 2) If disabled, enable via net banking → Card Controls → Enable Online Transactions. 3) For PMJDY RuPay cards specifically — visit the branch and request enabling of online transactions if the app doesn't show this option. 4) For fertilizer/seed purchase, platforms like BigHaat, Agrostar, and DeHaat accept RuPay. 5) Alternatively, use UPI directly (no card needed) for most online purchases — link your Jan Dhan account to PhonePe or BHIM UPI.
+
+Jan Dhan RuPay cardholders learn that online transactions may be disabled by default, how to enable them, and that UPI is often a simpler alternative for online purchases.

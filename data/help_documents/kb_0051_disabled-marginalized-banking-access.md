@@ -1,0 +1,7 @@
+# Disabled & Marginalized Banking Access
+
+Transgender persons have full banking rights under the Transgender Persons (Protection of Rights) Act 2019. Banks must update account records to reflect the name and gender as per the Transgender Certificate (TC) issued under the Act. RBI's Master Circular on Customer Service mandates that banks update KYC details when valid documentary evidence is provided. For gender update in bank records: (1) The Transgender Certificate from the District Magistrate is the official document. (2) Banks are required to recognize 'T' or 'Other' as a gender option. (3) Aadhaar allows gender change to 'Third Gender' via a gender change request at Aadhaar enrollment center with TC.
+
+1) Obtain a Transgender Certificate from your District Magistrate under the Transgender Persons Act 2019 (if not already done). 2) Visit your bank branch with TC, legal name change gazette notification, and the bank's KYC update form. 3) Submit a written request to update name and gender in bank records, citing the Transgender Persons Act 2019. 4) If bank refuses, cite RBI Master Circular on KYC and Customer Service. 5) File a complaint with the National Council for Transgender Persons (transgender.dosje.gov.in) or the State Welfare Board for Transgender Persons. 6) Update Aadhaar gender to 'Third Gender' at nearest enrollment center with TC.
+
+Transgender bank customers learn that the TC document enables legal name and gender updates in bank and Aadhaar records, the legal basis to insist on these updates, and complaint escalation.

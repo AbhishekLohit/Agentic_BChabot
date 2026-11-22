@@ -1,0 +1,7 @@
+# Microfinance, MFI & SHG Banking
+
+Opening a bank account for an SHG is a standard, well-documented process in India and banks are mandated to open accounts for registered SHGs. The required documents as per RBI KYC guidelines for SHG accounts are: (1) SHG group registration document (from Gram Panchayat/Block/DRDA). (2) Resolution of the group authorizing account opening with names and photographs of authorized signatories (usually 2-3 members). (3) KYC documents (Aadhaar and photograph) of each authorized signatory. (4) SHG meeting minutes/attendance register as supporting. That's all — banks cannot demand more. The SHG does not need to be an NGO or formal legal entity to open an account.
+
+1) Get a signed resolution letter from your SHG meeting listing the authorized signatories and their details. 2) Collect Aadhaar cards and photographs of the signatories (usually 2-3 key members). 3) Get SHG registration certificate from your Block/Gram Panchayat or DRDA (District Rural Development Agency). 4) Approach the bank branch again with these 4 documents — request specifically a 'Self Help Group savings account'. 5) If branch still refuses, approach the Lead District Manager (LDM) or your bank's Regional Office. 6) NABARD and NRLM (National Rural Livelihoods Mission) have SHG-Bank Linkage Programme guidelines banks must follow.
+
+SHG members learn the precise 4-document requirement for SHG bank account opening, that banks cannot demand more, and the escalation path if refused.

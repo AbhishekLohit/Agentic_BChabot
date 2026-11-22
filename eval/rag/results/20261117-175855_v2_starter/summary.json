@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "label": "v2_starter",
+    "run_at": "2026-11-17T17:58:55",
+    "stage": "retrieval",
+    "split": "all",
+    "limit": null,
+    "eval_version": "unfrozen",
+    "index": {
+      "files": 687,
+      "chunks": 800,
+      "chunk_strategy": "fixed",
+      "avg_chunk_chars": 825,
+      "chunk_size": 1200,
+      "chunk_overlap": 200,
+      "embedding_provider": "local",
+      "index_seconds": 98.7
+    }
+  },
+  "retrieval": {
+    "overall": {
+      "n": 18,
+      "recall@1": 0.8333,
+      "recall@5": 0.9444,
+      "recall@10": 1.0,
+      "group_recall@1": 0.8889,
+      "group_recall@5": 0.9722,
+      "group_recall@10": 1.0,
+      "mrr": 0.963
+    },
+    "by_split": {
+      "dev": {
+        "n": 15,
+        "recall@1": 0.8,
+        "recall@5": 0.9333,
+        "recall@10": 1.0,
+        "group_recall@1": 0.8667,
+        "group_recall@5": 0.9667,
+        "group_recall@10": 1.0,
+        "mrr": 0.9556
+      },
+      "test": {
+        "n": 3,
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 1.0,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      }
+    },
+    "by_question_type": {
+      "factual": {
+        "n": 4,
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 1.0,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      },
+      "keyword": {
+        "n": 2,
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 1.0,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      },
+      "multi_section": {
+        "n": 2,
+        "recall@1": 0.0,
+        "recall@5": 0.5,
+        "recall@10": 1.0,
+        "group_recall@1": 0.5,
+        "group_recall@5": 0.75,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      },
+      "near_miss": {
+        "n": 2,
+        "recall@1": 0.5,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 0.5,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 0.6667
+      },
+      "paraphrase": {
+        "n": 3,
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 1.0,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      },
+      "procedural": {
+        "n": 3,
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 1.0,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      },
+      "reasoning": {
+        "n": 2,
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "group_recall@1": 1.0,
+        "group_recall@5": 1.0,
+        "group_recall@10": 1.0,
+        "mrr": 1.0
+      }
+    }
+  },
+  "answers": null
+}

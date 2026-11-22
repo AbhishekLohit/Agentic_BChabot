@@ -1,0 +1,7 @@
+# Bank Charges & Account Management
+
+RBI mandated in 2014 that all banks must provide free SMS/email alerts for all electronic transactions — including UPI, NEFT, IMPS, ATM withdrawals. However, RBI also allowed banks to charge for SMS alerts on some non-electronic transactions (like cash deposits). The key distinction: (1) For electronic transactions, SMS alerts must be free. (2) For non-electronic transactions (cash withdrawals at branch, cash deposits), some charge is permitted but must be disclosed. If you're being charged for UPI/ATM/NEFT SMS alerts, that's against RBI guidelines. Additionally, registering for email alerts (free) and push notifications on your bank's mobile app (also free) can completely replace SMS alerts.
+
+1) Register for your bank's mobile app and enable push notifications — these are free and instant. 2) Register for email transaction alerts at your branch or via net banking — free. 3) Check which specific transactions are generating the ₹18 SMS charges — if any are for UPI/ATM/NEFT, file a complaint citing RBI's free electronic transaction alert mandate. 4) Some banks allow you to reduce SMS alert frequency (e.g., only for transactions above ₹1,000) to cut costs. 5) File at RBI SACHET portal (sachet.rbi.org.in) if being charged for mandatory-free electronic transaction alerts.
+
+Users learn that electronic transaction SMS alerts are mandated to be free by RBI, mobile app push notifications and email alerts are free alternatives, and overcharging for e-transaction alerts is reportable.

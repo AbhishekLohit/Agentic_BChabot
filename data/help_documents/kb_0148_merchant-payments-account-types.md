@@ -1,0 +1,7 @@
+# Merchant Payments - Account Types
+
+A merchant UPI account, compared to a personal account, is linked to your business current account and has distinct features: 1) Settlement: Merchants receive 'T+1' settlement (next day) or even 'T+0' (same day) for some high-volume merchants, instead of immediate credit to the recipient. 2) Limits: Merchant accounts have higher per-day limits (e.g., ₹5 lakh or more) depending on the bank's risk profile. 3) You can generate dynamic QR codes for specific amounts, integrate with billing systems, and receive detailed settlement reports. 4) Your business name will be displayed instead of your personal name on the UPI ID. The merchant account also provides tools for managing chargebacks and disputes under the UDIR framework. However, you may now incur MDR charges on RuPay credit card transactions, which were not applicable to personal accounts .
+
+Review your settlement report to understand your daily settlement cycle and the fees applied. If you want to manage disputes, use the 'UPI HELP' assistant which is now available via your bank's website. Ensure you have integrated dynamic QR for faster checkout. If you are a large merchant, inquire about T+0 settlement from your bank or payment aggregator. Also, be aware of the MDR implications of accepting RuPay credit cards via UPI .
+
+The user learns the key differences between personal and merchant UPI accounts, including settlement cycles and fees.

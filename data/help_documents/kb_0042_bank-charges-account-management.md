@@ -1,0 +1,7 @@
+# Bank Charges & Account Management
+
+Banks are legally required to disclose all charges and their reasons to customers. Under RBI's Customer Service Master Circular and the Banking Codes and Standards Board of India (BCSBI), banks must: (1) Publish their complete schedule of charges on their website and at branches. (2) Provide itemized explanation of any charge on request. (3) Not levy charges that are not in their published tariff. 'Incidental charges' is a broad category that includes charges for various services — but you're entitled to know exactly which service triggered it. A vague 'incidental charges' description without further detail may itself be a deficiency.
+
+1) Write a formal complaint to the bank's Grievance Redressal Officer (GRO) requesting a detailed explanation of the 'Incidental Charges' with the exact service and regulatory basis. 2) Download your bank's complete 'Schedule of Charges' from their website and check if ₹177 corresponds to any listed service. 3) If the bank cannot explain the charge or it's not in the schedule, demand reversal in writing. 4) File on RBI SACHET portal (sachet.rbi.org.in) for reporting unexplained/unauthorized bank charges. 5) File RBI CMS complaint at cms.rbi.org.in if the bank doesn't respond in 30 days.
+
+Account holders learn that every bank charge must be explainable and listed in the published tariff, how to verify charges against the schedule, and the SACHET portal for unauthorized charges.

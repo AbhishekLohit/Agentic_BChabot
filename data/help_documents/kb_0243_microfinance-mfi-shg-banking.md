@@ -1,0 +1,7 @@
+# Microfinance, MFI & SHG Banking
+
+Under the SHG-Bank Linkage Programme (SHG-BLP), all members of the SHG are jointly and severally liable for the loan — meaning the bank can proceed against any member if the group defaults. However, a restructuring/rescheduling is possible if the remaining members continue repayment. Banks are not supposed to immediately declare NPA if payments are regular — NPA declaration happens when dues are unpaid for 90+ days. The remaining members can request a formal loan restructuring at the bank, updating the group membership and rescheduling the outstanding ₹40,000 as a fresh arrangement. NABARD and NRLM banks often have restructuring protocols for split SHGs.
+
+1) File a formal written request to the branch manager for 'SHG Loan Restructuring due to change in group composition'. 2) Provide the updated group membership list and resolution signed by remaining members. 3) If the departing members created their own loan sub-agreement within the group (common practice), provide that to show their portions are being managed. 4) Contact your local NRLM (SRLM/Block Livelihood Mission) facilitator — they often mediate SHG-bank disputes. 5) If the bank proceeds to NPA unfairly, file RBI Ombudsman complaint. 6) NABARD Grievance portal is specifically designed for SHG-BLP issues.
+
+SHG groups understand joint liability implications, that restructuring is possible on member departure, and NRLM facilitators play a key mediation role in SHG-bank disputes.

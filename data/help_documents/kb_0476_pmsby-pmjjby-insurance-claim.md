@@ -1,0 +1,7 @@
+# PMSBY / PMJJBY Insurance Claim
+
+PMJJBY and PMSBY policies lapse if the annual premium is not successfully auto-debited due to insufficient balance. There is no grace period for reinstatement without a health declaration or waiting period. However: (1) Reinstatement is possible — if your mother is in the same policy year (before June of next year), she can pay the premium manually at the bank and reinstate the policy, usually with a health self-declaration. (2) There is typically a 45-day waiting period after reinstatement before full coverage resumes (except for accidental death which may restart immediately for PMSBY). (3) If she was hospitalized during the lapse period, any claim may be rejected — address the lapse urgently.
+
+1) Visit your mother's bank branch immediately and ask about 'PMJJBY/PMSBY Policy Reinstatement after premium failure'. 2) Ensure her account has sufficient balance and re-register the auto-debit mandate. 3) She may need to fill a self-declaration of health form (DD-DD-PMJJBY) for reinstatement. 4) Ensure her bank account always has ₹436 (PMJJBY) + ₹20 (PMSBY) = ₹456 minimum balance each June for auto-debit. 5) Set a reminder to check 1 week before June 1st every year that the premium will deduct successfully. 6) Contact bank helpline or jansuraksha.gov.in for exact reinstatement procedure for your bank.
+
+Beneficiaries learn that PMJJBY/PMSBY lapse due to premium failure is reversible through reinstatement (with waiting period), and the preventive measure of ensuring June balance.

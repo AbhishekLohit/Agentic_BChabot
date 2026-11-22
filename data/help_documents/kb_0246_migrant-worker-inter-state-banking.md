@@ -1,0 +1,7 @@
+# Migrant Worker & Inter-state Banking
+
+This is a common problem faced by internal migrant workers and it is explicitly addressed by RBI guidelines. Under RBI's Small Account provisions: (1) Aadhaar with ANY Indian address (including Rajasthan) is a valid KYC document for opening an account anywhere in India — there is no requirement for a local address. (2) RBI's Master Direction on KYC (2023) allows 'Self-Declaration for current address' — you can provide a brief letter stating your current Assam address as a 'self-declared address' which banks must accept. (3) If the bank insists on current state proof, this is a violation of RBI's KYC Circular.
+
+1) Politely insist to the bank officer that Aadhaar with any Indian address is valid KYC for account opening per RBI KYC Master Direction — you do not need local address proof. 2) Additionally submit a simple self-declaration letter: 'I, [Name], currently residing at [Assam address], declare that my current local address is [address].' 3) Alternatively, your employer/contractor can provide an address verification letter (works as KYC document for migrant workers per RBI Small Account provisions). 4) If refused, call the RBI helpline 14440 and report the refusal. 5) e-Shram registration address can also serve as current address documentation.
+
+Migrant workers learn Aadhaar with home state address is sufficient for national KYC, self-declaration of current address is RBI-compliant, and denying account opening based on migration is against RBI norms.

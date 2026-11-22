@@ -1,0 +1,7 @@
+# Transaction Failures & Refunds
+
+Under DGCA (Directorate General of Civil Aviation) guidelines, airlines are mandated to refund cancelled flight tickets within 7 working days for credit card purchases. A 34-day delay is a clear violation of DGCA norms and consumer rights. You are entitled not just to the refund but also to compensation for the delay. DGCA's Air Passenger Charter specifies that airlines must process refunds promptly when they cancel flights. Additionally, you can file a credit card chargeback with your bank — if the airline cannot prove the refund was initiated and processed, the bank will reverse the amount directly.
+
+1) File a DGCA complaint at dgca.gov.in — this triggers formal regulatory follow-up. 2) File on consumerhelpline.gov.in (National Consumer Helpline — 1800-11-4000) citing airline refund delay. 3) Simultaneously, file a credit card chargeback with your bank: call credit card customer care, say airline cancelled flight and refund not received in 34 days — initiate chargeback. Attach the cancellation email. 4) File on AirSewa portal (airsewa.gov.in) for DGCA mediation. 5) If still unresolved after 45 days, approach the District Consumer Disputes Redressal Commission.
+
+Travelers learn DGCA mandates a 7-working-day airline refund window, that credit card chargeback is a parallel and effective recovery route, and that DGCA/AirSewa portals are the regulatory escalation path.

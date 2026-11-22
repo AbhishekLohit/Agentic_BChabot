@@ -1,0 +1,20 @@
+{
+  "label": "baseline",
+  "run_at": "2026-11-15T20:53:42",
+  "stage": "all",
+  "split": "dev",
+  "limit": null,
+  "eval_version": "v1",
+  "index": {
+    "files": 1,
+    "chunks": 16,
+    "chunk_size": 1200,
+    "chunk_overlap": 200,
+    "embedding_provider": "local",
+    "index_seconds": 1.4
+  },
+  "generator": "capstone",
+  "judge": "capstone (temperature 0)",
+  "judge_provider": null,
+  "rescored_at": "2026-11-15T15:36:34"
+}

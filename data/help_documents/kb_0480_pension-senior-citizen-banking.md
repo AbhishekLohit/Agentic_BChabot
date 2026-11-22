@@ -1,0 +1,7 @@
+# Pension & Senior Citizen Banking
+
+This is a classic telephone banking fraud targeting elderly people. The immediate priority is containment and reporting. Under RBI's Zero Liability framework (Circular DBR.No.Leg.BC.78/09.07.005/2017-18), a customer who is a victim of fraud 'without any negligence on their part' is eligible for zero liability. However, sharing OTP is considered contributing negligence and reduces this protection. That said, immediate complaint filing is critical — the faster you act, the higher the chance of partial recovery through transaction tracing.
+
+1) Call the bank's 24/7 helpline IMMEDIATELY to block the card and report fraud — note the complaint reference number. 2) File cybercrime complaint at cybercrime.gov.in or call 1930 within hours of fraud — time-sensitive for fund recovery. 3) Visit the bank branch within 3 working days with a written complaint citing the fraud. 4) File an FIR at the local police station under Cyber Crime section. 5) For elderly victims especially, some PSBs have compassionate review processes — ask the branch manager explicitly to raise a 'senior citizen fraud reversal request'. 6) RBI Ombudsman can be approached if the bank doesn't respond within 30 days.
+
+Families of elderly fraud victims learn the time-critical steps (block card, 1930, cybercrime complaint), the partial zero-liability framework, and the compassionate review option for senior citizens.

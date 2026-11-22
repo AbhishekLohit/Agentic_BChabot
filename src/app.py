@@ -13,6 +13,7 @@ from app_models import (
                 )
 from app_setting import AppSettings
 from utils.embeddings.help_document_store import create_help_vector_store
+from langgraph.errors import GraphRecursionError
 from utils.file_utils import (
                             get_all_prompts,
                             save_chat_history,
@@ -88,6 +89,11 @@ async def lifespan(app: FastAPI):
     # Close DB connections or cleanup resources
    
 app = FastAPI(title="Banking chatbot", lifespan=lifespan)
+
+# Hard cap on agent steps per question (LangGraph super-steps); see AGENT_RECURSION_LIMIT.
+GRAPH_CONFIG = {"recursion_limit": AppSettings().AGENT_RECURSION_LIMIT}
+STEP_LIMIT_MESSAGE = ("I'm sorry, I couldn't complete this request within the allowed number of steps. "
+                      "Please try rephrasing your question.")
 
 from fastapi.responses import HTMLResponse
 import os
@@ -333,7 +339,7 @@ async def process(
     try:
         
         logger.info("Process endpoint invoked sucessfully")
-        response = await agent_graph.app.ainvoke(graph_state)
+        response = await agent_graph.app.ainvoke(graph_state, config=GRAPH_CONFIG)
         
         #response = response["context_builder_response"].user_query
         # final_chat_response = ResponseGeneratorResponse(
@@ -360,6 +366,9 @@ async def process(
             }
 
         logger.info("Final response generated")
+    except GraphRecursionError:
+        logger.warning(f"Agent step limit ({GRAPH_CONFIG['recursion_limit']}) reached")
+        return JSONResponse({"response": STEP_LIMIT_MESSAGE, "visualization": None})
     except Exception as e:
         logger.exception("Error while invoking agent graph")
         return JSONResponse({"error": "internal_error", "details": str(e)}, status_code=500)
@@ -422,7 +431,7 @@ async def process_debug(
     try:
         logger.info("[DEBUG] Invoking agent graph")
 
-        response = await agent_graph.app.ainvoke(graph_state)
+        response = await agent_graph.app.ainvoke(graph_state, config=GRAPH_CONFIG)
 
         response_gen = response.get("response_generation_response")
         generated_response = getattr(response_gen, "generated_response", None)
@@ -447,6 +456,9 @@ async def process_debug(
 
         return response
 
+    except GraphRecursionError:
+        logger.warning(f"[DEBUG] Agent step limit ({GRAPH_CONFIG['recursion_limit']}) reached")
+        return {"error": "step_limit", "details": STEP_LIMIT_MESSAGE}
     except Exception as e:
         logger.exception("[DEBUG] Error while invoking agent graph")
         return {"error": "internal_error", "details": str(e)}

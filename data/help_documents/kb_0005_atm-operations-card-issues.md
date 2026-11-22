@@ -1,0 +1,7 @@
+# ATM Operations & Card Issues
+
+Charging minimum balance fees when the account was above the required limit is clearly wrong and must be reversed. RBI mandates that: (1) Banks must give advance notice (SMS/letter) before deducting minimum balance penalties. (2) The charge cannot exceed the proportionate amount of the deficit. (3) Salaried accounts with some banks are 'zero balance' — check your account opening terms. (4) Under RBI circular, the bank must be transparent about all charges and cannot charge without disclosure in the tariff schedule. You are entitled to a full refund of incorrectly applied charges with an explanation.
+
+1) Download your last 6 months of bank statements and identify all 'minimum balance' charges. 2) Check your account type and the specified minimum balance requirement in your original welcome letter or bank's published tariff. 3) Visit the branch or call customer care with specific dates of erroneous charges. 4) Request reversal in writing, citing that the account was above minimum balance on the charge dates. 5) If the bank doesn't reverse, file an RBI CMS complaint at cms.rbi.org.in — wrong charges are a standard ground for RBI Ombudsman intervention. 6) NPCI Sachet portal (sachet.rbi.org.in) allows reporting unauthorized bank charges.
+
+Users learn that undisclosed or incorrect minimum balance charges are reversible, the RBI's charge transparency mandate, and the SACHET portal for reporting unauthorized bank charges.

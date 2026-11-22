@@ -1,0 +1,7 @@
+# Migrant Worker & Inter-state Banking
+
+For same-day ₹50,000 transfer: (1) IMPS (Immediate Payment Service) — available 24×7, settles instantly, limit is usually ₹5 lakh per transaction. Check your bank app for IMPS option. (2) RTGS (Real Time Gross Settlement) — instant settlement, but minimum ₹2 lakh. (3) Two UPI transfers of ₹25,000 each — if your per-transaction limit is ₹25,000 but daily limit is higher (usually ₹1 lakh), you can make two separate UPI transactions. (4) For amounts above your UPI limit, your bank can temporarily increase your UPI transaction limit upon request via net banking or customer care. NEFT is not instant (though batches now process every 30 minutes) — IMPS is the fastest option.
+
+1) Open your bank app → Fund Transfer → IMPS. Enter your brother's account number and IFSC. IMPS settles in seconds and is available 24×7 including holidays. 2) If IMPS is not visible in your app, use 'Other Transfers' and select IMPS. 3) IMPS charges are usually ₹0-₹15 depending on the bank — much lower than wire fees. 4) For two UPI transfers of ₹25,000 each, wait a few minutes between transactions. 5) Check your daily UPI limit — you can request a temporary increase via your bank's app under 'Card and Account Controls'.
+
+Users learn IMPS is the fastest 24×7 instant payment option for amounts up to ₹5 lakh, the difference between NEFT/RTGS/IMPS/UPI, and how to do 2 UPI splits for higher amounts.

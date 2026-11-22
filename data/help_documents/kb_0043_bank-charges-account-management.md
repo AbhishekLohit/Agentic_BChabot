@@ -1,0 +1,7 @@
+# Bank Charges & Account Management
+
+Pre-closure charges on savings accounts are allowed by RBI within the first 12 months for some banks and account types. However: (1) These charges must be disclosed upfront in account opening T&Cs. (2) For BSBD (Basic/Jan Dhan) accounts, no pre-closure charges are allowed. (3) After the lock-in period (usually 12 months), most banks don't charge. If within the disclosed period, the ₹500 may be valid. For migrating: (a) Change all salary credits and direct debits to the new account separately — NACH mandates must be updated with each lender. (b) Carry a copy of your bank statements when opening the new account for reference. (c) Keep the old account open for 3-6 months to catch any stray payments.
+
+1) Check your account opening T&Cs for the closure period and charges disclosure. If ₹500 is not disclosed, challenge it. 2) For migration checklist: (a) Update salary NEFT details with HR, (b) Update each NACH/ECS mandate individually with each lender, (c) Notify utility providers, insurance companies, mutual funds. 3) Port your UPI to the new bank via any UPI app — add new bank account, set as primary. 4) Keep old account minimally active (with minimum balance) for 3-6 months to catch any missed transfers. 5) After all transfers are migrated, close old account with a written closure request and collect a closure certificate.
+
+Users learn the legality of pre-closure charges, the migration checklist for salary/NACH/UPI, and the importance of keeping the old account open transitionally.

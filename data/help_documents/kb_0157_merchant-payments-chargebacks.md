@@ -1,0 +1,7 @@
+# Merchant Payments - Chargebacks
+
+When a customer files a chargeback for a UPI transaction, they claim the transaction was unauthorised or they did not receive the product/service. The chargeback is first handled by the customer's bank (issuing bank). They will raise a request through the UPI Resolution and Chargeback System (URCS). You (the merchant) have a few ways to respond. You can accept the chargeback or contest it by providing proof (e.g., delivery confirmation, customer receipt, SMS confirmation of payment). If you contest it, your bank (acquiring bank) will send evidence to the customer's bank. Under the new RGNB (remitting bank raising good faith negative chargeback) rules, a bank can raise a previously declined chargeback again if it believes it's genuine, eliminating the need for special NPCI permission .
+
+If you receive a chargeback notification, immediately gather evidence that the payment was legitimate (delivery proof, invoice, customer signature). If you can prove the transaction was valid and the customer received the service, contest the chargeback through your payment aggregator or bank. Under the new UPI chargeback rules, banks now have a tighter timeline to respond (3 calendar days for P2P, 15 days for P2M). If you do not respond, the chargeback is automatically accepted and the refund is processed .
+
+The user learns the chargeback process, the new RGNB rules, and the importance of providing evidence quickly.

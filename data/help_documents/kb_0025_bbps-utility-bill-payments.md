@@ -1,0 +1,7 @@
+# BBPS & Utility Bill Payments
+
+Many municipal corporations are now integrated with BBPS (Bharat Bill Payment System) even if their own website doesn't show it prominently. This means you can pay municipal taxes via BBPS on any payment app (PhonePe, Google Pay, Paytm, BHIM) by searching for the municipal corporation under 'Municipal Services' or 'Utility Payments' within the app's bill payment section. BBPS covers over 20,000 billers across utilities, municipalities, and government services. Check if your specific municipal corporation/nagar palika is listed on BBPS. Additionally, many state government portals (like UP's e-nagarpalika, Maharashtra's mahaaonline) have integrated UPI payment options on their dedicated apps.
+
+1) Open PhonePe/Google Pay → Bills → Municipal Corporation → search for your city. If listed, you can pay via UPI/BBPS. 2) Check the BBPS biller list at npci.org.in → BBPS → Biller List — search your municipal corporation. 3) Check if your state/city has a dedicated municipal payment app (e.g., Greater Hyderabad MC app, BBMP app for Bengaluru, NMMC app for Navi Mumbai) which typically supports UPI. 4) If none of these, the NEFT/Challan route on the municipal website is reliable — generate challan online, make NEFT from your bank, enter UTR on the portal.
+
+Urban residents learn BBPS often covers municipal taxes even when the municipality's website doesn't prominently show UPI, and how to search for the biller on payment apps.

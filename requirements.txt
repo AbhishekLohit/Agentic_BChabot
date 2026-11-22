@@ -112,9 +112,12 @@ zipp==3.23.0
 zstandard==0.25.0
 langchain-google-genai
 langchain-groq
+langchain-ollama
 python-multipart
 streamlit
 plotly
 watchdog
 pytest
 openpyxl
+rank_bm25
+flashrank

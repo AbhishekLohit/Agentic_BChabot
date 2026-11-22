@@ -1,0 +1,7 @@
+# Kisan Credit Card & Agricultural Banking
+
+Yes — RBI's KCC guidelines explicitly allow Kisan Credit Cards for farmers who don't hold land title, including: (1) Tenant farmers who cultivate leased land. (2) Oral lessees — those who farm land under informal arrangements. (3) Share croppers who receive a share of the harvest. (4) Allied activity workers — fishermen, poultry/dairy farmers. The bank's refusal citing land title is technically incorrect under RBI KCC Master Circular. However, you will need alternative documentation to prove actual cultivation — like a NOC from landowner (your mother), past crop loan receipts, crop insurance records, or a certificate from the village panchayat or agriculture department.
+
+1) Obtain a written NOC from your mother (landowner) confirming you are the actual cultivator. 2) Collect supporting documents: previous crop purchase receipts, cooperative fertilizer bill, PMFBY insurance record showing you as cultivator. 3) Submit a formal KCC application citing 'oral lessee / actual cultivator' category under RBI KCC Master Circular. 4) If branch still refuses, approach the Lead District Manager (LDM) of your district. 5) Contact NABARD's district office or Regional Rural Bank in your district — RRBs often have more flexible KCC lending for small farmers. 6) Raise complaint at CPGRAMS if bank refuses without valid reason.
+
+Tenant farmers and sharecroppers learn that KCC eligibility is not limited to land title holders, the documents that substitute for ownership proof, and how to formally challenge wrongful rejections.

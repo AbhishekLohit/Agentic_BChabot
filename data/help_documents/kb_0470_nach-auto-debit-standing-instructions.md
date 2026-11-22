@@ -1,0 +1,7 @@
+# NACH / Auto-Debit & Standing Instructions
+
+Absolutely yes — if the NACH failure was due to the bank's technical error (not insufficient funds), the bounce charge must be reversed without argument. Under RBI guidelines, charges can only be levied for NACH failures caused by the customer (insufficient balance, account issues). A bank-side technical error causing a NACH failure is a deficiency of service, and both the bounce charge AND any penal interest on EMI due to the delay must be reversed. Get the bank's admission of technical error in writing (email/letter) — this is your strongest evidence.
+
+1) Get the bank's acknowledgment of 'technical error' in writing — ask the customer care representative to send an email confirmation or provide a reference number. 2) Submit a written complaint citing: date of failed NACH, account balance on that date (attach mini statement), and bank's verbal admission of technical error. 3) Request reversal of: (a) ₹590 bounce charge, (b) any EMI late payment penalty from the lender. 4) If the bank doesn't reverse within 7 days, file at RBI CMS (cms.rbi.org.in). 5) Also notify the home loan lender (if a different entity) about the bank's technical error to ensure no negative credit bureau reporting.
+
+Borrowers learn that NACH bounce charges due to bank technical errors (not insufficient funds) are fully reversible, the importance of getting the bank's admission in writing, and CIBIL protection steps.
