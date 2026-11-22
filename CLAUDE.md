@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A FastAPI + LangGraph backend for a **banking-transactions chatbot** (Barclays-style "FinTell"). It accepts a natural-language user query, runs it through a security guardrail, splits/classifies it, then either (a) generates SQL against a single SQLite `transactions` table, executes it, and optionally builds a Plotly chart, (b) answers a how-to question from a Barclays help-centre RAG store, or (c) helps the customer raise a **non-fraud card dispute** (collects the payment, reason and answers, gets an explicit confirmation, then raises a case). The result is rephrased into a chat reply.
 
-The default LLM provider is **Anthropic** (`claude-sonnet-4-6`), set by `LLM_PROVIDER` in [src/app_setting.py](src/app_setting.py). The provider is hot-swappable at runtime via `POST /update-settings` — supported values are `"openai"`, `"anthropic"`, `"gemini"`, `"groq"`. `text-embedding-3-small` (OpenAI) is the embedding model used by the help-centre store.
+The default LLM provider is **Anthropic** (`claude-sonnet-4-6`), set by `LLM_PROVIDER` in [src/app_setting.py](src/app_setting.py). The provider is hot-swappable at runtime via `POST /update-settings` — supported values are `"openai"`, `"qwen"`, `"anthropic"`, `"gemini"`, `"groq"`. Qwen uses the OpenAI-compatible client with `QWEN_API_KEY`, `QWEN_API_BASE_URL`, `QWEN_MODEL`, and `QWEN_CA_CERT`. `text-embedding-3-small` (OpenAI) is the embedding model used for non-runtime utilities.
 
 ## Common commands
 
@@ -33,8 +33,6 @@ python src/clients/barclays_help_ingest.py
 python data/data_processing/transaction_data_enhance.py build
 python data/data_processing/transaction_data_enhance.py shift
 ```
-
-`.env` at the repo root must contain the API key for whichever provider is active (e.g. `ANTHROPIC_API_KEY`) **and** `OPENAI_API_KEY` (embeddings for the help store). It is gitignored and read by `clients/llm_client.py` via `python-dotenv`. See `.env.example`.
 
 Tests (no API keys needed — they use a scripted fake chat model in `tests/fakes.py`):
 
@@ -128,10 +126,9 @@ Prompts live as YAML in `prompts/*.yml` with a single `prompt:` key. [src/utils/
 
 - **The misspelling `suprivisor` (instead of `supervisor`) is load-bearing.** It appears in the prompt filename, the `Prompts.suprivisor_prompt` field, the agent module/function names, and the `Graph_State.suprivisor_response` field. Don't "fix" it as part of an unrelated change.
 - `Agent_Graph.__init__` sets `self.logger = logger` **after** `self.app = self._workflow()`, but `_workflow` doesn't use the logger so this works. Don't reorder so a node method that needs the logger gets called during compile.
-- `SubGraph_State.agent_metrics` is expected to already be a dict when the subgraph starts. In the normal flow the `guardrail` agent initializes `agent_metrics = {}`. If you add a graph path that reaches the subgraph without going through `guardrail`, initialize it yourself.
-- `_supervisor_router` picks a single primary route (Dispute first, then BankSQL, else help, else fallback); `_after_dispute_router` and `_after_sql_router` chain the remaining branches one after another so they never write the shared `agent_metrics` channel concurrently. The `join` node synchronises before `visualization_agent`.
-- Anything that can run more than once in a request (for example a model call made from both the dispute gate and the dispute agent) must store its metrics with `agent_utils.record_metric`, which suffixes `_2`, `_3`... instead of overwriting the key.
-- The guardrail judges each message on its own, so a bare "yes" or "ok" is classed GREETING. `Agent_Graph._guardrail` discards that verdict while a dispute draft is open. If you add another check that reads messages in isolation, remember mid-dispute replies are often one word.
-- `/process-stream` appends any reply text that was not model output (the dispute reminder) as a final token event so the live text matches the final reply. Nodes return the whole `Graph_State` (no reducers), so new fields need defaults and must be set on `state`, not returned as partial dicts.
-- Prompt-cache hints: agents send the system prompt with `cache_control` (ephemeral, 1h). Edit prompt text freely, but expect the first call afterwards to be a cache miss.
-- The LLM client (`clients/llm_client.py`) supports `openai`, `anthropic`, `gemini`, `groq`; each reads its own API key from the environment. Embeddings always use OpenAI regardless of the chat provider.
+- `SubGraph_State.agent_metrics` is expected to already be a dict when the subgraph starts. In the normal flow the `guardrail` agent initializes `agent_metrics = {}`. If you add a graph path that reaches the subgraph without going through `guardrail`, initialize `agent_metrics = {}` yourself.
+- `_supervisor_router` can return **multiple routes** simultaneously (e.g. both `sql_generation` and `fallback` when there are multiple banksql queries). LangGraph fans these out; the `join` node synchronises them before `visualization_agent`.
+- `transactions.db` is checked into the repo (~880KB). `orders.db` (~13MB) is the legacy food-ordering DB and is unused by the current code path; leave it alone unless intentionally removing legacy assets.
+- The `data/embeddings_data/` FAISS indices and `chroma_store/` are leftovers from the food-ordering version. The current banking flow does not load any vector store at runtime — `get_vectordb_data` in `file_utils.py` exists but is not called from `lifespan`.
+- The LLM client (`clients/llm_client.py`) supports `openai`, `qwen`, `anthropic`, `gemini`, and `groq`. The active provider is determined by `AppSettings.LLM_PROVIDER` (default `"anthropic"`). Each provider reads its own API key from the environment. Qwen uses an OpenAI-compatible endpoint and its configured CA certificate. Embeddings always use OpenAI regardless of the chat provider and are optional at runtime.
+- `dashboard.py` is a minimal Streamlit app that renders `src/index.html` inside a full-screen iframe — it is just a UI shell and does not contain application logic.

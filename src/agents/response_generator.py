@@ -3,9 +3,10 @@ from logging import Logger
 from agents.disputes.workflow import plain_reply as dispute_plain_reply
 from app_models import FallbackResponse, Graph_State,ResponseGeneratorResponse
 import time
+from langchain_core.prompts import BasePromptTemplate
 
 from utils import agent_utils
-
+from utils.chart_intent import is_explicit_pie_request
 
 async def _dispute_reply(state: Graph_State, llm: Any, prompt: Any, logger: Logger) -> str:
     """Put the Disputes agent's result into words. The agent has already decided what
@@ -64,6 +65,13 @@ async def response_generator_agent(
     dispute_prompt: Any = None,
 )-> Graph_State:
     logger.info("Executing response generation agent.")
+    if state.visualization_only:
+        state.response_generation_response = ResponseGeneratorResponse(
+            generated_response=""
+        )
+        logger.info("Skipping text response because the user requested only a visualization.")
+        return state
+
     # Render the final prompt string using .format()
     try:
         final_message = []
@@ -81,6 +89,12 @@ async def response_generator_agent(
 
         if state.database_query_results is not None:
             sql_query_result = state.database_query_results
+            truncation_notice = (
+                f"\n[System Notification: Only {len(sql_query_result)} result rows are displayed; "
+                "additional results were omitted.]"
+                if state.database_results_truncated
+                else ""
+            )
             # The queries answered on the SQL path are the classified BankSQL queries
             # (one, or several combined into a single SQL); fall back to the
             # context-builder queries if unavailable.
@@ -98,6 +112,7 @@ async def response_generator_agent(
                 {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
                 {"role": "user", "content": f"""
                                     sql_query_result: {sql_query_result}
+                                    {truncation_notice}
                                     user_question: {user_query}"""}
             ]
 
@@ -121,6 +136,16 @@ async def response_generator_agent(
                 logger.warning(f"Response generator metrics unavailable: {metric_err}")
 
             final_message.append(generated_text)
+        if (
+            state.input_request is not None
+            and is_explicit_pie_request(state.input_request.user_query)
+            and state.visualization_response is not None
+            and not state.visualization_response.decision.should_visualize
+            and state.visualization_response.decision.reasoning.startswith(
+                "Pie chart not supported for these values:"
+            )
+        ):
+            final_message.append(state.visualization_response.decision.reasoning)
 
         # After a side question asked mid-dispute: say the dispute is still open.
         if state.dispute_reminder:

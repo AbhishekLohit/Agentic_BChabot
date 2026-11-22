@@ -1,5 +1,5 @@
-from fastapi import Depends, FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File
+from fastapi.responses import JSONResponse, StreamingResponse
 import json
 import os
 from contextlib import asynccontextmanager
@@ -64,24 +64,25 @@ async def lifespan(app: FastAPI):
         os.environ["LANGCHAIN_API_KEY"] = app_settings.LANGCHAIN_API_KEY
         os.environ["LANGCHAIN_PROJECT"] = app_settings.LANGCHAIN_PROJECT
 
+    logger = setup_logging()
     llm = get_configured_llm()
     prompts = get_all_prompts(app_settings)
-    logger = setup_logging()
 
-    # Barclays help-centre RAG store. Opening the persisted Chroma dir is cheap;
-    # if the KB hasn't been built yet (or fails to open) the help branch degrades
-    # gracefully to a "couldn't find it" reply rather than crashing startup.
-    try:
-        help_store = HelpStore(
-            persist_directory=_resolve_path(app_settings.help_store_dir),
-            collection_name=app_settings.help_collection,
-            model=app_settings.EMBED_MODEL,
-            top_k=app_settings.help_top_k,
-            threshold=app_settings.help_similarity_threshold,
-        )
-        logger.info("Help store loaded (%s chunks).", help_store.count())
-    except Exception as e:
-        logger.warning("Help store unavailable — help-centre answers disabled: %s", e)
+    if openai_api_key:
+        # HelpStore uses OpenAI embeddings independently of the chat provider.
+        try:
+            help_store = HelpStore(
+                persist_directory=_resolve_path(app_settings.help_store_dir),
+                collection_name=app_settings.help_collection,
+                model=app_settings.EMBED_MODEL,
+                top_k=app_settings.help_top_k,
+                threshold=app_settings.help_similarity_threshold,
+            )
+            logger.info("Help store loaded (%s chunks).", help_store.count())
+        except Exception as e:
+            logger.warning("Help store unavailable — help-centre answers disabled: %s", e)
+            help_store = None
+    else:
         help_store = None
 
     # Per-reason question sets for the Disputes agent. If the file is missing or invalid
@@ -542,7 +543,8 @@ async def process(
             now,
         )
         db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "user", input_request.user_query, now)
-        db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
+        if final_chat_response:
+            db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
         agent_metrics = response.get("agent_metrics")
         if agent_metrics:
             db_utils.save_metrics(db_conn, input_request.customer_id, input_request.session_id, agent_metrics, now)
@@ -657,7 +659,8 @@ async def process_stream(
             now = db_utils.now_iso()
             db_utils.upsert_session(db_conn, input_request.session_id, input_request.customer_id, input_request.user_query, now)
             db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "user", input_request.user_query, now)
-            db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
+            if final_chat_response:
+                db_utils.save_message(db_conn, input_request.session_id, input_request.customer_id, "assistant", final_chat_response, now)
             metrics = final_state.get("agent_metrics")
             if metrics:
                 db_utils.save_metrics(db_conn, input_request.customer_id, input_request.session_id, metrics, now)
@@ -738,6 +741,76 @@ async def clear_chat_history_endpoint(
     deleted = db_utils.delete_other_sessions(db_conn, customer_id, keep_session_id or "")
     return JSONResponse({"status": "success", "deleted_sessions": deleted})
 
+
+@app.post("/process-voice")
+async def process_voice(
+    file: UploadFile = File(...),
+    openai_llm: Annotated[Any, Depends(get_llm)] = None,
+    prompts: Annotated[Prompts, Depends(get_prompts)] = None,
+    logger: Annotated[Logger, Depends(get_logging)] = None,
+    redis_client: Annotated[any, Depends(get_redis_client)] = None,
+    db_conn: Annotated[any, Depends(get_db_conn)] = None,
+):
+    """
+    Endpoint that accepts binary audio upload, transcribes it using Whisper,
+    and runs it through the chatbot pipeline.
+    """
+    from app_setting import AppSettings
+    settings = AppSettings()
+    api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Voice transcription is unavailable without an OpenAI API key. Text chat with Qwen is unaffected.",
+        )
+
+    logger.info(f"Received voice upload request: filename={file.filename}")
+    
+    # Save the uploaded file temporarily
+    temp_file_name = f"temp_{file.filename}"
+    with open(temp_file_name, "wb") as f:
+        f.write(await file.read())
+        
+    try:
+        from openai import AsyncOpenAI
+            
+        # Transcribe with Whisper
+        client = AsyncOpenAI(api_key=api_key)
+        with open(temp_file_name, "rb") as audio:
+            transcription = await client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio
+            )
+            
+        transcribed_text = transcription.text
+        logger.info(f"Whisper transcription completed: '{transcribed_text}'")
+        
+        # Build UIUserRequest matching standard payload
+        from app_models import UIUserRequest
+        request_data = UIUserRequest(
+            customer_id="Cust_0410",
+            session_id="sess_voice_upload",
+            user_query=transcribed_text
+        )
+        
+        # Invoke standard process endpoint logic
+        return await process(
+            input_request=request_data,
+            openai_llm=openai_llm,
+            prompts=prompts,
+            logger=logger,
+            redis_client=redis_client,
+            db_conn=db_conn
+        )
+    except Exception as e:
+        logger.exception("Error during voice query processing")
+        return {"error": "voice_processing_failed", "details": str(e)}
+    finally:
+        # Clean up temporary audio file
+        if os.path.exists(temp_file_name):
+            os.remove(temp_file_name)
+
+from pydantic import BaseModel
 
 class SettingsUpdateRequest(BaseModel):
     llm_provider: str

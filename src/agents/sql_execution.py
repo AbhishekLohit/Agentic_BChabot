@@ -1,42 +1,87 @@
 import sqlite3
 import re
 from logging import Logger
-from app_models import FallbackResponse, Graph_State
+from app_models import FallbackResponse, SubGraph_State
+from utils.chart_intent import is_explicit_chart_request
 
 # Hard ceiling on how many rows a single query may return to the user. Detail
 # transaction lists are capped to the most recent MAX_RESULT_ROWS rows.
 MAX_RESULT_ROWS = 20
+RESULT_TRUNCATION_PROBE = MAX_RESULT_ROWS + 1
+MAX_CHART_RESULT_ROWS = 500
+CHART_RESULT_TRUNCATION_PROBE = MAX_CHART_RESULT_ROWS + 1
 
 async def execute_query(
-    state: Graph_State,
+    state: SubGraph_State,
     db_conn: any,
     logger: Logger
-) -> list[str]:
+) -> SubGraph_State:
     """
-    Execute the given SQL query and return results as a string.
+    Execute the generated query and store rows as dictionaries in graph state.
     Includes safeguards to prevent fetching massive amounts of data.
     """
     logger.info("Executing SQL execution agent.")
     sql_query = state.text2sql_generator_response.sql_query.strip()
 
+    chart_request = is_explicit_chart_request(
+        state.input_request.user_query if state.input_request else None
+    )
+    is_grouped_aggregate = (
+        re.search(r"\bgroup\s+by\b", sql_query, re.IGNORECASE) is not None
+        and re.search(
+            r"\b(count|sum|avg|min|max|group_concat)\s*\(",
+            sql_query,
+            re.IGNORECASE,
+        )
+        is not None
+    )
+    chart_summary = chart_request and is_grouped_aggregate
+
     # Programmatic Safeguard: Check if SELECT query lacks aggregates and LIMIT
     if sql_query.lower().startswith("select"):
         has_aggregates = re.search(r'\b(count|sum|avg|min|max|group_concat)\b\s*\(', sql_query, re.IGNORECASE) is not None
         has_limit = re.search(r'\blimit\b', sql_query, re.IGNORECASE) is not None
-        if not has_aggregates and not has_limit:
+        if chart_summary:
+            sql_query_clean = sql_query.rstrip(";").strip()
+            if has_limit:
+                sql_query = re.sub(
+                    r"\blimit\s+(\d+)",
+                    lambda match: (
+                        f"LIMIT {min(int(match.group(1)), CHART_RESULT_TRUNCATION_PROBE)}"
+                    ),
+                    sql_query_clean,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
+            else:
+                sql_query = (
+                    f"{sql_query_clean} LIMIT {CHART_RESULT_TRUNCATION_PROBE}"
+                )
+            logger.info(
+                "Applied chart-summary SQL result cap of %s rows.",
+                CHART_RESULT_TRUNCATION_PROBE,
+            )
+        elif not has_aggregates and not has_limit:
             has_orderby = re.search(r'\border\s+by\b', sql_query, re.IGNORECASE) is not None
             sql_query_clean = sql_query.rstrip(";").strip()
             if has_orderby:
-                sql_query = sql_query_clean + f" LIMIT {MAX_RESULT_ROWS}"
+                sql_query = sql_query_clean + f" LIMIT {RESULT_TRUNCATION_PROBE}"
             else:
-                sql_query = sql_query_clean + f" ORDER BY transaction_date DESC LIMIT {MAX_RESULT_ROWS}"
+                sql_query = (
+                    sql_query_clean
+                    + f" ORDER BY transaction_date DESC LIMIT {RESULT_TRUNCATION_PROBE}"
+                )
             logger.info(f"Programmatic safeguard applied. Query rewritten to: {sql_query}")
         elif not has_aggregates and has_limit:
-            # Clamp an explicitly generated LIMIT down to the ceiling, so requests
-            # like "show all my transactions in 2026" can never exceed MAX_RESULT_ROWS.
+            # Fetch one probe row beyond the response cap so truncation is detectable.
             def _clamp_limit(match: re.Match) -> str:
                 requested = int(match.group(1))
-                return f"LIMIT {min(requested, MAX_RESULT_ROWS)}"
+                limit = (
+                    RESULT_TRUNCATION_PROBE
+                    if requested >= MAX_RESULT_ROWS
+                    else requested
+                )
+                return f"LIMIT {limit}"
             new_query = re.sub(r'\blimit\s+(\d+)', _clamp_limit, sql_query, flags=re.IGNORECASE)
             if new_query != sql_query:
                 sql_query = new_query
@@ -51,17 +96,19 @@ async def execute_query(
     try:
         cursor.execute(sql_query)
         if cursor.description is not None:
-            # Return results as list of dicts
             columns = [col[0] for col in cursor.description]
             raw_rows = cursor.fetchall()
-            results = [str(dict(zip(columns, row))) for row in raw_rows]
-            
-            # Truncation fallback: final hard cap in Python
-            if len(results) > MAX_RESULT_ROWS:
-                logger.warning(f"Database returned {len(results)} rows. Truncating to {MAX_RESULT_ROWS}.")
-                results = results[:MAX_RESULT_ROWS]
-                results.append(f"[System Notification: Only the {MAX_RESULT_ROWS} most recent relevant transactions are displayed for brevity]")
-            
+            result_limit = MAX_CHART_RESULT_ROWS if chart_summary else MAX_RESULT_ROWS
+            state.database_results_truncated = len(raw_rows) > result_limit
+            if state.database_results_truncated:
+                logger.warning(
+                    "Database returned %s rows. Truncating to %s.",
+                    len(raw_rows),
+                    result_limit,
+                )
+                raw_rows = raw_rows[:result_limit]
+
+            results = [dict(zip(columns, row)) for row in raw_rows]
             state.database_query_results = results
             logger.info(f"SQL executed successfully. Results count: {len(results)}\n")
             
@@ -81,4 +128,3 @@ async def execute_query(
     return state
 
     
-

@@ -1945,13 +1945,15 @@
             }
 
             const replyTs = formatTime(new Date());
-            ensureBubble();
-            assistantBubble.innerHTML = formatReply(cleanReply) + noteHtml;
+            if (cleanReply || noteHtml) {
+                ensureBubble();
+                assistantBubble.innerHTML = formatReply(cleanReply) + noteHtml;
 
-            const tsDiv = document.createElement("div");
-            tsDiv.className = "msg-timestamp left";
-            tsDiv.textContent = replyTs;
-            chatBoard.appendChild(tsDiv);
+                const tsDiv = document.createElement("div");
+                tsDiv.className = "msg-timestamp left";
+                tsDiv.textContent = replyTs;
+                chatBoard.appendChild(tsDiv);
+            }
             chatBoard.scrollTop = chatBoard.scrollHeight;
 
             // Render chart if visualization data is present
@@ -1966,9 +1968,11 @@
             }
 
             // Update sidebar preview
-            chatPreview.textContent = cleanReply.substring(0, 40) + (cleanReply.length > 40 ? "..." : "");
+            const previewText = cleanReply || (vizData ? "Chart created" : "");
+            chatPreview.textContent = previewText.substring(0, 40) + (previewText.length > 40 ? "..." : "");
             chatItemTime.textContent = replyTs;
 
+            if (cleanReply) speakReply(cleanReply);
             saveSession(currentSessionId); // reset idle timer on every successful exchange
 
         } catch (error) {

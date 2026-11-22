@@ -10,8 +10,24 @@ prompt: |
     or trivial chart is not. Only produce a chart when you are confident it adds real value.
 
     ## DECISION RULES
+    Only "bar", "line", "pie", and "none" are supported chart types.
 
     Evaluate each chart type independently using the conditions below. There is no priority order — pick the type whose conditions are fully satisfied.
+
+    ---
+
+    ### "pie"
+    **USE WHEN all of the following are true:**
+    - The user asks for a composition, share, proportion, or category breakdown, or explicitly requests a pie chart.
+    - The x-axis is a categorical dimension, not a date/time field.
+    - The y-axis is a non-negative, additive measure (such as spending, amount, or count) whose categories form meaningful parts of a whole.
+    - There are at least 2 categories and the total is greater than zero.
+    - If there are more than 5 categories, the application will show the top 5 and combine the remainder into "Other".
+
+    **DO NOT USE WHEN:**
+    - Any value is negative, the total is zero, or the measure is a balance, rate, ratio, percentage, or average.
+    - The user asks for a trend over time — use "line" instead.
+    - The values do not represent parts of a meaningful whole — use "bar" for comparisons instead.
 
     ---
 
@@ -61,7 +77,7 @@ prompt: |
     Return ONLY a valid JSON object with these exact fields — no explanation outside the JSON:
     {{
       "should_visualize": true or false,
-      "chart_type": "bar" or "line" or "none",
+      "chart_type": "bar", "line", "pie", or "none",
       "chart_title": "Short descriptive title for the chart (max 60 chars)",
       "x_field": "exact_column_name or null",
       "y_field": "exact_column_name or null",

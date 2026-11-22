@@ -7,6 +7,7 @@ from typing import Any
 
 from utils import agent_utils
 from utils import db_utils
+from utils.chart_intent import is_explicit_chart_request
 
 
 def _make_cache_key(customer_id: str, nl_query: str) -> str:
@@ -28,11 +29,15 @@ async def text2sql_generator_agent(
         input_query = state.banksql_queries
         query_str = str(input_query)
         customer_id = state.input_request.customer_id
+        chart_request = is_explicit_chart_request(
+            state.input_request.user_query if state.input_request else None
+        )
         logger.info(f"Input query for Text2SQL Generator: {input_query}")
         logger.info(f"Customer ID for Text2SQL Generator: {customer_id}")
 
         # --- CACHE CHECK ---
-        cache_key = _make_cache_key(customer_id, query_str)
+        cache_query = f"{query_str}\n[chart-summary]" if chart_request else query_str
+        cache_key = _make_cache_key(customer_id, cache_query)
         cached_sql = None
         if redis_client is not None:
             try:
@@ -58,7 +63,21 @@ async def text2sql_generator_agent(
             {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
             {"role": "user", "content": f"""
                                 input_query: {input_query}
-                                customer_id: {customer_id}"""}
+                                customer_id: {customer_id}
+                                {(
+                                    "VISUALIZATION REQUEST: Return a compact SQL summary, never individual "
+                                    "transactions. Aggregate in SQL before applying any row limit. For a "
+                                    "time-series chart, group by transaction_date for a narrow daily range "
+                                    "or by year and month for a broader range; for a requested merchant or "
+                                    "category comparison, group by that dimension. If the user explicitly "
+                                    "requests a pie chart, group by the requested categorical dimension "
+                                    "(not a date), and use a non-negative additive amount or count measure. "
+                                    "Select only the grouping fields and aggregated measure(s), use aliases "
+                                    "that clearly identify the date/category and value, and do not add a "
+                                    "LIMIT to grouped chart results. Spending must SUM amount_usd excluding "
+                                    "income; counts use COUNT; rates use AVG; never sum balances."
+                                    if chart_request else ""
+                                )}"""}
         ]
         structured_llm = llm.with_structured_output(Text2SqlGeneratorResponse,include_raw=True)
         start_time = time.time()
@@ -105,7 +124,7 @@ async def text2sql_generator_agent(
         generated_sql = sql_generator.sql_query
         if db_conn is not None:
             try:
-                db_utils.save_cached_sql(db_conn, cache_key, customer_id, query_str, generated_sql)
+                db_utils.save_cached_sql(db_conn, cache_key, customer_id, cache_query, generated_sql)
             except Exception:
                 pass
         if redis_client is not None:

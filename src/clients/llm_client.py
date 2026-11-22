@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from app_setting import AppSettings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+import httpx
 from typing import Any
 
 # Load environment variables from .env
@@ -15,7 +16,7 @@ def get_configured_llm(
 ) -> Any:
     """
     Returns a configured LangChain chat model based on AppSettings or overridden parameters.
-    Supports provider: "openai", "gemini", "groq", "anthropic".
+    Supports provider: "openai", "qwen", "gemini", "groq", "anthropic".
     """
     settings = AppSettings()
 
@@ -42,6 +43,31 @@ def get_configured_llm(
             temperature=temperature,
             max_tokens=max_tokens,
             api_key=api_key
+        )
+
+    elif provider == "qwen":
+        if model is None:
+            model = settings.QWEN_MODEL
+        api_key = settings.QWEN_API_KEY or os.getenv("QWEN_API_KEY")
+        if not api_key:
+            raise ValueError("QWEN_API_KEY not found. Please set it in your environment or AppSettings.")
+
+        max_tokens = max(1, min(max_tokens, 1024))
+
+        ca_cert = settings.QWEN_CA_CERT or os.getenv("QWEN_CA_CERT")
+        if not ca_cert:
+            raise ValueError("QWEN_CA_CERT not found. Set it to the path of your Qwen CA certificate.")
+        if not os.path.isfile(ca_cert):
+            raise FileNotFoundError(f"QWEN_CA_CERT file does not exist: {ca_cert}")
+
+        return ChatOpenAI(
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            api_key=api_key,
+            base_url=settings.QWEN_API_BASE_URL,
+            http_client=httpx.Client(verify=ca_cert),
+            http_async_client=httpx.AsyncClient(verify=ca_cert),
         )
 
     elif provider == "gemini":
@@ -89,7 +115,7 @@ def get_configured_llm(
     else:
         raise ValueError(
             f"Unsupported LLM provider '{provider}'. "
-            "Please configure one of: 'openai', 'gemini', 'groq', 'anthropic'."
+            "Please configure one of: 'openai', 'qwen', 'gemini', 'groq', 'anthropic'."
         )
 
 def get_openai_embeddings(model: str = "text-embedding-3-small") -> OpenAIEmbeddings:

@@ -52,7 +52,8 @@ def save_chat_history(
         return
     key = _get_redis_key(user_id, session_id)
     # Convert Pydantic models -> dicts -> JSON string
-    chat_history.append(ChatMessage(role="assistant", content=ai_response))
+    if ai_response:
+        chat_history.append(ChatMessage(role="assistant", content=ai_response))
     logger.info(f"Saving chat history to Redis key: {chat_history}")
     serialized = json.dumps([msg.dict() for msg in chat_history])
     try:
