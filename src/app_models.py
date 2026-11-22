@@ -13,9 +13,10 @@ class Prompts(BaseModel):
     sql_correction_prompt: BasePromptTemplate
     visualization_prompt: BasePromptTemplate
     history_summarizer_prompt: BasePromptTemplate
-    help_center_prompt: BasePromptTemplate
     dispute_extraction_prompt: BasePromptTemplate
     dispute_reply_prompt: BasePromptTemplate
+    # RAG help-document agent (prompts/help_agent_prompt.yml)
+    help_agent_prompt: BasePromptTemplate | None = None
 
 
 class UIUserRequest(BaseModel):
@@ -23,6 +24,14 @@ class UIUserRequest(BaseModel):
     session_id: str
     user_query: str
 
+
+
+class UIUserRequestDebug(BaseModel):
+    """/process-debug: like UIUserRequest, but the chat history is supplied by the caller."""
+    customer_id: str
+    session_id: str
+    user_query: str
+    chat_history: list["ChatMessage"] = []
 
 
 class GuardRailResponse(BaseModel):
@@ -200,6 +209,11 @@ class Graph_State(BaseModel):
     out_of_scope_queries: list[str] | None
     help_center_queries: list[str] | None = None
     help_center_response: ResponseGeneratorResponse | None = None
+    # RAG help-document agent: which agent answered the help questions, and the
+    # citation check report (see utils/help_rag.enforce_citations).
+    help_queries: list[str] | None = None
+    help_source: str | None = None
+    help_citation_report: dict[str, Any] | None = None
     fallback_response: FallbackResponse | None
     response_generation_response: ResponseGeneratorResponse | None
     visualization_response: VisualizationResponse | None = None
@@ -232,3 +246,5 @@ class SubGraph_State(BaseModel):
     banksql_queries: list[str] | None
     input_request: UIUserRequest | None
     agent_metrics: dict[str, Metrics]  | None
+
+UIUserRequestDebug.model_rebuild()

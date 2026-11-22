@@ -102,7 +102,7 @@ class StubSql:
 def build(llm, db, registry, settings, sql=None, with_registry=True):
     return Agent_Graph(
         openai_llm=llm, prompts=prompts(), logger=LOGGER, agent_subgraph=sql or StubSql(),
-        help_store=None, db_conn=db, settings=settings,
+        db_conn=db, settings=settings,
         dispute_registry=registry if with_registry else None,
     )
 

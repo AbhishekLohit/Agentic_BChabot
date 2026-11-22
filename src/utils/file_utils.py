@@ -26,9 +26,9 @@ def get_all_prompts(appsettings:AppSettings
         sql_correction_prompt= read_prompt_file(appsettings.sql_correction_prompt_path),
         visualization_prompt= read_prompt_file(appsettings.visualization_agent_prompt_path),
         history_summarizer_prompt= read_prompt_file(appsettings.history_summarizer_prompt_path),
-        help_center_prompt= read_prompt_file(appsettings.help_center_prompt_path),
         dispute_extraction_prompt= read_prompt_file(appsettings.dispute_extraction_prompt_path),
         dispute_reply_prompt= read_prompt_file(appsettings.dispute_reply_prompt_path),
+        help_agent_prompt= read_prompt_file(appsettings.help_agent_prompt_path),
     )
 
 def _get_redis_key(user_id: str, 

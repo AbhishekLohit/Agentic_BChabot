@@ -1,5 +1,10 @@
 from langgraph.graph import StateGraph, START, END
-from app_models import FallbackResponse, Graph_State
+from app_models import FallbackResponse, Graph_State, ResponseGeneratorResponse
+
+HELP_UNAVAILABLE_MESSAGE = (
+    "I'm sorry, the help documents are not available right now, so I can't answer "
+    "that question. Please try again later."
+)
 from typing import Any
 from agents.context_builder import context_builder_agent
 from agents.supervisor import suprivisor_agent
@@ -7,7 +12,7 @@ from agents.response_generator import response_generator_agent
 from agents.fallback import fallback_agent
 from agents.visualization_agent import visualization_agent
 from agents.guardrails import input_guardrail_node
-from agents.help_center_agent import help_center_agent
+from agents.help_agent import help_agent
 from agents.disputes import checks as dispute_checks
 from agents.disputes import workflow as dispute_workflow
 from agents.disputes.registry import DisputeRegistry
@@ -22,15 +27,16 @@ class Agent_Graph:
                  prompts:Prompts,
                  logger: Logger,
                  agent_subgraph: Agent_SubGraph,
-                 help_store: Any = None,
                  db_conn: Any = None,
                  settings: Any = None,
                  dispute_registry: DisputeRegistry | None = None,
+                 help_vector_store: Any = None,
                  ):
         self.llm = openai_llm
         self.prompts = prompts
         self.agent_subgraph = agent_subgraph
-        self.help_store = help_store
+        # RAG help-document index (data/help_documents); HelpCenter questions are answered from it.
+        self.help_vector_store = help_vector_store
         # Disputes need all three; without them the graph behaves as it did before.
         self.db_conn = db_conn
         self.settings = settings
@@ -323,7 +329,7 @@ class Agent_Graph:
         elif len(banksql) >= 1:
             routes.append("sql_generation")
 
-        # Help-only message → answer it directly from the Barclays help KB.
+        # Help-only message → answer it from the help documents (RAG).
         elif len(help_center) >= 1:
             routes.append("help_center")
 
@@ -356,12 +362,17 @@ class Agent_Graph:
 
 
     async def _help_center_agent_node(self, state: Graph_State) -> Graph_State:
-        """Help-centre RAG node: retrieves Barclays help passages and answers from them."""
-        await help_center_agent(
+        """Help node: the RAG help-document agent (hybrid retrieval, reranker, strict citations)."""
+        if self.help_vector_store is None or self.prompts.help_agent_prompt is None:
+            self.logger.warning("Help-document index not loaded; cannot answer help questions.")
+            state.help_source = "unavailable"
+            state.help_center_response = ResponseGeneratorResponse(generated_response=HELP_UNAVAILABLE_MESSAGE)
+            return state
+        await help_agent(
             state,
             self.llm,
-            self.prompts.help_center_prompt,
-            self.help_store,
+            self.prompts.help_agent_prompt,
+            self.help_vector_store,
             self.logger,
         )
         return state

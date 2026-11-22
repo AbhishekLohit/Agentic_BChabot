@@ -114,3 +114,15 @@ beautifulsoup4
 lxml
 langchain-text-splitters
 pytest
+# added by the RAG feature
+docopt==0.6.2
+faiss-cpu==1.13.2
+pypdf
+pipreqs==0.4.13
+yarg==0.1.10
+langchain-ollama
+python-multipart
+streamlit
+watchdog
+rank_bm25
+flashrank

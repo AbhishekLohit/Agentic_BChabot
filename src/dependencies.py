@@ -14,3 +14,9 @@ def get_redis_client(requests: Request):
 
 def get_db_conn(requests: Request):
     return requests.app.state.sqlite_db
+
+def get_llm_embeddings(requests: Request):
+    return requests.app.state.llm_embeddings
+
+def get_help_vector_store(requests: Request):
+    return requests.app.state.help_vector_store

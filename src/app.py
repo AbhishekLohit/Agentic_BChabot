@@ -1,5 +1,5 @@
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 import json
 import os
 from contextlib import asynccontextmanager
@@ -7,13 +7,16 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 import utils.db_utils as db_utils
-from clients.llm_client import get_configured_llm
+from clients.llm_client import get_configured_llm, get_embeddings
 from app_models import (
                 UIUserRequest,
                 Graph_State,
                 ChatMessage,
+                UIUserRequestDebug,
                 )
 from app_setting import AppSettings
+from utils.embeddings.help_document_store import create_help_vector_store
+from langgraph.errors import GraphRecursionError
 from utils.file_utils import (
                             get_all_prompts,
                             save_chat_history,
@@ -26,12 +29,13 @@ from dependencies import (
                     get_prompts, 
                     get_logging,
                     get_redis_client,
-                    get_db_conn
+                    get_db_conn,
+                    get_llm_embeddings,
+                    get_help_vector_store
                     )
 from agent_graph import Agent_Graph
 from agent_subraph import Agent_SubGraph
 from agents.disputes.registry import load_dispute_registry
-from utils.embeddings.help_store import HelpStore
 from typing import Annotated, Any
 from logging_setup import setup_logging
 from app_models import Prompts
@@ -68,22 +72,23 @@ async def lifespan(app: FastAPI):
     llm = get_configured_llm()
     prompts = get_all_prompts(app_settings)
 
-    if openai_api_key:
-        # HelpStore uses OpenAI embeddings independently of the chat provider.
-        try:
-            help_store = HelpStore(
-                persist_directory=_resolve_path(app_settings.help_store_dir),
-                collection_name=app_settings.help_collection,
-                model=app_settings.EMBED_MODEL,
-                top_k=app_settings.help_top_k,
-                threshold=app_settings.help_similarity_threshold,
-            )
-            logger.info("Help store loaded (%s chunks).", help_store.count())
-        except Exception as e:
-            logger.warning("Help store unavailable — help-centre answers disabled: %s", e)
-            help_store = None
-    else:
-        help_store = None
+    # Help-document RAG index (data/help_documents -> Chroma), used by the RAG help agent.
+    # Embeddings come from EMBEDDING_PROVIDER (local MiniLM, capstone bge-small or OpenAI).
+    try:
+        llm_embeddings = get_embeddings(app_settings.EMBEDDING_PROVIDER)
+        help_vector_store = create_help_vector_store(llm_embeddings, app_settings)
+        n_chunks = help_vector_store._collection.count()
+        if n_chunks == 0:
+            logger.warning("Help-document index is empty — build it with "
+                           "`cd src; python -m utils.embeddings.help_document_store`. "
+                           "Help questions will get a 'help documents unavailable' reply until then.")
+            help_vector_store = None
+        else:
+            logger.info("Help-document vector store loaded (%s chunks).", n_chunks)
+    except Exception as e:
+        logger.warning("Help-document vector store unavailable — RAG help answers disabled: %s", e)
+        llm_embeddings = None
+        help_vector_store = None
 
     # Per-reason question sets for the Disputes agent. If the file is missing or invalid
     # the graph runs without disputes (a dispute request gets the out-of-scope reply).
@@ -128,7 +133,8 @@ async def lifespan(app: FastAPI):
     app.state.logger = logger
     app.state.redis_client = redis_client
     app.state.sqlite_db = db_conn
-    app.state.help_store = help_store
+    app.state.llm_embeddings = llm_embeddings
+    app.state.help_vector_store = help_vector_store
     app.state.dispute_registry = dispute_registry
     app.state.app_settings = app_settings
 
@@ -140,6 +146,11 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down chatbot...")
    
 app = FastAPI(title="Banking chatbot", lifespan=lifespan)
+
+# Hard cap on agent steps per question (LangGraph super-steps); see AGENT_RECURSION_LIMIT.
+GRAPH_CONFIG = {"recursion_limit": AppSettings().AGENT_RECURSION_LIMIT}
+STEP_LIMIT_MESSAGE = ("I'm sorry, I couldn't complete this request within the allowed number of steps. "
+                      "Please try rephrasing your question.")
 
 TECHNICAL_FALLBACK_MESSAGE = (
     "I'm sorry, but I'm currently unable to process your request due to a "
@@ -304,8 +315,15 @@ def _build_agent_trace(response: dict) -> list[dict]:
             "agent": "help_center",
             "title": "Help Centre",
             "status": "ok",
-            "summary": f"Answered {len(help_q)} help quer{'y' if len(help_q) == 1 else 'ies'} from the Barclays help KB",
-            "details": {"help_center_queries": list(help_q)},
+            "summary": (
+                f"Answered {len(help_q)} help quer{'y' if len(help_q) == 1 else 'ies'} from the "
+                + "help documents (RAG)"
+            ),
+            "details": {
+                "help_center_queries": list(help_q),
+                "help_source": response.get("help_source"),
+                "citation_check": response.get("help_citation_report"),
+            },
             "metrics": metric("help_center"),
         })
 
@@ -481,6 +499,7 @@ async def _prepare_request(request, input_request, openai_llm, prompts, logger, 
         text2sql_generator_response= None,
         database_query_results = None,
         banksql_queries= None,
+        help_queries= None,
         out_of_scope_queries= None,
         fallback_response = None,
         response_generation_response = None,
@@ -495,10 +514,10 @@ async def _prepare_request(request, input_request, openai_llm, prompts, logger, 
                               prompts=prompts,
                               logger=logger,
                               agent_subgraph=agent_subgraph,
-                              help_store=request.app.state.help_store,
                               db_conn=db_conn,
                               settings=app_settings,
-                              dispute_registry=request.app.state.dispute_registry)
+                              dispute_registry=request.app.state.dispute_registry,
+                              help_vector_store=request.app.state.help_vector_store)
     return app_settings, chat_history, graph_state, agent_graph
 
 
@@ -519,7 +538,7 @@ async def process(
 
     try:
         logger.info("Process endpoint invoked sucessfully")
-        response = await agent_graph.app.ainvoke(graph_state)
+        response = await agent_graph.app.ainvoke(graph_state, config=GRAPH_CONFIG)
 
         final_chat_response = response["response_generation_response"].generated_response
 
@@ -564,6 +583,9 @@ async def process(
         agent_trace = _build_agent_trace(response)
 
         logger.info("Final response generated")
+    except GraphRecursionError:
+        logger.warning(f"Agent step limit ({GRAPH_CONFIG['recursion_limit']}) reached")
+        return JSONResponse({"response": STEP_LIMIT_MESSAGE, "visualization": None, "agent_trace": []})
     except Exception as e:
         logger.exception("Error while invoking agent graph")
         return JSONResponse({"error": "internal_error", "details": str(e)}, status_code=500)
@@ -576,6 +598,66 @@ async def process(
     })
 
 
+@app.post("/process-debug")
+async def process_debug(
+    request: Request,
+    input_request: UIUserRequestDebug,
+    openai_llm: Annotated[Any, Depends(get_llm)],  # type: ignore
+    prompts: Annotated[Prompts, Depends(get_prompts)],  # type: ignore
+    logger: Annotated[Logger, Depends(get_logging)],  # type: ignore
+    redis_client: Annotated[any, Depends(get_redis_client)],  # type: ignore
+    db_conn: Annotated[any, Depends(get_db_conn)],  # type: ignore
+    help_vector_store: Annotated[Any, Depends(get_help_vector_store)],
+):
+    """Runs one question through the graph with a caller-supplied chat history and
+    returns the full graph state (routing, help_source, citations, SQL, metrics).
+    Nothing is saved to Redis or the chat database."""
+    app_settings: AppSettings = request.app.state.app_settings
+    chat_history = list(input_request.chat_history) + [ChatMessage(role="user", content=input_request.user_query)]
+    input_request_debug = UIUserRequest(
+        user_query=input_request.user_query,
+        customer_id=input_request.customer_id,
+        session_id=input_request.session_id,
+    )
+    logger.info(f"[DEBUG] Chat history received: {chat_history}")
+    graph_state = Graph_State(
+        input_request=input_request_debug,
+        chat_history=chat_history,
+        customer_id=input_request.customer_id,
+        context_builder_response=None,
+        suprivisor_response=None,
+        text2sql_generator_response=None,
+        database_query_results=None,
+        banksql_queries=None,
+        help_queries=None,
+        out_of_scope_queries=None,
+        fallback_response=None,
+        response_generation_response=None,
+        agent_metrics=None,
+    )
+    agent_subgraph = Agent_SubGraph(openai_llm=openai_llm, prompts=prompts, logger=logger,
+                                    db_conn=db_conn, redis_client=redis_client)
+    agent_graph = Agent_Graph(openai_llm=openai_llm,
+                              prompts=prompts,
+                              logger=logger,
+                              agent_subgraph=agent_subgraph,
+                              db_conn=db_conn,
+                              settings=app_settings,
+                              dispute_registry=request.app.state.dispute_registry,
+                              help_vector_store=help_vector_store)
+    try:
+        logger.info("[DEBUG] Invoking agent graph")
+        response = await agent_graph.app.ainvoke(graph_state, config=GRAPH_CONFIG)
+        response["agent_trace"] = _build_agent_trace(response)
+        return response
+    except GraphRecursionError:
+        logger.warning(f"[DEBUG] Agent step limit ({GRAPH_CONFIG['recursion_limit']}) reached")
+        return {"error": "step_limit", "details": STEP_LIMIT_MESSAGE}
+    except Exception as e:
+        logger.exception("[DEBUG] Error while invoking agent graph")
+        return {"error": "internal_error", "details": str(e)}
+
+
 # ---- Streaming (SSE) support -------------------------------------------------
 
 # Friendly progress labels for the live "what the bot is doing" stream (Level 1).
@@ -584,7 +666,7 @@ _STREAM_STEP_LABELS = {
     "context_builder": "Understanding your question",
     "suprivisor": "Working out what you need",
     "sql_generation": "Looking up your transactions",
-    "help_center": "Searching the Barclays help centre",
+    "help_center": "Searching the help documents",
     "visualization_agent": "Preparing a chart",
     "dispute_agent": "Reviewing your dispute",
     "response_generator": "Writing your answer",
@@ -619,7 +701,7 @@ async def process_stream(
         streamed = ""   # the token text sent so far
         try:
             async for mode, chunk in agent_graph.app.astream(
-                graph_state, stream_mode=["updates", "messages", "values"]
+                graph_state, config=GRAPH_CONFIG, stream_mode=["updates", "messages", "values"]
             ):
                 if mode == "values":
                     # Full state after each step; keep the last as the final state.
@@ -683,6 +765,9 @@ async def process_stream(
                 "visualization": viz_payload,
                 "agent_trace": agent_trace,
             })
+        except GraphRecursionError:
+            logger.warning(f"Agent step limit ({GRAPH_CONFIG['recursion_limit']}) reached")
+            yield _sse({"type": "final", "response": STEP_LIMIT_MESSAGE, "visualization": None, "agent_trace": []})
         except Exception:
             logger.exception("Error while streaming agent graph")
             yield _sse({"type": "error", "message": TECHNICAL_FALLBACK_MESSAGE})

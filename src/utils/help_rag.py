@@ -96,6 +96,8 @@ def bm25_index(vector_store: Any) -> _Bm25Index:
 
 
 def bm25_search(vector_store: Any, query: str, k: int) -> list[dict]:
+    if not vector_store._collection.count():  # empty index: nothing to search
+        return []
     return bm25_index(vector_store).search(query, k)
 
 
