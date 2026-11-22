@@ -72,3 +72,9 @@ Add the five new paths below to your current `feature/evaluation-framework` bran
 - `.github/workflows/context-builder-evaluation.yml`
 
 Commit with `Add isolated Context Builder golden dataset evaluation`. The offline workflow will validate on push. Existing PR #2 will update automatically when you push to the same branch, but **reviewers still need to approve the draft labels and rule decisions before calling it complete**.
+
+## Live Evaluation Pilot
+
+Initial live evaluation will test three Context Builder
+examples using Qwen3-8B.
+Ground truth remains subject to team review.
