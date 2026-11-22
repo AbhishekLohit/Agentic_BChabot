@@ -1,0 +1,102 @@
+name: FinTell Context Builder Golden Evaluation
+
+on:
+  push:
+    branches:
+      - feature/evaluation-framework
+    paths:
+      - evaluation/context_builder_run.py
+      - evaluation/context_builder_golden_100_audited.jsonl
+      - evaluation/CONTEXT_BUILDER_EVALUATION.md
+      - tests/test_context_builder_evaluation.py
+      - .github/workflows/context-builder-evaluation.yml
+  workflow_dispatch:
+    inputs:
+      run_live:
+        description: 'Make real Qwen API calls (default: no)'
+        type: boolean
+        default: false
+        required: true
+      case_count:
+        description: 'Maximum number of evaluated Context Builder cases'
+        type: choice
+        default: '3'
+        options:
+          - '3'
+          - '10'
+          - '25'
+          - '98'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate the golden dataset
+        run: python -m evaluation.context_builder_run --validate-only
+      - name: Test scoring, dataset and actual agent integration with a fake model
+        run: python -m unittest discover -s tests -p 'test_context_builder_evaluation.py' -v
+
+  live-context-builder:
+    needs: offline-validation
+    # On the feature branch, one explicit commit marker triggers a THREE-case pilot.
+    # Once this workflow exists on the default branch, use Run workflow instead.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.run_live == true) ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-context-pilot]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: fintell-context-builder-live
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install chatbot dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Decode approved CA certificate
+        env:
+          QWEN_CA_CERT_B64: ${{ secrets.QWEN_CA_CERT_B64 }}
+        run: |
+          python - <<'PY'
+          import base64
+          import os
+          from pathlib import Path
+
+          cert = os.environ.get('QWEN_CA_CERT_B64', '').strip()
+          if not cert:
+              raise RuntimeError('QWEN_CA_CERT_B64 secret is not configured')
+          path = Path(os.environ['RUNNER_TEMP']) / 'vm07-ca.crt'
+          path.write_bytes(base64.b64decode(cert, validate=True))
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as f:
+              f.write(f'QWEN_CA_CERT_PATH={path}\n')
+          print('CA certificate prepared (contents not logged)')
+          PY
+      - name: Run isolated Context Builder pilot
+        env:
+          LLM_PROVIDER: qwen
+          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+          CASE_LIMIT: ${{ github.event_name == 'push' && '3' || inputs.case_count }}
+        run: |
+          python -m evaluation.context_builder_run \
+            --live \
+            --as-of 2026-11-22 \
+            --limit "$CASE_LIMIT" \
+            --delay 2 \
+            --output evaluation/results/context_builder_report.json
+      - name: Upload report for manual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fintell-context-builder-report
+          path: evaluation/results/context_builder_report.json
+          if-no-files-found: warn
+          retention-days: 7
