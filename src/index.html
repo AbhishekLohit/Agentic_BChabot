@@ -1972,7 +1972,7 @@
             chatPreview.textContent = previewText.substring(0, 40) + (previewText.length > 40 ? "..." : "");
             chatItemTime.textContent = replyTs;
 
-            if (cleanReply) speakReply(cleanReply);
+            if (cleanReply && typeof speakReply === "function") speakReply(cleanReply);
             saveSession(currentSessionId); // reset idle timer on every successful exchange
 
         } catch (error) {

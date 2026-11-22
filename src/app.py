@@ -714,9 +714,11 @@ async def process_stream(
                             yield _sse({"type": "step", "agent": node, "label": label})
                 elif mode == "messages":
                     msg_chunk, meta = chunk
-                    # Only stream tokens from the user-facing answer nodes — not the
-                    # internal guardrail / SQL / supervisor LLM calls.
-                    if meta.get("langgraph_node") in ("response_generator", "help_center"):
+                    # Only stream tokens from the user-facing answer node — not the
+                    # internal guardrail / SQL / supervisor LLM calls. The help node is not
+                    # streamed: its RAG answer is structured JSON that is citation-checked
+                    # after generation, so only the checked answer (final event) is shown.
+                    if meta.get("langgraph_node") == "response_generator":
                         text = agent_utils.message_to_text(msg_chunk)
                         if text:
                             streamed += text
