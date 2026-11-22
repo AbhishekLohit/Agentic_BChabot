@@ -73,3 +73,25 @@ python src/app.py
 ---
 
 If you hit any errors during deployment, share the Railway build logs here and I'll help you debug them.
+
+## Help-document RAG (help questions)
+
+Help questions ("how do I…", limits, procedures) are answered by the RAG help agent
+(`src/agents/help_agent.py`, retrieval in `src/utils/help_rag.py`) from the 687 bank-neutral
+documents in `data/help_documents/`. Answers cite their excerpts as [1], [2]… and unsupported
+sentences are removed before the reply is shown.
+
+**The vector index is committed** (`chroma_store/help_documents/`, 800 chunks, bge-small-en-v1.5),
+so you do not need to build it. On each laptop you still need:
+
+1. `pip install -r requirements.txt` (includes `rank_bm25`, `flashrank`, `chromadb==1.5.0`).
+2. In `.env` (see `.env.example`): `EMBEDDING_PROVIDER=capstone`, `CAPSTONE_EMBED_API_KEY`,
+   and the certificate `data/certs/vm02-ca.crt` (questions are embedded at query time).
+3. Start the app and check the log for `Help-document vector store loaded (800 chunks)`.
+
+Notes:
+- Running the app can touch `chroma_store/help_documents/chroma.sqlite3`. If `git pull` complains
+  about it, run `git restore chroma_store` first. Only commit `chroma_store` after a deliberate rebuild.
+- After changing the documents, rebuild once and commit the new index:
+  `cd src` → `python -m utils.embeddings.help_document_store`, then `git add -A chroma_store`.
+- Never commit `data/certs/` or `.env` (both are git-ignored).

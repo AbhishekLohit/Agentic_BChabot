@@ -1,0 +1,2 @@
+# Prebuilt help-document vector index (Chroma): never convert line endings or try to merge
+chroma_store/** binary
