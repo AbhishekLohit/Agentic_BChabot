@@ -6,6 +6,13 @@ class AppSettings(BaseSettings):
     GEMINI_API_KEY: str | None = None
     GROQ_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
+    
+    # Qwen3-8B via capstone inference API
+    QWEN_API_KEY: str | None = None
+    QWEN_BASE_URL: str = "https://103.42.50.41:1031/v1"
+    QWEN_MODEL: str = "Qwen/Qwen3-8B"
+    QWEN_CA_CERT_PATH: str | None = None
+
     OPENAI_MODEL: str = "gpt-4o-mini"
     GEMINI_MODEL: str = "gemini-1.5-flash"
     GROQ_MODEL: str = "llama3-70b-8192"

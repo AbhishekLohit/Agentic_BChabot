@@ -1,0 +1,182 @@
+name: FinTell Context Builder Golden Evaluation
+
+on:
+  push:
+    branches:
+      - feature/evaluation-framework
+    paths:
+      - evaluation/context_builder_run.py
+      - evaluation/context_builder_golden_100_audited.jsonl
+      - evaluation/CONTEXT_BUILDER_EVALUATION.md
+      - tests/test_context_builder_evaluation.py
+      - .github/workflows/context-builder-evaluation.yml
+  workflow_dispatch:
+    inputs:
+      run_live:
+        description: 'Allow live Qwen API calls'
+        type: boolean
+        required: true
+        default: false
+      selection:
+        description: 'Choose which golden cases to evaluate'
+        type: choice
+        required: true
+        default: 'remaining_85'
+        options:
+          - remaining_85
+          - all_98
+          - pilot_3
+
+permissions:
+  contents: read
+
+jobs:
+  offline-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate all golden dataset entries
+        run: python -m evaluation.context_builder_run --validate-only
+      - name: Run isolated Context Builder unit tests
+        run: python -m unittest discover -s tests -p 'test_context_builder_evaluation.py' -v
+
+  live-context-builder:
+    needs: offline-validation
+    # On this feature branch, one explicit commit marker runs the remaining 85.
+    # Manual runs become available from the Actions UI once this workflow is on the default branch.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.run_live == true) ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-context-remaining]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: fintell-context-builder-live
+      cancel-in-progress: false
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install chatbot dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Decode approved CA certificate
+        env:
+          QWEN_CA_CERT_B64: ${{ secrets.QWEN_CA_CERT_B64 }}
+        run: |
+          python - <<'PY'
+          import base64
+          import os
+          from pathlib import Path
+
+          cert = os.environ.get('QWEN_CA_CERT_B64', '').strip()
+          if not cert:
+              raise RuntimeError('QWEN_CA_CERT_B64 secret is not configured')
+          path = Path(os.environ['RUNNER_TEMP']) / 'vm07-ca.crt'
+          path.write_bytes(base64.b64decode(cert, validate=True))
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as out:
+              out.write(f'QWEN_CA_CERT_PATH={path}\n')
+          print('CA certificate prepared; contents not logged')
+          PY
+      - name: Evaluate selected Context Builder cases
+        env:
+          LLM_PROVIDER: qwen
+          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+          BATCH_MODE: ${{ github.event_name == 'push' && 'remaining_85' || inputs.selection }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          rows = [
+              json.loads(line)
+              for line in Path('evaluation/context_builder_golden_100_audited.jsonl').read_text(encoding='utf-8').splitlines()
+              if line.strip()
+          ]
+          eligible_ids = [row['id'] for row in rows if row['auto_eval_ready']]
+          previously_tested = {f'CB{number:03d}' for number in range(1, 14)}
+          mode = os.environ.get('BATCH_MODE', 'remaining_85')
+          if mode == 'remaining_85':
+              selected_ids = [case_id for case_id in eligible_ids if case_id not in previously_tested]
+              assert len(selected_ids) == 85, f'Expected 85 remaining cases, got {len(selected_ids)}'
+          elif mode == 'all_98':
+              selected_ids = eligible_ids
+              assert len(selected_ids) == 98, f'Expected 98 eligible cases, got {len(selected_ids)}'
+          elif mode == 'pilot_3':
+              selected_ids = eligible_ids[:3]
+          else:
+              raise ValueError(f'Unsupported selection: {mode}')
+
+          print(f'Selected {len(selected_ids)} cases for {mode}; no API calls are run in parallel', flush=True)
+          command = [
+              sys.executable, '-m', 'evaluation.context_builder_run',
+              '--live', '--as-of', '2026-11-22',
+              '--ids', *selected_ids,
+              '--limit', str(len(selected_ids)),
+              '--delay', '2',
+              '--output', 'evaluation/results/context_builder_report.json',
+          ]
+          subprocess.run(command, check=True)
+          PY
+      - name: Create summary and review queue
+        if: always()
+        run: |
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          directory = Path('evaluation/results')
+          report_file = directory / 'context_builder_report.json'
+          if not report_file.is_file():
+              print('Report not present; skipping summary and review queue')
+              raise SystemExit(0)
+          report = json.loads(report_file.read_text(encoding='utf-8'))
+          summary = report['summary']
+          rows = report['results']
+          flagged = [row for row in rows if row['verdict'] != 'exact_match']
+          with (directory / 'context_builder_review_queue.csv').open('w', newline='', encoding='utf-8') as f:
+              writer = csv.writer(f)
+              writer.writerow(['id', 'verdict', 'category', 'latest_user_message',
+                               'expected_contextual_queries', 'actual_contextual_queries',
+                               'date_anchors_match', 'latency_seconds', 'review_decision'])
+              for row in flagged:
+                  writer.writerow([
+                      row['id'], row['verdict'], row['category'], row['latest_user_message'],
+                      json.dumps(row['expected_contextual_queries'], ensure_ascii=False),
+                      json.dumps(row['actual_contextual_queries'], ensure_ascii=False),
+                      row['date_anchors_match'], row['latency_seconds'], 'Pending human review',
+                  ])
+          text = [
+              '# FinTell Context Builder - Live Evaluation Batch', '',
+              f"- Executed: {summary['executed']}",
+              f"- Exact draft-ground-truth matches: {summary['exact_matches_to_draft_ground_truth']}",
+              f"- Needs human review: {summary['requires_human_review']}",
+              f"- Potential mismatches: {summary['potential_mismatches']}",
+              f"- Invalid outputs/errors: {summary['invalid_outputs_or_errors']}",
+              f"- Average latency (s): {summary['mean_latency_seconds']}",
+              f"- Total reported tokens: {summary['reported_total_tokens']}",
+              '',
+              'Scores are NOT verified agent accuracy. Ground truth is draft; review semantic differences.',
+              'The CSV lists outputs requiring review. Previous pilot results are not included in this batch.',
+          ]
+          (directory / 'context_builder_batch_summary.md').write_text('\n'.join(text) + '\n', encoding='utf-8')
+          print(f'Created report and review queue: {len(flagged)} cases flagged', flush=True)
+          PY
+      - name: Upload all evaluation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fintell-context-builder-report
+          path: evaluation/results/context_builder_*
+          if-no-files-found: warn
+          retention-days: 14
