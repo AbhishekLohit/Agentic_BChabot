@@ -1,0 +1,7 @@
+# Kisan Credit Card & Agricultural Banking
+
+The Kisan Credit Card is a revolving credit facility valid for 5 years, but it requires an Annual Review/Renewal (called 'enhanced annual limit review') every year — this is not the same as reapplying from scratch. The annual renewal is a simpler process: (1) The bank reviews your crop production and repayment record. (2) You provide the latest season's crop details and land records. (3) If your repayment record is satisfactory, the limit is typically maintained or enhanced. You do NOT have to repay the full amount to renew — the revolving nature means you can draw and repay as needed within your limit. Under the KCC 2.0 digital initiative, many banks now allow online renewal via mobile app or net banking for existing customers.
+
+1) Check if your bank offers KCC renewal via their mobile banking app or net banking — this avoids the bank visit. 2) For renewal, typically required: latest khasra/khatauni land record, crop declaration for current season, and passbook. 3) Some banks have started doorstep KCC renewal through BC agents for existing customers — ask your branch. 4) CSC (Common Service Centres) also facilitate KCC renewal for many banks. 5) KCC renewal deadline is typically before the kharif or rabi season — don't delay as lapsed KCC may require fresh application.
+
+Farmers understand that KCC annual renewal is simpler than fresh application, is not a full repayment requirement, and digital options increasingly allow renewal without branch visits.

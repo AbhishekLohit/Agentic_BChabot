@@ -1,0 +1,7 @@
+# PMSBY / PMJJBY Insurance Claim
+
+When the nominee has pre-deceased the policyholder, the claim is paid to the legal heirs. This requires additional documentation to establish legal heirship. Under PMJJBY claim procedure: (1) Apply as a legal heir with a 'Legal Heir Certificate' or 'Succession Certificate' issued by a competent authority (District Magistrate / Revenue Court / Civil Court depending on the state). (2) Some states have simplified processes — in many states, the District Magistrate can issue a Legal Heir Certificate quickly for government scheme claims. (3) A 'Claimant-cum-Discharge Form' must be submitted with all supporting documents. Death certificate, Legal Heir Certificate, and all claimants' Aadhaar and bank details are needed.
+
+1) Apply for a Legal Heir Certificate at your district's Revenue Office/Tehsildar office (this is typically faster than a court Succession Certificate). 2) Visit the bank branch where the PMJJBY was registered with: Legal Heir Certificate, father's death certificate, all claimant (family members') Aadhaar and bank details. 3) Submit the PMJJBY Claim-Cum-Discharge Form (available at bank or jansuraksha.gov.in). 4) If multiple legal heirs, all may need to sign or agree on a single account for the payout. 5) If bank delays, approach the Insurance Ombudsman at insuranceombudsman.gov.in.
+
+Families learn that pre-deceased nominees don't void the claim — legal heir certificates substitute, and how to obtain them quickly through the Tehsildar office.

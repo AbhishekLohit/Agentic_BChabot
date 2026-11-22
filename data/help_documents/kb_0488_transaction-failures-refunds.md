@@ -1,0 +1,7 @@
+# Transaction Failures & Refunds
+
+A successfully completed UPI transaction to a wrong recipient is legally classified as erroneous credit to the receiver. Under the Payment and Settlement Systems Act 2007 and NPCI UPI dispute guidelines, banks can and must assist in recovery — but cannot reverse the transaction without the receiver's consent. Your bank must raise a formal Wrong Account Transfer dispute with the receiver's bank through the NPCI dispute mechanism. The receiver has no legal right to retain the money — retaining erroneously credited money can constitute unjust enrichment under civil law and Section 403 IPC (dishonest misappropriation of property). You must file a police complaint to build legal pressure for the receiver to return the funds.
+
+1) Call your bank immediately and report wrong UPI transfer — they will raise an inter-bank dispute with the receiver's bank. Get a complaint reference number. 2) Visit the local police station and file an FIR citing erroneous transfer — receiver refusing to return. An FIR triggers the receiver's bank to freeze the credited amount pending resolution. 3) File on cybercrime.gov.in under Online Financial Fraud — Erroneous Transfer. 4) Your bank can legally send a written notice to the receiver via their bank demanding return of funds. 5) If the receiver's bank does not assist within 30 days, escalate to RBI CMS.
+
+Users learn that wrong UPI transfers have a formal inter-bank dispute mechanism, that the receiver legally cannot retain the funds, and that an FIR is the critical lever for forcing recovery.

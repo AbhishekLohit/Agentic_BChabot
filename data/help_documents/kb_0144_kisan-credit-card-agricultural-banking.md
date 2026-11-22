@@ -1,0 +1,7 @@
+# Kisan Credit Card & Agricultural Banking
+
+Banks do have the right to revise KCC limits based on updated crop value assessments, but they must provide a reasoned written order with the revised limit calculation. If you believe the revised limit is inadequate, you can: (1) Request the bank to factor in allied activity (dairy, poultry, post-harvest storage) under KCC — the total limit can include working capital for these activities. (2) Provide current season's input cost invoices to show actual working capital needs. (3) Under RBI KCC framework, the limit must cover the entire production credit cycle including inputs. (4) The bank cannot reduce the limit arbitrarily without following the KCC Renewal Assessment procedure.
+
+1) Request the branch to provide the revised limit assessment in writing with the basis of reduction. 2) Obtain your current season's input cost estimates from your local agriculture department or KVK (Krishi Vigyan Kendra). 3) Submit a formal representation to the branch manager with your actual sowing expenses. 4) Request inclusion of dairy/allied activity credit under KCC if applicable. 5) If the revision appears arbitrary, escalate to the bank's Regional Office or RBI CMS at cms.rbi.org.in. 6) NABARD has a farmer grievance portal for KCC-related issues.
+
+Farmers learn KCC limits must be need-based and include allied activities, how to formally challenge inadequate limit revision, and the importance of documented input costs.

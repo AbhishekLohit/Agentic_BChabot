@@ -1,0 +1,7 @@
+# DBT & Government Subsidy Failures
+
+State government pension disbursements flow through PFMS or the state's own treasury system. If the bank account side is confirmed fine, the issue is at the pension sanctioning authority or data level. Common causes: (1) Annual verification or 'life certificate' not submitted (most state pension schemes require annual beneficiary verification). (2) Beneficiary data was purged during a scheme re-verification drive. (3) Aadhaar seeding for state pension is different from PM-KISAN. (4) Bank account details in the pension database may be incorrect. The Social Welfare Department at block/district level is the correct authority.
+
+1) Visit the District Social Welfare Office with your aunt's pension order, Aadhaar, and bank passbook. 2) Submit an 'Application for Continuation of Pension/Payment Irregularity' form. 3) Check if annual life certificate/Jeevan Pramaan was due — submit it at bank or CSC. 4) CPGRAMS (cpgrams.gov.in) for state government scheme complaints, or the state helpline. 5) Apply Right to Information to District Social Welfare Officer if no response within 30 days. 6) State CM Helpline numbers (like 1076 in Maharashtra, 1920 in Rajasthan) are also effective.
+
+Families of pension recipients learn the annual verification requirement, how to check if the pension is suspended vs. payment failure, and the correct escalation path through state welfare departments.

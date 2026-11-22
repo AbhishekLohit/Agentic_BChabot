@@ -1,0 +1,405 @@
+{
+  "index": {
+    "files": 687,
+    "chunks": 800,
+    "chunk_strategy": "fixed",
+    "avg_chunk_chars": 825,
+    "chunk_size": 1200,
+    "chunk_overlap": 200,
+    "embedding_provider": "capstone",
+    "embedding_model": "capstone:bge-small-en-v1.5",
+    "index_seconds": 30.2
+  },
+  "split": "dev",
+  "eval_version": "unfrozen",
+  "modes": {
+    "dense": {
+      "overall": {
+        "n": 15,
+        "recall@1": 0.8667,
+        "recall@5": 0.9333,
+        "recall@10": 0.9333,
+        "group_recall@1": 0.9333,
+        "group_recall@5": 0.9667,
+        "group_recall@10": 0.9667,
+        "mrr": 1.0
+      },
+      "by_split": {
+        "dev": {
+          "n": 15,
+          "recall@1": 0.8667,
+          "recall@5": 0.9333,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.9333,
+          "group_recall@5": 0.9667,
+          "group_recall@10": 0.9667,
+          "mrr": 1.0
+        }
+      },
+      "by_question_type": {
+        "factual": {
+          "n": 3,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "keyword": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "multi_section": {
+          "n": 2,
+          "recall@1": 0.0,
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "group_recall@1": 0.5,
+          "group_recall@5": 0.75,
+          "group_recall@10": 0.75,
+          "mrr": 1.0
+        },
+        "near_miss": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "paraphrase": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "procedural": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "reasoning": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "ms_per_query": 93.3
+    },
+    "bm25": {
+      "overall": {
+        "n": 15,
+        "recall@1": 0.4667,
+        "recall@5": 0.8,
+        "recall@10": 0.8667,
+        "group_recall@1": 0.5,
+        "group_recall@5": 0.8,
+        "group_recall@10": 0.8667,
+        "mrr": 0.6373
+      },
+      "by_split": {
+        "dev": {
+          "n": 15,
+          "recall@1": 0.4667,
+          "recall@5": 0.8,
+          "recall@10": 0.8667,
+          "group_recall@1": 0.5,
+          "group_recall@5": 0.8,
+          "group_recall@10": 0.8667,
+          "mrr": 0.6373
+        }
+      },
+      "by_question_type": {
+        "factual": {
+          "n": 3,
+          "recall@1": 0.0,
+          "recall@5": 0.6667,
+          "recall@10": 1.0,
+          "group_recall@1": 0.0,
+          "group_recall@5": 0.6667,
+          "group_recall@10": 1.0,
+          "mrr": 0.3254
+        },
+        "keyword": {
+          "n": 2,
+          "recall@1": 0.5,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 0.5,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 0.625
+        },
+        "multi_section": {
+          "n": 2,
+          "recall@1": 0.0,
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "group_recall@1": 0.25,
+          "group_recall@5": 0.5,
+          "group_recall@10": 0.5,
+          "mrr": 0.5
+        },
+        "near_miss": {
+          "n": 2,
+          "recall@1": 0.5,
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "group_recall@1": 0.5,
+          "group_recall@5": 0.5,
+          "group_recall@10": 0.5,
+          "mrr": 0.5
+        },
+        "paraphrase": {
+          "n": 2,
+          "recall@1": 0.5,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 0.5,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 0.6667
+        },
+        "procedural": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "reasoning": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "ms_per_query": 23.2
+    },
+    "hybrid": {
+      "overall": {
+        "n": 15,
+        "recall@1": 0.6667,
+        "recall@5": 0.8,
+        "recall@10": 0.9333,
+        "group_recall@1": 0.7,
+        "group_recall@5": 0.8333,
+        "group_recall@10": 0.9667,
+        "mrr": 0.7994
+      },
+      "by_split": {
+        "dev": {
+          "n": 15,
+          "recall@1": 0.6667,
+          "recall@5": 0.8,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.7,
+          "group_recall@5": 0.8333,
+          "group_recall@10": 0.9667,
+          "mrr": 0.7994
+        }
+      },
+      "by_question_type": {
+        "factual": {
+          "n": 3,
+          "recall@1": 0.6667,
+          "recall@5": 0.6667,
+          "recall@10": 1.0,
+          "group_recall@1": 0.6667,
+          "group_recall@5": 0.6667,
+          "group_recall@10": 1.0,
+          "mrr": 0.7222
+        },
+        "keyword": {
+          "n": 2,
+          "recall@1": 0.5,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 0.5,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 0.75
+        },
+        "multi_section": {
+          "n": 2,
+          "recall@1": 0.0,
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "group_recall@1": 0.25,
+          "group_recall@5": 0.75,
+          "group_recall@10": 0.75,
+          "mrr": 0.6
+        },
+        "near_miss": {
+          "n": 2,
+          "recall@1": 0.5,
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "group_recall@1": 0.5,
+          "group_recall@5": 0.5,
+          "group_recall@10": 1.0,
+          "mrr": 0.5625
+        },
+        "paraphrase": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "procedural": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "reasoning": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "ms_per_query": 92.0
+    },
+    "hybrid_rerank": {
+      "overall": {
+        "n": 15,
+        "recall@1": 0.8667,
+        "recall@5": 0.9333,
+        "recall@10": 0.9333,
+        "group_recall@1": 0.9,
+        "group_recall@5": 0.9667,
+        "group_recall@10": 0.9667,
+        "mrr": 0.9667
+      },
+      "by_split": {
+        "dev": {
+          "n": 15,
+          "recall@1": 0.8667,
+          "recall@5": 0.9333,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.9,
+          "group_recall@5": 0.9667,
+          "group_recall@10": 0.9667,
+          "mrr": 0.9667
+        }
+      },
+      "by_question_type": {
+        "factual": {
+          "n": 3,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "keyword": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "multi_section": {
+          "n": 2,
+          "recall@1": 0.0,
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "group_recall@1": 0.25,
+          "group_recall@5": 0.75,
+          "group_recall@10": 0.75,
+          "mrr": 0.75
+        },
+        "near_miss": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "paraphrase": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "procedural": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        },
+        "reasoning": {
+          "n": 2,
+          "recall@1": 1.0,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "group_recall@1": 1.0,
+          "group_recall@5": 1.0,
+          "group_recall@10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "ms_per_query": 5397.1
+    }
+  }
+}

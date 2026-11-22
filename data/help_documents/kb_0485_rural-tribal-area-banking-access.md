@@ -1,0 +1,7 @@
+# Rural & Tribal Area Banking Access
+
+RBI's KYC Master Direction (2023) specifically includes Forest Rights Act pattas and ration cards as 'Simplified KYC' documents for Small Accounts. For a tribal person: (1) A ration card with photo, or (2) A gram panchayat certificate, or (3) A VFO (Village Forest Office) issued document, or (4) FRA patta — any of these can serve as address proof for a 'Small Account' under RBI's Simplified KYC norms. A Small Account allows deposits up to ₹50,000 and withdrawals up to ₹10,000 per month — more than sufficient for most tribal banking needs. For a full account, these documents combined with a gram panchayat identity certificate are acceptable.
+
+1) Gather your FRA patta, ration card, and a photograph. 2) Ask the bank branch to open a 'Small Account' citing RBI KYC Master Direction 2023 — Simplified KYC provisions for tribal persons. 3) If refused, ask them to cite the specific RBI clause prohibiting your documents. 4) Get a 'Certificate of Residence and Identity' from your Gram Panchayat Pradhan — this is specifically mentioned in RBI's KYC list as valid proof. 5) Visit your district's SLBC office or LDM if branches continue to refuse. 6) Free legal aid is available via NALSA (15100) to help you assert your KYC rights.
+
+Forest-dwelling tribals learn FRA patta and ration cards qualify for Simplified KYC Small Accounts under RBI, what additional gram panchayat documents bridge gaps, and legal aid availability.

@@ -1,0 +1,798 @@
+{
+  "split": "dev",
+  "eval_version": "unfrozen",
+  "results": [
+    {
+      "name": "fixed-500",
+      "strategy": "fixed",
+      "chunk_size": 500,
+      "chunk_overlap": 75,
+      "index": {
+        "files": 687,
+        "chunks": 1743,
+        "chunk_strategy": "fixed",
+        "avg_chunk_chars": 411,
+        "chunk_size": 500,
+        "chunk_overlap": 75,
+        "embedding_provider": "capstone",
+        "embedding_model": "capstone:bge-small-en-v1.5",
+        "index_seconds": 39.8
+      },
+      "quotes_split": 0.0,
+      "avg_context_chars_top4": 1795,
+      "retrieval": {
+        "overall": {
+          "n": 15,
+          "recall@1": 0.4667,
+          "recall@5": 0.8667,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.5,
+          "group_recall@5": 0.8667,
+          "group_recall@10": 0.9667,
+          "mrr": 0.678
+        },
+        "by_split": {
+          "dev": {
+            "n": 15,
+            "recall@1": 0.4667,
+            "recall@5": 0.8667,
+            "recall@10": 0.9333,
+            "group_recall@1": 0.5,
+            "group_recall@5": 0.8667,
+            "group_recall@10": 0.9667,
+            "mrr": 0.678
+          }
+        },
+        "by_question_type": {
+          "factual": {
+            "n": 3,
+            "recall@1": 0.6667,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 0.6667,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 0.7778
+          },
+          "keyword": {
+            "n": 2,
+            "recall@1": 0.5,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 0.5,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 0.625
+          },
+          "multi_section": {
+            "n": 2,
+            "recall@1": 0.0,
+            "recall@5": 0.5,
+            "recall@10": 0.5,
+            "group_recall@1": 0.25,
+            "group_recall@5": 0.5,
+            "group_recall@10": 0.75,
+            "mrr": 0.5714
+          },
+          "near_miss": {
+            "n": 2,
+            "recall@1": 0.0,
+            "recall@5": 0.5,
+            "recall@10": 1.0,
+            "group_recall@1": 0.0,
+            "group_recall@5": 0.5,
+            "group_recall@10": 1.0,
+            "mrr": 0.3056
+          },
+          "paraphrase": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "procedural": {
+            "n": 2,
+            "recall@1": 0.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 0.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 0.4167
+          },
+          "reasoning": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          }
+        }
+      },
+      "per_question": {
+        "E001": 1,
+        "E002": 1,
+        "E003": 1,
+        "E004": 1,
+        "E005": 1,
+        "E006": 4,
+        "E007": 9,
+        "E008": 1,
+        "E009": 3,
+        "E010": 2,
+        "E014": 2,
+        "E015": 3,
+        "E016": 1,
+        "E017": 1,
+        "E018": 7
+      }
+    },
+    {
+      "name": "fixed-1000",
+      "strategy": "fixed",
+      "chunk_size": 1000,
+      "chunk_overlap": 150,
+      "index": {
+        "files": 687,
+        "chunks": 959,
+        "chunk_strategy": "fixed",
+        "avg_chunk_chars": 708,
+        "chunk_size": 1000,
+        "chunk_overlap": 150,
+        "embedding_provider": "capstone",
+        "embedding_model": "capstone:bge-small-en-v1.5",
+        "index_seconds": 21.7
+      },
+      "quotes_split": 0.0,
+      "avg_context_chars_top4": 3232,
+      "retrieval": {
+        "overall": {
+          "n": 15,
+          "recall@1": 0.8667,
+          "recall@5": 0.9333,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.9,
+          "group_recall@5": 0.9667,
+          "group_recall@10": 0.9667,
+          "mrr": 0.9667
+        },
+        "by_split": {
+          "dev": {
+            "n": 15,
+            "recall@1": 0.8667,
+            "recall@5": 0.9333,
+            "recall@10": 0.9333,
+            "group_recall@1": 0.9,
+            "group_recall@5": 0.9667,
+            "group_recall@10": 0.9667,
+            "mrr": 0.9667
+          }
+        },
+        "by_question_type": {
+          "factual": {
+            "n": 3,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "keyword": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "multi_section": {
+            "n": 2,
+            "recall@1": 0.0,
+            "recall@5": 0.5,
+            "recall@10": 0.5,
+            "group_recall@1": 0.25,
+            "group_recall@5": 0.75,
+            "group_recall@10": 0.75,
+            "mrr": 0.75
+          },
+          "near_miss": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "paraphrase": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "procedural": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "reasoning": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          }
+        }
+      },
+      "per_question": {
+        "E001": 1,
+        "E002": 1,
+        "E003": 1,
+        "E004": 1,
+        "E005": 1,
+        "E006": 1,
+        "E007": 1,
+        "E008": 1,
+        "E009": 1,
+        "E010": 1,
+        "E014": 1,
+        "E015": 1,
+        "E016": 1,
+        "E017": 1,
+        "E018": 2
+      }
+    },
+    {
+      "name": "fixed-1200 (current)",
+      "strategy": "fixed",
+      "chunk_size": 1200,
+      "chunk_overlap": 200,
+      "index": {
+        "files": 687,
+        "chunks": 800,
+        "chunk_strategy": "fixed",
+        "avg_chunk_chars": 825,
+        "chunk_size": 1200,
+        "chunk_overlap": 200,
+        "embedding_provider": "capstone",
+        "embedding_model": "capstone:bge-small-en-v1.5",
+        "index_seconds": 21.4
+      },
+      "quotes_split": 0.0,
+      "avg_context_chars_top4": 3905,
+      "retrieval": {
+        "overall": {
+          "n": 15,
+          "recall@1": 0.8667,
+          "recall@5": 0.9333,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.9333,
+          "group_recall@5": 0.9667,
+          "group_recall@10": 0.9667,
+          "mrr": 1.0
+        },
+        "by_split": {
+          "dev": {
+            "n": 15,
+            "recall@1": 0.8667,
+            "recall@5": 0.9333,
+            "recall@10": 0.9333,
+            "group_recall@1": 0.9333,
+            "group_recall@5": 0.9667,
+            "group_recall@10": 0.9667,
+            "mrr": 1.0
+          }
+        },
+        "by_question_type": {
+          "factual": {
+            "n": 3,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "keyword": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "multi_section": {
+            "n": 2,
+            "recall@1": 0.0,
+            "recall@5": 0.5,
+            "recall@10": 0.5,
+            "group_recall@1": 0.5,
+            "group_recall@5": 0.75,
+            "group_recall@10": 0.75,
+            "mrr": 1.0
+          },
+          "near_miss": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "paraphrase": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "procedural": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "reasoning": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          }
+        }
+      },
+      "per_question": {
+        "E001": 1,
+        "E002": 1,
+        "E003": 1,
+        "E004": 1,
+        "E005": 1,
+        "E006": 1,
+        "E007": 1,
+        "E008": 1,
+        "E009": 1,
+        "E010": 1,
+        "E014": 1,
+        "E015": 1,
+        "E016": 1,
+        "E017": 1,
+        "E018": 1
+      }
+    },
+    {
+      "name": "fixed-1500",
+      "strategy": "fixed",
+      "chunk_size": 1500,
+      "chunk_overlap": 225,
+      "index": {
+        "files": 687,
+        "chunks": 709,
+        "chunk_strategy": "fixed",
+        "avg_chunk_chars": 906,
+        "chunk_size": 1500,
+        "chunk_overlap": 225,
+        "embedding_provider": "capstone",
+        "embedding_model": "capstone:bge-small-en-v1.5",
+        "index_seconds": 22.2
+      },
+      "quotes_split": 0.0,
+      "avg_context_chars_top4": 4064,
+      "retrieval": {
+        "overall": {
+          "n": 15,
+          "recall@1": 0.8667,
+          "recall@5": 0.9333,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.9333,
+          "group_recall@5": 0.9667,
+          "group_recall@10": 0.9667,
+          "mrr": 1.0
+        },
+        "by_split": {
+          "dev": {
+            "n": 15,
+            "recall@1": 0.8667,
+            "recall@5": 0.9333,
+            "recall@10": 0.9333,
+            "group_recall@1": 0.9333,
+            "group_recall@5": 0.9667,
+            "group_recall@10": 0.9667,
+            "mrr": 1.0
+          }
+        },
+        "by_question_type": {
+          "factual": {
+            "n": 3,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "keyword": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "multi_section": {
+            "n": 2,
+            "recall@1": 0.0,
+            "recall@5": 0.5,
+            "recall@10": 0.5,
+            "group_recall@1": 0.5,
+            "group_recall@5": 0.75,
+            "group_recall@10": 0.75,
+            "mrr": 1.0
+          },
+          "near_miss": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "paraphrase": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "procedural": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "reasoning": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          }
+        }
+      },
+      "per_question": {
+        "E001": 1,
+        "E002": 1,
+        "E003": 1,
+        "E004": 1,
+        "E005": 1,
+        "E006": 1,
+        "E007": 1,
+        "E008": 1,
+        "E009": 1,
+        "E010": 1,
+        "E014": 1,
+        "E015": 1,
+        "E016": 1,
+        "E017": 1,
+        "E018": 1
+      }
+    },
+    {
+      "name": "structure (1 per Q&A)",
+      "strategy": "structure",
+      "chunk_size": null,
+      "chunk_overlap": null,
+      "index": {
+        "files": 687,
+        "chunks": 709,
+        "chunk_strategy": "structure",
+        "avg_chunk_chars": 903,
+        "chunk_size": 1200,
+        "chunk_overlap": 200,
+        "embedding_provider": "capstone",
+        "embedding_model": "capstone:bge-small-en-v1.5",
+        "index_seconds": 25.7
+      },
+      "quotes_split": 0.0,
+      "avg_context_chars_top4": 4012,
+      "retrieval": {
+        "overall": {
+          "n": 15,
+          "recall@1": 0.8667,
+          "recall@5": 0.9333,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.9333,
+          "group_recall@5": 0.9667,
+          "group_recall@10": 0.9667,
+          "mrr": 1.0
+        },
+        "by_split": {
+          "dev": {
+            "n": 15,
+            "recall@1": 0.8667,
+            "recall@5": 0.9333,
+            "recall@10": 0.9333,
+            "group_recall@1": 0.9333,
+            "group_recall@5": 0.9667,
+            "group_recall@10": 0.9667,
+            "mrr": 1.0
+          }
+        },
+        "by_question_type": {
+          "factual": {
+            "n": 3,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "keyword": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "multi_section": {
+            "n": 2,
+            "recall@1": 0.0,
+            "recall@5": 0.5,
+            "recall@10": 0.5,
+            "group_recall@1": 0.5,
+            "group_recall@5": 0.75,
+            "group_recall@10": 0.75,
+            "mrr": 1.0
+          },
+          "near_miss": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "paraphrase": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "procedural": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "reasoning": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          }
+        }
+      },
+      "per_question": {
+        "E001": 1,
+        "E002": 1,
+        "E003": 1,
+        "E004": 1,
+        "E005": 1,
+        "E006": 1,
+        "E007": 1,
+        "E008": 1,
+        "E009": 1,
+        "E010": 1,
+        "E014": 1,
+        "E015": 1,
+        "E016": 1,
+        "E017": 1,
+        "E018": 1
+      }
+    },
+    {
+      "name": "structure + section header",
+      "strategy": "structure_header",
+      "chunk_size": null,
+      "chunk_overlap": null,
+      "index": {
+        "files": 687,
+        "chunks": 709,
+        "chunk_strategy": "structure_header",
+        "avg_chunk_chars": 942,
+        "chunk_size": 1200,
+        "chunk_overlap": 200,
+        "embedding_provider": "capstone",
+        "embedding_model": "capstone:bge-small-en-v1.5",
+        "index_seconds": 29.3
+      },
+      "quotes_split": 0.0,
+      "avg_context_chars_top4": 4145,
+      "retrieval": {
+        "overall": {
+          "n": 15,
+          "recall@1": 0.8667,
+          "recall@5": 0.9333,
+          "recall@10": 0.9333,
+          "group_recall@1": 0.9,
+          "group_recall@5": 0.9667,
+          "group_recall@10": 0.9667,
+          "mrr": 0.9667
+        },
+        "by_split": {
+          "dev": {
+            "n": 15,
+            "recall@1": 0.8667,
+            "recall@5": 0.9333,
+            "recall@10": 0.9333,
+            "group_recall@1": 0.9,
+            "group_recall@5": 0.9667,
+            "group_recall@10": 0.9667,
+            "mrr": 0.9667
+          }
+        },
+        "by_question_type": {
+          "factual": {
+            "n": 3,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "keyword": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "multi_section": {
+            "n": 2,
+            "recall@1": 0.0,
+            "recall@5": 0.5,
+            "recall@10": 0.5,
+            "group_recall@1": 0.25,
+            "group_recall@5": 0.75,
+            "group_recall@10": 0.75,
+            "mrr": 0.75
+          },
+          "near_miss": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "paraphrase": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "procedural": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          },
+          "reasoning": {
+            "n": 2,
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "group_recall@1": 1.0,
+            "group_recall@5": 1.0,
+            "group_recall@10": 1.0,
+            "mrr": 1.0
+          }
+        }
+      },
+      "per_question": {
+        "E001": 1,
+        "E002": 1,
+        "E003": 1,
+        "E004": 1,
+        "E005": 1,
+        "E006": 1,
+        "E007": 1,
+        "E008": 1,
+        "E009": 1,
+        "E010": 1,
+        "E014": 1,
+        "E015": 1,
+        "E016": 1,
+        "E017": 1,
+        "E018": 2
+      }
+    }
+  ]
+}

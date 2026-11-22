@@ -1,0 +1,7 @@
+# Jan Dhan & Zero-Balance Accounts
+
+The PMJDY overdraft facility of up to ₹10,000 (with the first ₹2,000 given without conditions for accounts held by women) has specific eligibility conditions: (1) The account must be satisfactorily operated for at least 6 months. (2) The account must be seeded with Aadhaar. (3) The account must not already have an overdraft outstanding. (4) Only one account per household is eligible for OD. (5) The OD limit is ₹2,000 without conditions for accounts by Pradhan or women; up to ₹10,000 for 18-65 year olds based on credit history. Banks sometimes apply additional informal conditions — if your account is 12+ months old, Aadhaar-seeded, and regularly transacted, insist on your right to the OD facility.
+
+1) Visit the branch manager with your passbook showing 6+ months of transactions and Aadhaar-linked status. 2) Submit a formal written application for PMJDY Overdraft Facility. 3) If rejected without written reason, ask for rejection in writing citing the specific clause. 4) Escalate to the Lead District Manager (LDM) or file on the bank's grievance portal. 5) PMJDY-OD for women of up to ₹2,000 is supposed to be given without bureaucratic conditions — emphasize this in your application.
+
+Jan Dhan account holders, especially women, understand the eligibility conditions for the overdraft facility, the ₹2,000 unconditional OD for women, and how to formally apply and escalate.

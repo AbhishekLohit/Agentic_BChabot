@@ -1,0 +1,7 @@
+# KYC & Compliance
+
+GST registration is NOT mandatory for sole proprietor business account KYC if annual turnover is below the GST threshold (Rs.20 lakh for services, Rs.40 lakh for goods). Under RBI's KYC Master Directions, acceptable business identity proof for sole proprietors without GST includes: (1) Udyam Registration Certificate (MSME registration — free, available at udyamregistration.gov.in). (2) Shops and Establishments license from your municipal corporation. (3) Trade license issued by the local panchayat or municipality. Additionally, the proprietor's personal KYC (Aadhaar + PAN) must be submitted along with business documents. Udyam Registration is the easiest to obtain and is widely accepted.
+
+1) Register on udyamregistration.gov.in using your Aadhaar — it's free, online, and takes 15 minutes. Download the Udyam Registration Certificate. 2) Get a Shops and Establishments license from your local municipal corporation (typically costs Rs.100-500 and takes 1-7 days). 3) Visit the bank with Udyam Certificate or Shops license, your personal Aadhaar + PAN, one business photograph/visiting card, and proof of business address. 4) If the bank still insists on GST and your turnover is below threshold, escalate to the branch manager citing RBI KYC Master Directions on sole proprietor accounts.
+
+Small business owners without GST learn that Udyam Registration or Shops and Establishments license is the correct substitute for business KYC, and that free Udyam Registration takes just 15 minutes online.

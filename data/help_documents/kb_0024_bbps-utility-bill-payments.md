@@ -1,0 +1,7 @@
+# BBPS & Utility Bill Payments
+
+BBPS credit card bill payments typically settle within T+1 to T+2 business days. A 5-day delay is unusual. The Google Pay BBPS transaction generates both: (a) a Google Pay transaction ID and (b) a BBPS Transaction Reference Number. The credit card company uses the BBPS reference, not Google Pay's internal ID. Key action: Extract the BBPS Transaction Reference from your Google Pay receipt (it's usually labeled 'BBPS Transaction ID' or similar). This is different from the UPI Transaction ID. The credit card company can trace the payment using this BBPS reference.
+
+1) Open Google Pay → Transaction History → Find the credit card payment → Look for 'BBPS Transaction ID' in the full transaction details (not the UPI RRN). 2) Call your credit card company's 24/7 helpline and provide BBPS Transaction ID + date + amount — request them to trace it. 3) Request waiver of late payment fee citing the documented BBPS payment proof — most credit card companies waive this once on submission of evidence. 4) If the credit card company can't trace after 48 hours, raise a dispute with NPCI at npci.org.in → Contact Us → BBPS Dispute. 5) File BBPS grievance with your Payment App (Google Pay support) if unresolved.
+
+Credit card users learn the BBPS Transaction ID is distinct from UPI RRN and is the correct reference for credit card payment tracing, and how to get late fees waived with payment proof.

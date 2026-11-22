@@ -1,0 +1,7 @@
+# UPI Fraud Prevention
+
+This is a classic task-based fraud, also called pig-butchering or investment scam variant, that has cost thousands of Indians crores of rupees. The initial small payouts are deliberate — they build trust before asking for investment. Once you pay, the investment balance shown on their platform is fake. Every demand for more money (withdrawal tax, premium unlock, KYC fee) is designed to extract more funds. There is no task platform, no returns, and no recovery once paid. These groups are run by organized cybercrime networks — many based in Southeast Asia — as documented by I4C. The Rs.5,000 is likely already lost.
+
+1) Stop all further payments immediately — do not pay the Rs.20,000 or any further amount under any pretext. 2) File a complaint at cybercrime.gov.in and call 1930 with all UPI transaction details, Telegram group links and screenshots, and VPA IDs you paid. 3) Take screenshots of all conversations, payment screenshots, and fake balance dashboards before the group disappears. 4) File a local police FIR citing online financial fraud (IPC 420 / IT Act 66D). 5) Block and report the Telegram group. Warn contacts. 6) The initial small payment is called lure money — it proves the scam's intent, include it in your FIR.
+
+Users recognize the pay-first task fraud pattern — initial small genuine payments followed by escalating investment demands — and understand that all returns shown on such platforms are fabricated.

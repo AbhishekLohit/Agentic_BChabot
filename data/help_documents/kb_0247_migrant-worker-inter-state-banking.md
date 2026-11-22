@@ -1,0 +1,7 @@
+# Migrant Worker & Inter-state Banking
+
+Yes! UPI transfers between any two bank accounts in India are completely free — there are zero charges for person-to-person UPI transfers (as per NPCI's current fee structure). There are no inter-state restrictions on UPI. This is a much better option than NEFT/RTGS which may have charges at the branch. Your wife needs a bank account (ideally a Jan Dhan account which is zero-balance) with a UPI-linked mobile number. Then you can send money from Delhi to Bihar instantly, 24×7, at zero cost. If your wife has a feature phone, she can receive payments at her bank account even without UPI — you just need her account number and IFSC for an IMPS transfer (also mostly free on apps).
+
+1) Download PhonePe, BHIM, or GPay on your smartphone and link your bank account. 2) Your wife needs: a bank account with her mobile number registered, and ideally a UPI-enabled smartphone for QR-based receiving. 3) If wife doesn't have a smartphone, you can do an IMPS transfer using her account number and IFSC — free on most banking apps. 4) For your wife to receive via AEPS (if she's near a BC kiosk), ensure her account has Aadhaar linked. 5) Encourage wife to open a Jan Dhan account at the nearest branch or CSC if she doesn't have one — zero balance, free to operate.
+
+Migrant workers learn UPI P2P transfers are completely free without inter-state restrictions, how to send IMPS using account details even if wife lacks UPI, and the Jan Dhan account option.

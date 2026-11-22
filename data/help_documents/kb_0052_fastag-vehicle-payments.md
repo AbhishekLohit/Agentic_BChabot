@@ -1,0 +1,7 @@
+# FASTag & Vehicle Payments
+
+FASTag accounts can go into negative balance due to: (1) Deferred toll deductions — some toll plazas process transactions 24-48 hours after the vehicle passage due to technical issues; if your balance was ₹200 and earlier deductions cleared simultaneously, the balance went negative. (2) Penalty charges — some plazas charge double the toll (penalty) if FASTag was unreadable at the scanner. (3) Monthly minimum balance requirements some banks apply to FASTag wallets. To resolve: (a) Top up the FASTag wallet to clear the negative balance and restore functionality. (b) Check the transaction history to identify which deduction caused the negative — it may be a valid deferred toll or an incorrect charge.
+
+1) Open your FASTag app (your issuer bank's app or FASTag portal) → Transaction History — identify all deductions and their dates/plaza names. 2) Top up the wallet by ₹350 + some buffer (suggest ₹500 minimum) to restore functionality. 3) If you believe the ₹350 deduction is incorrect (wrong plaza, duplicate, penalty applied wrongly), raise a dispute on ihmcl.com or call 1033. 4) Enable auto-recharge: most FASTag wallets have an auto-recharge below a threshold (e.g., auto-top-up ₹500 when balance falls below ₹100). 5) Link FASTag to your savings account for automatic reload to prevent negative balance.
+
+FASTag users learn what causes negative balances (deferred deductions, penalties), how to check transaction history, and the auto-recharge feature to prevent future negative balance.

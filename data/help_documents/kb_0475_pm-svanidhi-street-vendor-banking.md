@@ -1,0 +1,7 @@
+# PM SVANidhi & Street Vendor Banking
+
+The PM SVANidhi scheme incentivizes digital payments with cashback (up to ₹1,200 per year on UPI transactions) but digital payments are an incentive, NOT a mandatory requirement for the second loan. Timely repayment of the first loan is the primary criterion for the second loan of ₹20,000. Cash repayments through the bank or the lender directly also qualify as timely repayment. However, banks sometimes informally emphasize digital adoption during the second loan process — you have the right to be considered based on repayment record alone. For future loans, starting UPI via a basic mobile phone will help maximize your cashback benefits.
+
+1) Collect your repayment proof — bank receipts or your loan account statement showing the first ₹10,000 was fully repaid. 2) Apply for the second ₹20,000 loan at the same lending institution citing timely repayment record. 3) If the bank insists on digital payment history, formally ask for the requirement in writing citing the PM SVANidhi Guidelines — it's not in the official criteria. 4) Contact PM SVANidhi Helpline (011-23062850) if your application is unfairly rejected. 5) Consider setting up a simple UPI ID for digital repayment going forward — even basic Android phones support PhonePe or BHIM.
+
+PM SVANidhi beneficiaries learn that digital payments are incentivized (cashback) but not mandatory for loan progression, and timely cash repayment also qualifies for higher tranches.

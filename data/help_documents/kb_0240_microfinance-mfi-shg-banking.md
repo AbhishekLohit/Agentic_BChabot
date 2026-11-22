@@ -1,0 +1,7 @@
+# Microfinance, MFI & SHG Banking
+
+Multiple overlapping MFI loans leading to a debt trap is a known systemic problem documented by RBI. Under RBI's Microfinance Regulations (2022): (1) An NBFC-MFI cannot give a loan that takes your total EMI beyond 50% of your monthly household income. (2) Multiple loans from different MFIs to the same borrower creating over-indebtedness is tracked via credit bureau reporting and regulated. (3) Excessive 'late fees' must be disclosed upfront and cannot be punitive. You have the right to request a formal loan restructuring and the RBI mandates MFIs to have a grievance redressal mechanism. This situation may also warrant involvement of a social worker or legal aid.
+
+1) Stop taking further loans to repay MFI loans — this worsens the debt spiral. 2) Write a formal letter to the MFI's Grievance Redressal Officer requesting debt restructuring and a moratorium. 3) File complaint with RBI Ombudsman (cms.rbi.org.in) regarding excessive charges and over-indebtedness. 4) Contact SEWA (Self Employed Women's Association) helpline, or your nearest NRLM/SRLM office — they have debt restructuring programs. 5) Explore SHG-BLP loan to refinance at lower rate (8-12% vs MFI's 24-36%). 6) Contact National Legal Services Authority (NALSA) toll-free: 15100 for free legal aid.
+
+Borrowers in MFI debt traps learn their rights under RBI 2022 microfinance regulations, the 50% income cap rule, formal restructuring options, and free legal aid resources.
