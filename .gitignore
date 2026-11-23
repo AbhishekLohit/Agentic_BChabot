@@ -210,3 +210,5 @@ __marimo__/
 data/certs/
 data/raw/
 eval/rag/results/
+evaluation/results/
+evaluation/rag/results/

@@ -3,10 +3,9 @@ Chunking experiments: the same retrieval evaluation (recall@1/5/10, MRR) for sev
 chunking strategies, side by side. No LLM calls; only the local embedding model.
 
 Run from the project root:
-    python eval/rag/chunking_experiments.py              # dev split (default)
-    python eval/rag/chunking_experiments.py --split test # once, for the final report
-
-Writes eval/rag/results/<timestamp>_chunking/ with report.md, summary.json and one
+python eval/rag/chunking_experiments.py              # dev split (default)
+python eval/rag/chunking_experiments.py --split test # once, for the final report
+Writes evaluation/rag/results/<timestamp>_chunking/ with report.md, summary.json and one
 retrieval_<config>.jsonl per configuration.
 """
 import argparse
@@ -18,8 +17,8 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-import evaluate as ev  # noqa: E402  (also puts src/ on the path)
+sys.path.insert(0, str(HERE.parents[1]))
+from evaluation.rag import evaluate as ev  # noqa: E402  (also puts src/ on the path)
 
 # name, strategy, chunk size, overlap (overlap ~15% of the size for fixed windows)
 CONFIGS = [

@@ -23,9 +23,9 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parents[1]))
 
-import evaluate as ev  # noqa: E402  (also puts src/ on sys.path)
+from evaluation.rag import evaluate as ev  # noqa: E402  (also puts src/ on sys.path)
 from utils.help_rag import RETRIEVAL_MODES  # noqa: E402
 
 

@@ -2,7 +2,7 @@
 RAG evaluation with two SEPARATE scores.
 
   1. Retrieval (no LLM):  recall@1/5/10, group recall@k and MRR against the gold
-     evidence quotes in rag_eval_set.jsonl.
+     evidence quotes in the `sbi_rag` cases in evaluation_cases.jsonl.
   2. Answers (LLM):       the app's own help-agent prompt and model answer each
      question from its top-k chunks; a judge LLM then scores
        - correctness   : share of the question's key facts present in the answer
@@ -16,10 +16,10 @@ Reading them together:
   low recall                 -> retrieval is the problem; prompt changes won't help
 
 Run from the project root:
-  python eval/rag/evaluate.py retrieval                    # fast, free, no LLM
-  python eval/rag/evaluate.py answers --split dev --limit 10
-  python eval/rag/evaluate.py all --label baseline
-  python eval/rag/evaluate.py answers --resume eval/rag/results/<run folder>
+  python evaluation/rag/evaluate.py retrieval                    # fast, free, no LLM
+  python evaluation/rag/evaluate.py answers --split dev --limit 10
+  python evaluation/rag/evaluate.py all --label baseline
+  python evaluation/rag/evaluate.py answers --resume evaluation/rag/results/<run folder>
 Options: --split dev|test|all, --chunk-size/--chunk-overlap (chunking experiments),
          --judge-provider groq (use a stronger judge than the generator).
 """
@@ -56,11 +56,11 @@ def check_freeze(allow_unfrozen: bool) -> str:
     if not MANIFEST.is_file():
         print("WARNING: the eval set is not frozen yet (no MANIFEST.json). "
               "Freeze it before recording official numbers:\n"
-              "         python eval/rag/validate_eval_set.py --freeze\n")
+              "         python evaluation/rag/validate_eval_set.py --freeze\n")
         return "unfrozen"
     m = json.loads(MANIFEST.read_text(encoding="utf-8"))
     if m.get("eval_sha256") != sha256(EVAL_FILE):
-        msg = "rag_eval_set.jsonl changed since it was frozen; results would not be comparable."
+        msg = "evaluation_cases.jsonl changed since it was frozen; results would not be comparable."
         if not allow_unfrozen:
             sys.exit(f"ERROR: {msg} (use --allow-unfrozen to run anyway)")
         print(f"WARNING: {msg}\n")
@@ -114,8 +114,7 @@ def load_llms(judge_provider: Optional[str]):
 
 def load_help_prompt() -> str:
     import yaml
-    from app_setting import AppSettings
-    path = ROOT / "prompts" / AppSettings().help_agent_prompt_path
+    path = HERE / "evaluation_prompt.yml"
     return yaml.safe_load(path.read_text(encoding="utf-8"))["prompt"]
 
 
@@ -523,7 +522,7 @@ def main() -> int:
 
     if args.stage == "rescore":
         if not args.resume:
-            sys.exit("ERROR: rescore needs --resume eval/rag/results/<run folder>")
+            sys.exit("ERROR: rescore needs --resume evaluation/rag/results/<run folder>")
         run_dir = Path(args.resume)
         meta = json.loads((run_dir / "meta.json").read_text(encoding="utf-8"))
         ret = ansum = None

@@ -12,7 +12,7 @@ rows is the effect of that change alone:
 
     python eval/rag/ablation.py --split dev            # all rungs (≈ 6 x questions x 2 LLM calls)
     python eval/rag/ablation.py --rungs 0 5 --limit 5  # quick check
-    python eval/rag/ablation.py --report results/<time>_ablation   # rebuild the table only
+    python eval/rag/ablation.py --report evaluation/rag/results/<time>_ablation
 
 Writes results/<time>_ablation/{rung_*.jsonl, summary.json, report.md, small_model_section.md}.
 Re-running with --resume <dir> skips questions already answered in each rung.
@@ -27,9 +27,9 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parents[1]))
 
-import evaluate as ev  # noqa: E402
+from evaluation.rag import evaluate as ev  # noqa: E402
 
 RUNGS = [
     ("baseline", "Baseline (dense top-8, plain text, no citation check)",

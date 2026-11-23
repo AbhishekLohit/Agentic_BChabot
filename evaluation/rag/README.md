@@ -4,45 +4,56 @@ A fixed set of questions for measuring the help-document RAG pipeline. It scores
 (did we fetch the right evidence?) separately from **answers** (did the model use it correctly?),
 so you can tell whether a bad answer came from retrieval or from the 8B generator.
 
+This is a standalone SBI-help benchmark over `data/help_documents`. Its core runner, data and results
+live here; chunking, retrieval-mode and ablation utilities remain under `eval/rag/`. The active app
+HelpCenter uses a separate Barclays corpus and Chroma collection; these scores do not directly measure
+that runtime path.
+Both use local MiniLM embeddings, while generation and judging use the configured chat model.
+
 ## Files
 
 | File | What it is |
 |---|---|
-| `rag_eval_set.jsonl` | The eval set, one question per line. **This is the source of truth.** |
-| `rag_eval_set.csv` | The same data for reading and reviewing in Excel. Generated; don't edit. |
+| `evaluation/evaluation_cases.jsonl` | Shared golden dataset. The 22 SBI cases use `suite: "sbi_rag"`; this is the source of truth. |
+| `rag_eval_set.csv` | RAG-only review view for Excel. Generated; don't edit. |
 | `validate_eval_set.py` | Checks every evidence quote against the corpus, and freezes the set. |
 | `MANIFEST.json` | Written by `--freeze`: hashes of the eval set and corpus, counts, rules. |
 
-## What's in it (v1)
+## Current dataset
 
-102 questions over `data/help_documents/SBI_Help_QA.pdf` (44 Q&As, 7 sections).
+The `sbi_rag` slice contains 22 questions over the Markdown documents in `data/help_documents`.
 
 | Type | Count | Tests |
 |---|---|---|
-| `paraphrase` | 23 | Different wording from the document (favours dense retrieval) |
-| `factual` | 15 | Numbers and limits (Rs. 5,00,000, T+5, 1930) |
-| `procedural` | 15 | Steps and menu paths |
-| `reasoning` | 12 | Applying a rule to the user's situation ("my son is 12…") |
-| `keyword` | 8 | Exact terms: PPK, Green PIN, UPI Lite, NREGA, AnyDesk (favours BM25) |
-| `near_miss` | 7 | A related section exists, but the answer is "no" or "only at a branch" |
-| `multi_section` | 7 | Needs evidence from two different Q&As |
-| `unanswerable` | 15 | Bank questions the corpus does **not** cover; the right behaviour is to abstain |
+| `paraphrase` | 3 | Different wording from the document |
+| `factual` | 4 | Amounts, limits, and conditions |
+| `procedural` | 3 | Steps and processes |
+| `reasoning` | 2 | Applying a rule to a situation |
+| `keyword` | 2 | Exact terminology |
+| `near_miss` | 2 | Related content with a negative or restricted answer |
+| `multi_section` | 2 | Evidence from more than one document section |
+| `unanswerable` | 4 | Questions the corpus does **not** cover; the right behaviour is to abstain |
 
-Split: **70 dev / 32 test**, stratified by type. Tune on `dev`; report final numbers on `test`.
+There are **18 dev / 4 test** RAG cases. Tune on `dev`; use `test` only for a final check.
+The set is currently unfrozen; reports are provisional until the set is reviewed and frozen.
+The RAG freeze manifest hashes the shared master file, so any suite's dataset changes require a
+new freeze before recording comparable benchmark results.
 
 ## Schema
 
 ```json
 {
+  "suite": "sbi_rag",
   "id": "E038",
   "question": "Why can't I send more than 5 lakh to a beneficiary I just added?",
   "question_type": "paraphrase",
   "answerable": true,
   "expected_behavior": "answer_with_citations",
   "split": "dev",
-  "gold_doc": "SBI_Help_QA.pdf",
+  "gold_doc": "kb_0438_money-transfers-neft-for-large-amounts.md",
   "evidence_groups": [
-    [ {"section": "Q4.2", "page": 4, "quote": "first four days after a beneficiary is activated"} ]
+    [ {"doc": "kb_0438_money-transfers-neft-for-large-amounts.md", "section": null,
+       "page": null, "quote": "There is no RBI-set upper limit for NEFT"} ]
   ],
   "reference_answer": "For the first four days after a beneficiary is activated ...",
   "key_facts": ["first four days after activation", "capped at Rs. 5,00,000", "cooling period for protection"],
@@ -53,6 +64,7 @@ Split: **70 dev / 32 test**, stratified by type. Tune on `dev`; report final num
 - **`evidence_groups`** is a list of groups. A **group** is satisfied if *any* of its quotes is retrieved
   (some facts appear in two places). A question is **fully recalled** when *every* group is satisfied
   (multi-section questions have two groups).
+- Each evidence quote may name its source `doc`, which is useful when a fact is supported by multiple files.
 - **`quote`** is a short verbatim span from the document. A retrieved chunk is a hit when it contains
   the quote (case-, whitespace- and quote-style-insensitive).
 - **`key_facts`** are the points a correct answer must contain; use them for answer scoring.
@@ -69,9 +81,9 @@ Two **separate** scores, so you can tell which stage failed:
 
 | Stage | Command | Needs an LLM? | Metrics |
 |---|---|---|---|
-| Retrieval | `python eval/rag/evaluate.py retrieval` | No (seconds, free) | recall@1/5/10, group recall@k, MRR |
-| Answers | `python eval/rag/evaluate.py answers` | Yes (generator + judge) | correctness, faithfulness, citation precision, abstention |
-| Both | `python eval/rag/evaluate.py all --label baseline` | Yes | everything, in one report |
+| Retrieval | `python evaluation/rag/evaluate.py retrieval` | No (seconds, free) | recall@1/5/10, group recall@k, MRR |
+| Answers | `python evaluation/rag/evaluate.py answers` | Yes (generator + judge) | correctness, faithfulness, citation precision, abstention |
+| Both | `python evaluation/rag/evaluate.py all --label baseline` | Yes | everything, in one report |
 
 Useful options:
 
@@ -82,10 +94,12 @@ Useful options:
 | `--label baseline` | Names the run folder. |
 | `--chunk-size 800 --chunk-overlap 100` | Chunking experiments. Builds a fresh in-memory index; the app's index is untouched. |
 | `--judge-provider groq` | Judge with a different (stronger) model than the generator. |
-| `--resume eval/rag/results/<folder>` | Continue an interrupted answers run with the same settings; failed questions are retried. |
+| `--resume evaluation/rag/results/<folder>` | Continue an interrupted answers run with the same settings; failed questions are retried. |
 
-Each run writes a folder under `eval/rag/results/` with `report.md` (tables), `summary.json`,
+Each run writes a folder under `evaluation/rag/results/` with `report.md` (tables), `summary.json`,
 `retrieval.jsonl` and `answers.jsonl` (one row per question, for error analysis), and `meta.json`.
+The evaluator uses `evaluation/rag/evaluation_prompt.yml`; it does not reuse the active Barclays HelpCenter prompt.
+Its MiniLM embedding configuration is separate from the active app HelpStore.
 
 ### How each metric is computed
 
@@ -137,7 +151,7 @@ python eval/rag/chunking_experiments.py --split test  # once, to confirm the cho
 The app's strategy is set by `HELP_CHUNK_STRATEGY` in `.env` (`fixed`, `structure` or
 `structure_header`; default `fixed`). After changing it, rebuild the index
 (`cd src`, then `python -m utils.embeddings.help_document_store`). To check answer quality with a
-strategy before switching: `python eval/rag/evaluate.py all --chunk-strategy structure_header --label structure_header`.
+strategy before switching: `python evaluation/rag/evaluate.py all --chunk-strategy structure_header --label structure_header`.
 
 Note: recall@1 on `multi_section` questions is 0 by design for one-chunk-per-Q&A strategies, because no
 single chunk contains two Q&As. Compare those questions with group recall@k instead.
@@ -192,7 +206,7 @@ Six rungs; each adds one change to the rung before it, so each step's difference
 
     python eval/rag/ablation.py --split dev --rungs 0 5 --limit 3   # smoke test
     python eval/rag/ablation.py --split dev                         # full ladder
-    python eval/rag/ablation.py --resume eval/rag/results/<time>_ablation   # after an interruption
+    python eval/rag/ablation.py --resume evaluation/rag/results/<time>_ablation   # after an interruption
 
 Each run writes `report.md` (the before-and-after table) and `small_model_section.md`, a draft of the
 "compensating for a small model" write-up filled from the measured numbers.
@@ -200,8 +214,8 @@ Each run writes `report.md` (the before-and-after table) and `small_model_sectio
 ## Commands (run from the project root)
 
 ```powershell
-python eval/rag/validate_eval_set.py            # verify evidence + check the freeze
-python eval/rag/validate_eval_set.py --freeze   # freeze: record hashes in MANIFEST.json
+python evaluation/rag/validate_eval_set.py            # verify evidence + check the freeze
+python evaluation/rag/validate_eval_set.py --freeze   # freeze: record hashes in MANIFEST.json
 ```
 
 ## Rules

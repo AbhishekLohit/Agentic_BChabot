@@ -2,8 +2,8 @@
 Validate (and optionally freeze) the RAG evaluation set.
 
 Run from the project root:
-    python eval/rag/validate_eval_set.py            # check the set and the freeze
-    python eval/rag/validate_eval_set.py --freeze   # record hashes in MANIFEST.json
+    python evaluation/rag/validate_eval_set.py            # check the set and the freeze
+    python evaluation/rag/validate_eval_set.py --freeze   # record hashes in MANIFEST.json
 
 Checks, for every answerable question:
   1. each evidence quote exists verbatim in the corpus (case/whitespace-insensitive),
@@ -23,9 +23,11 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-EVAL_FILE = HERE / "rag_eval_set.jsonl"
+EVAL_FILE = ROOT / "evaluation" / "evaluation_cases.jsonl"
 MANIFEST = HERE / "MANIFEST.json"
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
+from evaluation.golden_dataset import load_suite_cases  # noqa: E402
 
 REQUIRED = {"id", "question", "question_type", "answerable", "expected_behavior", "split",
             "gold_doc", "evidence_groups", "reference_answer", "key_facts"}
@@ -44,12 +46,7 @@ def sha256(path: Path) -> str:
 
 
 def load_eval():
-    rows = []
-    with EVAL_FILE.open(encoding="utf-8") as f:
-        for n, line in enumerate(f, 1):
-            if line.strip():
-                rows.append(json.loads(line))
-    return rows
+    return load_suite_cases(EVAL_FILE, "sbi_rag")
 
 
 def main() -> int:
@@ -140,7 +137,7 @@ def main() -> int:
     if MANIFEST.is_file() and not args.freeze:
         m = json.loads(MANIFEST.read_text(encoding="utf-8"))
         if m.get("eval_sha256") != eval_hash:
-            errors.append("rag_eval_set.jsonl has CHANGED since it was frozen. Revert it, or bump the "
+            errors.append("evaluation_cases.jsonl has CHANGED since it was frozen. Revert it, or bump the "
                           "version and re-freeze (never edit test items after seeing results).")
         if {c["file"]: c["sha256"] for c in m.get("corpus", [])} != {c["file"]: c["sha256"] for c in corpus}:
             warnings.append("corpus files differ from the frozen manifest; re-validate evidence and re-freeze as a new version.")
@@ -166,7 +163,8 @@ def main() -> int:
     if args.freeze:
         prev = json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.is_file() else {}
         manifest = {
-            "name": "rag_eval_set",
+            "name": "evaluation_cases",
+            "suite": "sbi_rag",
             "version": prev.get("version", "v1"),
             "status": "frozen",
             "frozen_on": date.today().isoformat(),
