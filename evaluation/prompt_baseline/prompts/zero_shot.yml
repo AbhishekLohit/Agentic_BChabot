@@ -1,0 +1,11 @@
+# Strategy 0 (baseline): zero-shot, free-text JSON. No examples, no reasoning, no schema
+# enforcement: the model must write the JSON itself and we parse it from its text.
+strategy: zero_shot
+output: text_json
+template: |
+  {{TASK}}
+
+  Reply with ONLY a JSON object, nothing else:
+  {"route": "BankSQL" | "HelpCenter" | "Dispute" | "Out_of_scope", "sql": "<query or null>"}
+
+  Question: {{QUESTION}}

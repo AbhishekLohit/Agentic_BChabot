@@ -1,0 +1,258 @@
+{
+  "meta": {
+    "model": "Qwen/Qwen3-8B",
+    "provider": "capstone",
+    "n_cases": 42,
+    "today": "2026-11-24",
+    "run_at": "2026-11-24T00:46:35",
+    "samples": 5,
+    "temperature": 0.0,
+    "sc_temperature": 0.7,
+    "strategies": [
+      "zero_shot",
+      "structured_fewshot",
+      "cot",
+      "self_consistency",
+      "decomposition"
+    ]
+  },
+  "strategies": {
+    "zero_shot": {
+      "n": 42,
+      "correct": 33,
+      "route_ok": 42,
+      "valid_output": 42,
+      "n_sql": 24,
+      "sql_ok": 15,
+      "avg_latency": 1.62,
+      "avg_calls": 1.0,
+      "avg_tokens": 618,
+      "failures": {
+        "wrong_result": 8,
+        "empty_result": 1
+      },
+      "by_difficulty": {
+        "easy": [
+          10,
+          12
+        ],
+        "medium": [
+          12,
+          15
+        ],
+        "hard": [
+          11,
+          15
+        ]
+      },
+      "by_route": {
+        "BankSQL": [
+          24,
+          24
+        ],
+        "HelpCenter": [
+          8,
+          8
+        ],
+        "Dispute": [
+          4,
+          4
+        ],
+        "Out_of_scope": [
+          6,
+          6
+        ]
+      }
+    },
+    "structured_fewshot": {
+      "n": 42,
+      "correct": 38,
+      "route_ok": 41,
+      "valid_output": 42,
+      "n_sql": 24,
+      "sql_ok": 21,
+      "avg_latency": 1.56,
+      "avg_calls": 1.0,
+      "avg_tokens": 853,
+      "failures": {
+        "wrong_result": 3,
+        "wrong_route": 1
+      },
+      "by_difficulty": {
+        "easy": [
+          12,
+          12
+        ],
+        "medium": [
+          13,
+          15
+        ],
+        "hard": [
+          13,
+          15
+        ]
+      },
+      "by_route": {
+        "BankSQL": [
+          24,
+          24
+        ],
+        "HelpCenter": [
+          7,
+          8
+        ],
+        "Dispute": [
+          4,
+          4
+        ],
+        "Out_of_scope": [
+          6,
+          6
+        ]
+      }
+    },
+    "cot": {
+      "n": 42,
+      "correct": 32,
+      "route_ok": 42,
+      "valid_output": 42,
+      "n_sql": 24,
+      "sql_ok": 14,
+      "avg_latency": 4.62,
+      "avg_calls": 1.0,
+      "avg_tokens": 821,
+      "failures": {
+        "wrong_result": 8,
+        "empty_result": 2
+      },
+      "by_difficulty": {
+        "easy": [
+          10,
+          12
+        ],
+        "medium": [
+          12,
+          15
+        ],
+        "hard": [
+          10,
+          15
+        ]
+      },
+      "by_route": {
+        "BankSQL": [
+          24,
+          24
+        ],
+        "HelpCenter": [
+          8,
+          8
+        ],
+        "Dispute": [
+          4,
+          4
+        ],
+        "Out_of_scope": [
+          6,
+          6
+        ]
+      }
+    },
+    "self_consistency": {
+      "n": 42,
+      "correct": 35,
+      "route_ok": 42,
+      "valid_output": 42,
+      "n_sql": 24,
+      "sql_ok": 17,
+      "avg_latency": 21.17,
+      "avg_calls": 5.0,
+      "avg_tokens": 4109,
+      "failures": {
+        "wrong_result": 5,
+        "empty_result": 2
+      },
+      "by_difficulty": {
+        "easy": [
+          11,
+          12
+        ],
+        "medium": [
+          12,
+          15
+        ],
+        "hard": [
+          12,
+          15
+        ]
+      },
+      "by_route": {
+        "BankSQL": [
+          24,
+          24
+        ],
+        "HelpCenter": [
+          8,
+          8
+        ],
+        "Dispute": [
+          4,
+          4
+        ],
+        "Out_of_scope": [
+          6,
+          6
+        ]
+      },
+      "avg_agreement": 0.93,
+      "questions_with_disagreement": 9
+    },
+    "decomposition": {
+      "n": 42,
+      "correct": 33,
+      "route_ok": 42,
+      "valid_output": 42,
+      "n_sql": 24,
+      "sql_ok": 15,
+      "avg_latency": 4.09,
+      "avg_calls": 1.0,
+      "avg_tokens": 794,
+      "failures": {
+        "wrong_result": 7,
+        "empty_result": 2
+      },
+      "by_difficulty": {
+        "easy": [
+          10,
+          12
+        ],
+        "medium": [
+          12,
+          15
+        ],
+        "hard": [
+          11,
+          15
+        ]
+      },
+      "by_route": {
+        "BankSQL": [
+          24,
+          24
+        ],
+        "HelpCenter": [
+          8,
+          8
+        ],
+        "Dispute": [
+          4,
+          4
+        ],
+        "Out_of_scope": [
+          6,
+          6
+        ]
+      }
+    }
+  }
+}

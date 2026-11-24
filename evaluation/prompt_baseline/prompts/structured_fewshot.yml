@@ -1,0 +1,28 @@
+# Strategy 1: structured output (schema-enforced) + few-shot examples.
+strategy: structured_fewshot
+output: structured
+schema: Answer
+template: |
+  {{TASK}}
+
+  EXAMPLES
+  Question: How much did I spend on shopping in March 2025?
+  {"route": "BankSQL", "sql": "SELECT ROUND(SUM(amount_usd), 2) FROM transactions WHERE customer_id = '{{CUSTOMER_ID}}' AND transaction_type <> 'income' AND merchant_system_category1_name = 'Shopping' AND year = 2025 AND month = 3"}
+
+  Question: Which 2 merchants did I pay most often in 2024?
+  {"route": "BankSQL", "sql": "SELECT merchant_brand_name FROM transactions WHERE customer_id = '{{CUSTOMER_ID}}' AND transaction_type <> 'income' AND year = 2024 GROUP BY merchant_brand_name ORDER BY COUNT(*) DESC LIMIT 2"}
+
+  Question: How do I change my card PIN?
+  {"route": "HelpCenter", "sql": null}
+
+  Question: Tesco took 40 pounds twice on 2 May, please sort it out.
+  {"route": "Dispute", "sql": null}
+
+  Question: How do I raise a dispute about a payment?
+  {"route": "HelpCenter", "sql": null}
+
+  Question: Delete all my transactions from 2023.
+  {"route": "Out_of_scope", "sql": null}
+
+  Answer the question below in the same format.
+  Question: {{QUESTION}}

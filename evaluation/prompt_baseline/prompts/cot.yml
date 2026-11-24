@@ -1,0 +1,17 @@
+# Strategy 2: chain-of-thought. Same task, structured output, but the model writes its
+# reasoning first (route, filters, dates, aggregation) and only then the answer.
+# Also used by self-consistency: several samples at a higher temperature, majority vote.
+strategy: cot
+output: structured
+schema: CoTAnswer
+template: |
+  {{TASK}}
+
+  Think step by step in the "reasoning" field BEFORE answering:
+  1. Which route is this, and why?
+  2. For BankSQL: which transaction types, merchant or category, and which dates?
+     Work out any relative dates ("last month", "this year", "last 7 days") from today's date.
+  3. Which aggregation (SUM, COUNT, MAX, GROUP BY ... ORDER BY ... LIMIT) answers it?
+  Then give "route" and "sql" (null unless the route is BankSQL).
+
+  Question: {{QUESTION}}

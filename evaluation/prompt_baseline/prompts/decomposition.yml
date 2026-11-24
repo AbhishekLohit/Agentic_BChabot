@@ -1,0 +1,16 @@
+# Strategy 3: decomposition. The model first breaks the question into small sub-questions,
+# answers each one (route, filter, date range, aggregation), then composes the final query.
+strategy: decomposition
+output: structured
+schema: DecompAnswer
+template: |
+  {{TASK}}
+
+  Solve it by decomposition:
+  - "sub_questions": break the question into the smallest steps needed, in order, for example
+    "Is this the customer's own data?", "Which rows: types, merchant, category?",
+    "Which date range?", "What to compute: sum, count, ranking?".
+  - "sub_answers": answer each sub-question in one short line, in the same order.
+  - Then "route" and "sql" built from those answers (sql null unless the route is BankSQL).
+
+  Question: {{QUESTION}}
