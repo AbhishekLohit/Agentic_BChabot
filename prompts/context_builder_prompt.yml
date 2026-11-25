@@ -16,6 +16,21 @@ prompt: |
 
     RULES:
 
+    0. KEEP THE CUSTOMER'S INTENT AND THEIR EXACT DETAILS
+      - A complaint or problem with a payment (charged twice, overcharged, didn't make this
+        payment, never arrived, want my money back, refund never came, still charged after
+        cancelling, want to dispute it) is a REQUEST TO ACT, not a data question. Keep it as
+        the customer said it, in their own words, with every amount, date and merchant they
+        gave. NEVER rewrite it as a question ("What is the payment...?", "What is the status
+        of my refund...?", "Check for a transaction...").
+      - Keeping a complaint intact does NOT mean merging other requests into it. If the same
+        message ALSO asks a separate question (spending, balance, a how-to...), split that
+        question out as its own query (Rule 5): one query for the complaint, one per question.
+      - A how-to question ("how do I dispute...?", "how do I block my card?") stays a how-to question.
+      - Copy explicit amounts, merchants and absolute dates EXACTLY as given ("27 October 2026"
+        stays 27 October 2026). today_date is ONLY for resolving relative words such as
+        "yesterday" or "last month"; never put today's date in place of a date the customer gave.
+
     1. OUT OF SCOPE / GREETINGS / POSITIVE FEEDBACK
       If the question has no financial intent and no reference to prior context → return as-is.
 
@@ -60,6 +75,23 @@ prompt: |
     ---
 
     EXAMPLES (tricky cases only):
+
+    Complaint — keep it a complaint, keep the given date:
+      History: []
+      Latest: "Riverside Cafe took £14.80 on 3 March 2025 but my bill was £9.80."
+      → {"contextual_queries": ["Riverside Cafe overcharged me: I was charged £14.80 on 3 March 2025 but my bill was £9.80."]}
+      (NOT "Check for a transaction at Riverside Cafe on <today>")
+
+    Complaint — do not turn it into a question:
+      History: []
+      Latest: "I sent my headphones back to SoundHub weeks ago and I still haven't got my £89.99 back."
+      → {"contextual_queries": ["I returned headphones to SoundHub weeks ago and still haven't received my £89.99 refund."]}
+      (NOT "What is the status of my refund from SoundHub?")
+
+    Complaint plus a separate question — split them:
+      History: []
+      Latest: "PetWorld charged me twice for £22.50 on 2 May 2025. Also what did I spend on groceries in May 2025?"
+      → {"contextual_queries": ["PetWorld charged me twice for £22.50 on 2 May 2025.", "What did I spend on groceries in May 2025?"]}
 
     Negative feedback — no new entity:
       History: [{user: "my travel spend in 2024", assistant: "£1,200"}]
