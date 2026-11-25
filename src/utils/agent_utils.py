@@ -84,3 +84,10 @@ def agent_metrics(
         )
     
     return return_val
+
+def describe_error(err: BaseException, limit: int = 400) -> str:
+    """One line naming an exception, for FallbackResponse.error_detail and the UI trace."""
+    text = " ".join(str(err).split())
+    if len(text) > limit:
+        text = text[:limit] + "..."
+    return f"{type(err).__name__}: {text}" if text else type(err).__name__

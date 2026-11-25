@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from app_models import FallbackResponse, Graph_State
+from app_models import DisputeResult, FallbackResponse, Graph_State
 from typing import Any
 from agents.context_builder import context_builder_agent
 from agents.supervisor import suprivisor_agent
@@ -46,6 +46,7 @@ class Agent_Graph:
         builder.add_node("context_builder", self._context_builder)
         builder.add_node("suprivisor", self._suprivisor_agent)
         builder.add_node("dispute_agent", self._dispute_agent_node)
+        builder.add_node("dispute_list", self._dispute_list_node)
         builder.add_node("sql_generation", self.agent_subgraph.app)
         builder.add_node("help_center", self._help_center_agent_node)
         builder.add_node("response_generator", self._response_generator_agent)
@@ -61,8 +62,11 @@ class Agent_Graph:
             {
                 "fallback": "fallback",
                 "dispute_gate": "dispute_gate",
+                "dispute_list": "dispute_list",
             }
         )
+        # "Show my disputes": straight from the database, then the normal reply path.
+        builder.add_edge("dispute_list", "join")
         # The gate: while a dispute is open, decide whether this message belongs to it.
         builder.add_conditional_edges(
             "dispute_gate",
@@ -144,6 +148,15 @@ class Agent_Graph:
             return None
 
     async def _guardrail(self, state: Graph_State) -> Graph_State:
+        # "Show my disputes" / a case ID: answered from the database by code alone. The message
+        # never reaches a model on that path, so there is nothing for the guardrail to protect,
+        # and its per-message reading wrongly blocked these requests as "sensitive data".
+        if dispute_workflow.is_case_list_request(state.input_request.user_query or ""):
+            if state.agent_metrics is None:
+                state.agent_metrics = {}
+            state.dispute_list_request = True
+            self.logger.info("Dispute list request: answering from the database, no model calls.")
+            return state
         await input_guardrail_node(state, self.llm, self.logger)
         fallback = state.fallback_response
         if fallback and fallback.fallback_reason == "greeting" and self._open_draft(state):
@@ -154,6 +167,8 @@ class Agent_Graph:
         return state
 
     def _guardrail_router(self, state: Graph_State) -> str:
+        if state.dispute_list_request:
+            return "dispute_list"
         if state.fallback_response and state.fallback_response.fallback_flag:
             return "fallback"  # Jump straight to fallback response generation
         return "dispute_gate"  # Check for an open dispute, then normal conversational extraction
@@ -206,12 +221,13 @@ class Agent_Graph:
                 )
                 state.dispute_open = False
                 state.dispute_extraction = None
-        except Exception:
+        except Exception as e:
             self.logger.exception("Error in dispute gate")
             state.fallback_response = FallbackResponse(
                 fallback_flag=True,
                 fallback_node="dispute_gate",
                 fallback_reason="exception",
+                error_detail=f"{type(e).__name__}: {e}",
                 fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
             )
         return state
@@ -225,6 +241,23 @@ class Agent_Graph:
         if ext.message_kind == "side_question":
             return "context_builder"   # answer it normally; the reply reminds them about the dispute
         return "dispute_agent"          # a reply to the dispute (possibly with a side question too)
+
+    async def _dispute_list_node(self, state: Graph_State) -> Graph_State:
+        """The customer's own disputes, read from the database with a fixed query. No model call:
+        the reply is written by code (workflow._case_list_reply) from these rows."""
+        request = state.input_request
+        state.dispute_handled = True
+        try:
+            state.dispute_result = dispute_workflow.case_list_for(
+                self.db_conn, request.customer_id, request.session_id, request.user_query, self.settings,
+            )
+        except Exception as e:
+            self.logger.exception("Error listing disputes")
+            state.dispute_result = DisputeResult(
+                status="error", summary="The dispute list could not be read.",
+                data={"error": f"{type(e).__name__}: {e}"},
+            )
+        return state
 
     async def _dispute_agent_node(self, state: Graph_State) -> Graph_State:
         """The Disputes agent: one turn of finding the payment, confirming the reason, asking

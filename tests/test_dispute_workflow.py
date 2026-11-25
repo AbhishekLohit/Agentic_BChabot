@@ -406,6 +406,17 @@ def test_wrong_amount_dispute_end_to_end(db, registry, settings, add_txn):
     assert f.draft() is None
     assert events(db) == ["reason_set", "draft_started", "summary_shown", "confirmed", "filed"]
 
+    # The readable copy in dispute_details: the payment as recorded, the reason and every Q&A.
+    cur = db.execute("SELECT * FROM dispute_details WHERE case_id = ?", (case["case_id"],))
+    details = dict(zip([c[0] for c in cur.description], cur.fetchone()))
+    assert details["merchant"] == "Acme" and details["amount"] == 45.0
+    assert details["transaction_date"] == "2026-11-01" and details["reason_label"] == "Wrong amount"
+    assert details["what_happened"] == "Charged more than the quote"
+    assert details["merchant_contacted"] == "Emailed, no reply" and details["evidence"] == "Quote email"
+    assert "Q: What amount did you expect to pay?\nA: 30.00" in details["questions_and_answers"]
+    assert "{merchant}" not in details["questions_and_answers"]       # placeholders are filled
+    assert [q["slot_id"] for q in json.loads(details["answers_json"])][0] == "description"
+
 
 def _answer_everything(f, reason, answers):
     return f.say("here is everything", ext(reason, answers), txn_id="T1")
@@ -909,3 +920,72 @@ def test_not_eligible_results_name_the_payment_so_the_reply_never_has_to_guess(d
         assert r.status == "not_eligible" and r.data["code"] == code
         assert merchant in r.summary and merchant in r.data["transaction"]
         assert "The payment in question is" in r.summary
+
+
+# --- "Show my disputes": the customer's raised cases, with their status ----------------------
+
+def test_a_customer_with_no_disputes_is_told_so(db, registry, settings):
+    r = flow(db, registry, settings).turn("show my disputes", ext(intent="check_status"))
+    assert r.status == "case_list" and r.data["cases"] == []
+    assert workflow.plain_reply(r) == "You haven't raised any disputes yet."
+
+
+def test_check_status_lists_only_this_customers_cases_with_what_they_are_for(db, registry, settings, add_txn):
+    add_txn("T1", "2026-11-01", 45.0, merchant="Acme")
+    f = flow(db, registry, settings)
+    f.say("dispute it", ext("wrong_amount", {"description": "Charged more than the quote"}), txn_id="T1")
+    f.say("details", ext(answers={"expected_amount": "30", "amount_basis": "Quote",
+                                  "difference_reason": "Unknown", "contacted_merchant": "No", "evidence": "Email"}))
+    filed = f.say("yes please", ext(intent="confirm"))
+    assert filed.status == "filed"
+    db_utils.create_dispute(db, "SOMEONE_ELSE", "S9", "T9", "wrong_amount", {})    # never shown to C1
+
+    r = flow(db, registry, settings, session="S2").turn("what's the status of my dispute?", ext(intent="check_status"))
+    assert r.status == "case_list"
+    [case] = r.data["cases"]
+    assert case["case_id"] == filed.data["case_id"] and case["status"] == "open"
+    assert case["dispute_for"] == "Wrong amount: £45.00 to Acme on 2026-11-01. Charged more than the quote"
+    assert "1 dispute, 1 of them open" in r.summary
+
+
+def test_checking_status_leaves_a_dispute_in_progress_untouched(db, registry, settings, add_txn):
+    add_txn("T1", "2026-11-01", 45.0, merchant="Acme")
+    f = flow(db, registry, settings)
+    f.say("dispute it", ext("wrong_amount"), txn_id="T1")
+    before = f.draft()
+    r = f.turn("show my disputes", ext(intent="check_status"))
+    assert r.status == "case_list" and r.data["dispute_open"] is True
+    assert "still in progress" in r.summary
+    assert f.draft() == before
+
+
+def test_naming_a_case_id_shows_only_that_case(db, registry, settings, add_txn):
+    add_txn("T1", "2026-11-01", 45.0, merchant="Acme")
+    add_txn("T2", "2026-11-02", 20.0, merchant="Shop")
+    first, _ = db_utils.create_dispute(db, "C1", "S1", "T1", "wrong_amount", {})
+    db_utils.create_dispute(db, "C1", "S1", "T2", "wrong_amount", {})
+    theirs, _ = db_utils.create_dispute(db, "OTHER", "S9", "T9", "wrong_amount", {})
+
+    # Named in lower case, read as "unclear" by the model: still only that case.
+    r = flow(db, registry, settings, session="S2").turn(f"what about {first.lower()}?", ext(intent="unclear"))
+    assert r.status == "case_list" and [c["case_id"] for c in r.data["cases"]] == [first]
+
+    # Someone else's case ID finds nothing, and says so.
+    r = flow(db, registry, settings, session="S3").turn(f"status of {theirs}", ext(intent="check_status"))
+    assert r.status == "case_list" and r.data["cases"] == []
+    assert "check the ID" in workflow.plain_reply(r)
+
+
+def test_the_disputes_reply_is_written_from_the_database():
+    case = {"case_id": "DSP-1", "status": "open", "created_at": "2026-11-24T06:46:28", "reason": "wrong_amount",
+            "reason_label": "Wrong amount", "merchant": "Acme", "amount": 45.0, "transaction_date": "2026-11-01"}
+    every = workflow.plain_reply(DisputeResult(status="case_list", summary="", data={"cases": [case], "dispute_open": True}))
+    assert every.startswith("You have 1 dispute, 1 open:")
+    assert "**DSP-1** \u00b7 Open \u00b7 raised 2026-11-24" in every
+    assert "Reason: Wrong amount" in every and "Payment: \u00a345.00 to Acme on 2026-11-01" in every
+    assert "Nothing more is needed from you" in every and "new dispute in progress" in every
+
+    one = workflow.plain_reply(DisputeResult(status="case_list", summary="",
+                                             data={"cases": [case], "case_ids": ["DSP-1", "DSP-2"], "dispute_open": False}))
+    assert one.startswith("Here is case DSP-1:") and "couldn't find case ID DSP-2" in one
+    assert "You have" not in one                     # never a count when specific cases were asked for

@@ -1122,6 +1122,7 @@
             padding: 14px 16px 6px; flex-shrink: 0;
         }
         .history-card {
+            flex-shrink: 0;  /* without this a long list squeezes every card to a blank sliver */
             margin: 0 12px 8px; border-radius: 14px;
             background: #fff; border: 1px solid #e9edf5;
             overflow: hidden; transition: box-shadow 0.2s, border-color 0.2s;
@@ -1152,7 +1153,16 @@
         .history-thread {
             display: none; flex-direction: column; gap: 8px;
             background: #f2fbfe; border-top: 1px solid #e3f4fa;
-            padding: 12px 14px; max-height: 220px; overflow-y: auto;
+            padding: 12px 14px; max-height: 360px; overflow-y: auto;
+        }
+        .history-open-btn {
+            align-self: flex-start; border: 1px solid #9ed3f0; background: #fff; color: var(--brand-primary);
+            font-size: 0.74rem; font-weight: 700; border-radius: 999px; padding: 5px 12px; cursor: pointer;
+        }
+        .history-open-btn:hover { background: #e3f4fa; }
+        .history-resume-note {
+            align-self: center; font-size: 0.7rem; color: #64748b; background: #e3f4fa;
+            border-radius: 999px; padding: 4px 12px; margin: 4px 0 8px;
         }
         .history-card.open .history-thread { display: flex; }
         .history-thread::-webkit-scrollbar { width: 3px; }
@@ -1367,6 +1377,28 @@
         .trace-text {
             font-size: 0.78rem; line-height: 1.55; color: var(--ink);
             background: #f2fbfe; border-radius: 10px; padding: 10px 12px; border: 1px solid var(--border);
+        }
+        /* Copy button next to a dispute case ID in a reply */
+        .copy-id {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 20px; height: 20px; margin: 0 2px 0 4px; padding: 0; vertical-align: -4px;
+            border: 1px solid #cfe7f9; border-radius: 6px; background: #ffffff; color: #0074a6; cursor: pointer;
+        }
+        .copy-id:hover { background: #e3f4fa; }
+        .copy-id.copied { background: #dcfce7; border-color: #86efac; color: #15803d; }
+        .copy-id.copy-failed { background: #fde8e8; border-color: #fca5a5; color: #dc2626; }
+
+        /* Why a request fell back: where, why, the error, and what to change */
+        .trace-note {
+            margin-top: 8px; border-radius: 10px; padding: 10px 12px;
+            background: #fff7ed; border: 1px solid #fed7aa; font-size: 0.78rem; line-height: 1.5; color: var(--ink);
+        }
+        .trace-note-title { font-weight: 700; color: #c2410c; margin-bottom: 6px; }
+        .trace-note-row { margin-top: 6px; }
+        .trace-note-row b { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: #9a3412; }
+        .trace-note-row code {
+            display: block; white-space: pre-wrap; word-break: break-word; font-size: 0.72rem;
+            background: #ffedd5; border-radius: 6px; padding: 6px 8px; margin-top: 2px;
         }
         .trace-running {
             display: flex; align-items: center; gap: 10px; justify-content: center;
@@ -2040,8 +2072,48 @@
     function formatReply(text) {
         let html = linkify(escapeHtml(text || ""));
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); // **bold**
+        html = addCopyButtons(html);
         return html.replace(/\n/g, '<br>');
     }
+
+    // A small copy button after every dispute case ID (e.g. DSP-D15F82EE) in a reply.
+    const COPY_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    function addCopyButtons(html) {
+        return html.replace(/\b(DSP-[0-9A-F]{8})\b/gi, (m, id) => {
+            const caseId = id.toUpperCase();
+            return `${id}<button type="button" class="copy-id" data-copy="${caseId}" title="Copy case ID" aria-label="Copy case ID ${caseId}">${COPY_ICON}</button>`;
+        });
+    }
+
+    async function copyText(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (e) {
+            // Fallback for browsers that block the clipboard API
+            const ta = document.createElement("textarea");
+            ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+            document.body.appendChild(ta); ta.select();
+            let ok = false;
+            try { ok = document.execCommand("copy"); } catch (_) {}
+            ta.remove();
+            return ok;
+        }
+    }
+
+    document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".copy-id");
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const ok = await copyText(btn.dataset.copy);
+        btn.classList.add(ok ? "copied" : "copy-failed");
+        btn.title = ok ? "Copied!" : "Could not copy";
+        setTimeout(() => {
+            btn.classList.remove("copied", "copy-failed");
+            btn.title = "Copy case ID";
+        }, 1500);
+    });
 
     // ===== SUGGESTION CHIPS =====
     function useChip(btn) {
@@ -2140,6 +2212,7 @@
             return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
         }
 
+        _historySessions = sessions;
         let html = "";
         let lastLabel = "";
         sessions.forEach((s, i) => {
@@ -2154,7 +2227,7 @@
             const msgHtml = s.messages.map(m => `
                 <div class="h-msg ${m.role}">
                     <span class="h-msg-label">${m.role === "user" ? "You" : "Fintell"}</span>
-                    <div class="h-msg-bubble">${escapeHtml(m.content.length > 180 ? m.content.substring(0, 180) + "…" : m.content)}</div>
+                    <div class="h-msg-bubble">${m.role === "user" ? escapeHtml(m.content) : formatReply(m.content)}</div>
                 </div>`).join("");
             html += `
                 <div class="history-card" id="hcard_${i}">
@@ -2172,7 +2245,10 @@
                         </div>
                         <svg class="history-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
-                    <div class="history-thread">${msgHtml}</div>
+                    <div class="history-thread">
+                        <button class="history-open-btn" onclick="openHistorySession(${i})">Open this chat</button>
+                        ${msgHtml}
+                    </div>
                 </div>`;
         });
         historyView.innerHTML = html;
@@ -2180,6 +2256,30 @@
 
     function toggleHistoryCard(i) {
         document.getElementById("hcard_" + i).classList.toggle("open");
+    }
+
+    // Load a past conversation into the main chat window. New messages continue that session.
+    let _historySessions = [];
+    function openHistorySession(i) {
+        const s = _historySessions[i];
+        if (!s) return;
+        closeHistory();
+        const started = new Date(s.created_at + "Z");
+        let html = `<div class="history-resume-note">Previous chat · ${escapeHtml(
+            started.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }))} · you can carry on below</div>`;
+        s.messages.forEach(m => {
+            const ts = m.created_at ? formatTime(new Date(m.created_at + "Z")) : "";
+            html += m.role === "user"
+                ? `<div class="message user">${escapeHtml(m.content)}</div><div class="msg-timestamp right">${ts}</div>`
+                : `<div class="message assistant">${formatReply(m.content)}</div><div class="msg-timestamp left">${ts}</div>`;
+        });
+        chatBoard.innerHTML = html;
+        chatBoard.scrollTop = chatBoard.scrollHeight;
+        currentSessionId = s.session_id;
+        saveSession(currentSessionId);
+        suggestionsRow.style.display = "none";
+        const last = s.messages.filter(m => m.role === "user").pop();
+        if (last) chatPreview.textContent = last.content.substring(0, 40) + (last.content.length > 40 ? "..." : "");
     }
 
     // ===== AGENT TRACE PANEL =====
@@ -2384,6 +2484,24 @@
                 "Node: " + (d.fallback_node || "?") + (d.fallback_reason ? " · " + d.fallback_reason : "")));
         }
 
+        // A note on why this step fell back, so the cause can be fixed (built by _fallback_note in app.py)
+        if (d.note) {
+            const box = el("div", "trace-note");
+            box.appendChild(el("div", "trace-note-title", "Why did this fall back?"));
+            const row = (label, text, asCode) => {
+                if (!text) return;
+                const r = el("div", "trace-note-row");
+                r.appendChild(el("b", null, label));
+                r.appendChild(el(asCode ? "code" : "span", null, text));
+                box.appendChild(r);
+            };
+            row("Where", d.note.where);
+            row("Why", d.note.why);
+            row("Error", d.note.error, true);
+            row("What to change", d.note.fix);
+            frag.appendChild(box);
+        }
+
         return frag;
     }
 
@@ -2431,7 +2549,8 @@
         // Auto-expand the SQL + response steps so the demo reads well at a glance
         const cards = traceBody.querySelectorAll(".trace-card");
         trace.forEach((step, i) => {
-            if (["text2sql_generator", "sql_execution", "response_generator", "fallback"].includes(step.agent) && cards[i]) {
+            if ((["text2sql_generator", "sql_execution", "response_generator", "fallback"].includes(step.agent)
+                 || (step.details && step.details.note)) && cards[i]) {
                 cards[i].classList.add("open");
             }
         });

@@ -77,6 +77,33 @@ def setup_chat_tables(conn: sqlite3.Connection) -> None:
         CREATE UNIQUE INDEX IF NOT EXISTS idx_disputes_open_unique
             ON disputes(customer_id, transaction_id, reason) WHERE status = 'open';
 
+        -- Readable details of each raised case: the payment as the bank recorded it, the
+        -- reason, and every question asked with the customer's answer. One row per case.
+        CREATE TABLE IF NOT EXISTS dispute_details (
+            case_id               TEXT PRIMARY KEY REFERENCES disputes(case_id),
+            customer_id           TEXT NOT NULL,
+            session_id            TEXT,
+            transaction_id        TEXT NOT NULL,
+            card_number           TEXT,
+            merchant              TEXT,
+            merchant_category     TEXT,
+            amount                REAL,
+            transaction_date      TEXT,
+            transaction_type      TEXT,
+            reason                TEXT NOT NULL,
+            reason_label          TEXT,
+            visa_code             TEXT,
+            dispute_for           TEXT,   -- one line: what the dispute is about
+            what_happened         TEXT,
+            merchant_contacted    TEXT,
+            evidence              TEXT,
+            questions_and_answers TEXT,   -- readable "Q: ... / A: ..." lines
+            answers_json          TEXT,   -- [{"slot_id", "question", "answer"}, ...]
+            status                TEXT NOT NULL DEFAULT 'open',
+            created_at            TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_dispute_details_customer ON dispute_details(customer_id);
+
         -- Audit trail: one row per step that matters (draft started, reason set,
         -- confirmed, filed, resolved, suspected fraud, handoff...).
         CREATE TABLE IF NOT EXISTS dispute_events (
@@ -90,6 +117,10 @@ def setup_chat_tables(conn: sqlite3.Connection) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_dispute_events_case ON dispute_events(case_id);
     """)
+    # Columns added after a table first shipped (CREATE TABLE IF NOT EXISTS won't add them).
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(dispute_details)")}
+    if "dispute_for" not in columns:
+        conn.execute("ALTER TABLE dispute_details ADD COLUMN dispute_for TEXT")
     conn.commit()
 
 
@@ -205,6 +236,87 @@ def create_dispute(
         )
         existing = cur.fetchone()
         return (existing[0] if existing else case_id), False
+
+
+def save_dispute_details(
+    conn: sqlite3.Connection,
+    case_id: str,
+    customer_id: str,
+    session_id: str,
+    txn: dict,
+    reason: str,
+    reason_label: str,
+    visa_code: str,
+    qa: list[dict],
+) -> None:
+    """Store the readable details of a newly raised case. `qa` is the list of
+    {"slot_id", "question", "answer"} in the order the questions were asked."""
+    by_slot = {item["slot_id"]: item.get("answer") for item in qa}
+    dispute_for = describe_dispute(reason_label, txn, by_slot.get("description"))
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO dispute_details (
+            case_id, customer_id, session_id, transaction_id, card_number, merchant, merchant_category,
+            amount, transaction_date, transaction_type, reason, reason_label, visa_code, dispute_for,
+            what_happened, merchant_contacted, evidence, questions_and_answers, answers_json, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
+        """,
+        (
+            case_id, customer_id, session_id, txn.get("transaction_id"),
+            str(txn["card_number"]) if txn.get("card_number") is not None else None,
+            txn.get("merchant_brand_name"), txn.get("merchant_system_category1_name"),
+            round(float(txn["amount_usd"]), 2) if txn.get("amount_usd") is not None else None,
+            txn.get("transaction_date"), txn.get("transaction_type"),
+            reason, reason_label, visa_code, dispute_for,
+            by_slot.get("description"), by_slot.get("contacted_merchant"), by_slot.get("evidence"),
+            "\n".join(f"Q: {i['question']}\nA: {i.get('answer') or '(not answered)'}" for i in qa),
+            json.dumps(qa),
+            now_iso(),
+        ),
+    )
+    conn.commit()
+
+
+def describe_dispute(reason_label: str | None, txn: dict, what_happened: str | None) -> str:
+    """One line saying what a dispute is about, e.g.
+    "Goods or services not received: £156.37 to Topshop on 2026-06-02. My order never arrived." """
+    amount = txn.get("amount_usd")
+    payment = (
+        f"£{float(amount):,.2f} to {txn.get('merchant_brand_name')} on {txn.get('transaction_date')}"
+        if amount is not None else f"payment {txn.get('transaction_id')}"
+    )
+    text = f"{reason_label or 'Dispute'}: {payment}."
+    if what_happened:
+        text += f" {what_happened.strip()}"
+    return text
+
+
+def list_customer_disputes(
+    conn: sqlite3.Connection, customer_id: str, limit: int = 20, case_ids: list[str] | None = None,
+) -> list[dict]:
+    """The customer's raised cases, newest first, with the status read live from `disputes`.
+    Only the signed-in customer's rows: customer_id always comes from the request.
+    With case_ids, only those cases (still only if they belong to this customer)."""
+    id_filter = ""
+    params: list = [customer_id]
+    if case_ids:
+        id_filter = f" AND d.case_id IN ({', '.join('?' for _ in case_ids)})"
+        params += [c.upper() for c in case_ids]
+    cur = conn.execute(
+        f"""
+        SELECT d.case_id, d.status, d.created_at, d.reason,
+               x.merchant, x.amount, x.transaction_date, x.reason_label, x.dispute_for, x.what_happened,
+               x.merchant_category, x.card_number, x.merchant_contacted, x.evidence
+        FROM disputes d
+        LEFT JOIN dispute_details x ON x.case_id = d.case_id
+        WHERE d.customer_id = ?{id_filter}
+        ORDER BY d.created_at DESC
+        LIMIT ?
+        """,
+        (*params, limit),
+    )
+    names = [c[0] for c in cur.description]
+    return [dict(zip(names, row)) for row in cur.fetchall()]
 
 
 def upsert_session(

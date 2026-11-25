@@ -91,21 +91,26 @@ async def fallback_agent(
         else:
             message = FALLBACK_MESSAGES["exception"]
             reason = state.fallback_response.fallback_reason if state.fallback_response else "exception"
+        # Keep WHERE it went wrong and the underlying error, so the UI trace can explain it.
+        # With no earlier fallback, the route here came from the supervisor's classification.
+        previous = state.fallback_response
         fallback_response = FallbackResponse(
             fallback_flag=True,
-            fallback_node="fallback_agent",
+            fallback_node=(previous.fallback_node if previous and previous.fallback_node else "supervisor"),
             fallback_reason=reason,
-            fallback_message=message
+            fallback_message=message,
+            error_detail=previous.error_detail if previous else None,
         )
         state.fallback_response= fallback_response
 
-    except Exception:
+    except Exception as e:
         logger.exception("Fallback agent failure")
         fallback_response = FallbackResponse(
             fallback_flag=True,
             fallback_node="fallback_agent",
             fallback_reason="exception",
-            fallback_message=FALLBACK_MESSAGES["exception"]
+            fallback_message=FALLBACK_MESSAGES["exception"],
+            error_detail=f"{type(e).__name__}: {e}",
         )
         state.fallback_response= fallback_response
     return state

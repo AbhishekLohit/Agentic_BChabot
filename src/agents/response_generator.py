@@ -12,7 +12,8 @@ async def _dispute_reply(state: Graph_State, llm: Any, prompt: Any, logger: Logg
     happens; this only phrases it, and falls back to a plain fixed wording if the model
     is unavailable."""
     result = state.dispute_result
-    if prompt is None:
+    # A list of the customer's disputes is all database facts: written by code, no model call.
+    if prompt is None or result.status == "case_list":
         return dispute_plain_reply(result)
 
     user_block = f"status: {result.status}\nsummary:\n{result.summary}\n"
@@ -137,6 +138,7 @@ async def response_generator_agent(
             fallback_flag=True,
             fallback_node="response_generator",
             fallback_reason="exception",
+            error_detail=agent_utils.describe_error(e),
             fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         state.fallback_response = fallback_response

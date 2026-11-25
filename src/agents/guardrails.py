@@ -125,6 +125,7 @@ async def input_guardrail_node(
             fallback_flag=True,
             fallback_node="guardrail",
             fallback_reason="exception",
+            error_detail=agent_utils.describe_error(e),
             fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         

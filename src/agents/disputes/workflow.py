@@ -19,6 +19,7 @@ and ask unrelated things in between (see dispute_gate in agent_graph.py).
 """
 import hashlib
 import json
+import re
 import time
 from dataclasses import asdict
 from datetime import date
@@ -499,7 +500,38 @@ def plain_reply(result: DisputeResult) -> str:
         return "I've cancelled the dispute. Nothing was submitted."
     if status == "suspected_fraud":
         return HANDOFF_MESSAGE
+    if status == "case_list":
+        return _case_list_reply(d)
     return result.summary
+
+
+def _case_list_reply(d: dict) -> str:
+    """The whole reply to "show my disputes" / "status of DSP-...", written by code: every
+    fact comes straight from the database, so no model call is needed or wanted."""
+    cases = d.get("cases") or []
+    asked = d.get("case_ids") or []
+    found = {c["case_id"] for c in cases}
+    missing = [c for c in asked if c not in found]
+    parts = []
+    if asked and not cases:
+        parts.append(f"I couldn't find a dispute with case ID {', '.join(asked)} on your account. Could you check the ID?")
+    elif not cases:
+        parts.append("You haven't raised any disputes yet.")
+    else:
+        if asked:
+            intro = f"Here is case {cases[0]['case_id']}:" if len(cases) == 1 else "Here are the cases you asked about:"
+        else:
+            open_count = sum(1 for c in cases if c["status"] == "open")
+            noun = "dispute" if len(cases) == 1 else "disputes"
+            intro = f"You have {len(cases)} {noun}, {open_count} open:"
+        parts.append(intro + "\n\n" + case_bullets(cases))
+        if missing:
+            parts.append(f"I couldn't find case ID {', '.join(missing)} on your account.")
+        if any(c["status"] == "open" for c in cases):
+            parts.append("Open means the case is with our disputes team for review. Nothing more is needed from you.")
+    if d.get("dispute_open"):
+        parts.append("You also have a new dispute in progress. Reply whenever you're ready to carry on with it.")
+    return "\n\n".join(parts)
 
 
 # ---------------------------------------------------------------------------
@@ -600,6 +632,157 @@ def _resolve(db_conn: Any, customer_id: str, session_id: str, draft: DisputeDraf
     return result
 
 
+def _save_details(
+    draft: DisputeDraft,
+    txn: dict,
+    registry: DisputeRegistry,
+    db_conn: Any,
+    customer_id: str,
+    session_id: str,
+    case_id: str,
+) -> None:
+    """Write the readable dispute_details row for a newly raised case. The case itself is
+    already filed, so a failure here is recorded in the audit trail instead of raised."""
+    try:
+        cfg = registry.types[draft.reason]
+        asked = registry.slots_for(draft.reason)
+        qa = [
+            {"slot_id": s.id, "question": _fill(s.question, txn), "answer": draft.answers.get(s.id)}
+            for s in asked
+        ]
+        known = {s.id for s in asked}
+        qa += [{"slot_id": k, "question": k, "answer": v} for k, v in draft.answers.items() if k not in known]
+        db_utils.save_dispute_details(
+            db_conn, case_id, customer_id, session_id, txn,
+            draft.reason, cfg.label, cfg.visa_code, qa,
+        )
+    except Exception as e:
+        db_utils.add_dispute_event(
+            db_conn, customer_id, session_id, "details_not_saved",
+            {"error": agent_utils.describe_error(e)}, case_id=case_id,
+        )
+
+
+_CASE_ID = re.compile(r"\bDSP-[0-9A-F]{8}\b", re.IGNORECASE)
+
+
+_STATUS_TEXT = {
+    "open": "open (the case has been raised and is with the disputes team for review; nothing is needed from the customer)",
+    "closed": "closed (the case is finished)",
+    "resolved": "resolved",
+}
+
+
+def _status_text(status: str) -> str:
+    return _STATUS_TEXT.get(status, status)
+
+
+def case_bullets(cases: list[dict]) -> str:
+    """One block per dispute, built from the database so no fact is retyped by a model:
+    case ID, status and date raised, then the reason, the payment, what happened, whether
+    the merchant was contacted and the evidence (each line only when it is known)."""
+    blocks = []
+    for c in cases:
+        raised = (c.get("created_at") or "")[:10]
+        lines = [f"• **{c['case_id']}** · {str(c['status']).title()}" + (f" · raised {raised}" if raised else "")]
+        lines.append(f"   Reason: {c.get('reason_label') or c['reason']}")
+        if c.get("merchant") and c.get("amount") is not None:
+            payment = f"£{float(c['amount']):,.2f} to {c['merchant']}"
+            if c.get("merchant_category"):
+                payment += f" ({c['merchant_category']})"
+            if c.get("transaction_date"):
+                payment += f" on {c['transaction_date']}"
+            card = str(c.get("card_number") or "")
+            if len(card) >= 4:
+                payment += f", card ending {card[-4:]}"
+            lines.append(f"   Payment: {payment}")
+        for label, key in (("What happened", "what_happened"), ("Merchant contacted", "merchant_contacted"),
+                           ("Evidence", "evidence")):
+            if c.get(key):
+                lines.append(f"   {label}: {c[key]}")
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks)
+
+
+def _case_ids_in(message: str) -> list[str]:
+    """Case IDs the customer typed, upper-cased and de-duplicated, in order."""
+    return list(dict.fromkeys(m.upper() for m in _CASE_ID.findall(message or "")))
+
+
+# "Show me my disputes" and the like, recognised without a model. A model reading these one
+# message at a time gets them wrong too often (classed as a how-to, a new dispute, a SQL
+# question, or blocked as sensitive), and every fact in the answer is in the database anyway.
+_DISPUTE_NOUN = r"(?:disputes?|cases?|claims?)"
+_LIST_REQUEST = re.compile(
+    r"\b(?:list|show|share|view|see|display|give|get|tell|check|track|find|fetch|send|what\s+are|what\s+were|which\s+are|any)\b"
+    r"(?:\s+\w+){0,3}?\s+(?:my|the|all|all\s+my|previous|past|old|existing|open|raised|different|current|recent)"
+    r"(?:\s+\w+)?\s+" + _DISPUTE_NOUN + r"\b",
+    re.IGNORECASE,
+)
+_STATUS_REQUEST = re.compile(
+    r"\b(?:status|progress|update|history|details?|list)\s+(?:of|on|for)\s+(?:my|the|all)\s+(?:\w+\s+)?" + _DISPUTE_NOUN + r"\b"
+    r"|\b(?:my|the)\s+(?:\w+\s+)?" + _DISPUTE_NOUN + r"\s+(?:status|progress|history|details|list)\b"
+    r"|\bmy\s+(?:disputes|cases|claims)\b",
+    re.IGNORECASE,
+)
+_HOW_TO = re.compile(r"\bhow\s+(?:do|can|to|should|would)\b|\bwhat\s+is\s+a\s+dispute\b", re.IGNORECASE)
+
+
+def is_case_list_request(message: str) -> bool:
+    """True when the customer asks to see disputes they already raised, or names a case ID."""
+    text = message or ""
+    if _CASE_ID.search(text):
+        return True
+    if _HOW_TO.search(text):
+        return False
+    return bool(_LIST_REQUEST.search(text) or _STATUS_REQUEST.search(text))
+
+
+def case_list_for(db_conn: Any, customer_id: str, session_id: str, message: str, settings: Any) -> DisputeResult:
+    """Answer a dispute-list request straight from the database, without any model call.
+    customer_id comes from the signed-in request, so only that customer's cases are read.
+    A dispute in progress in this session is left exactly as it was."""
+    draft = load_open_draft(db_conn, customer_id, session_id, settings.DISPUTE_DRAFT_MAX_AGE_HOURS)
+    return _case_list(db_conn, customer_id, dispute_open=draft is not None, case_ids=_case_ids_in(message))
+
+
+def _case_list(db_conn: Any, customer_id: str, dispute_open: bool, case_ids: list[str] | None = None) -> DisputeResult:
+    """The customer's raised disputes: a short summary for the reply writer, and the rows,
+    which the graph turns into the table shown under the reply. With case_ids, only those
+    cases, and only if they belong to this customer."""
+    cases = db_utils.list_customer_disputes(db_conn, customer_id, case_ids=case_ids or None)
+    if case_ids:
+        found = {c["case_id"] for c in cases}
+        missing = [c for c in case_ids if c not in found]
+        if not cases:
+            summary = f"No dispute with case ID {', '.join(case_ids)} was found on the customer's account. Ask them to check the case ID."
+        else:
+            summary = " ".join(
+                f"Case {c['case_id']}: {c.get('dispute_for') or c['reason']} Status: {_status_text(c['status'])}. Raised on {(c.get('created_at') or '')[:10]}."
+                for c in cases
+            ) + " The details are listed under the reply."
+            if missing:
+                summary += f" No dispute with case ID {', '.join(missing)} was found on the customer's account."
+        if dispute_open:
+            summary += " A new dispute the customer started is still in progress and waiting for them."
+        return DisputeResult(status="case_list", summary=summary,
+                             data={"cases": cases, "dispute_open": dispute_open, "case_ids": case_ids})
+    if not cases:
+        summary = "The customer has not raised any disputes yet."
+    else:
+        open_count = sum(1 for c in cases if c["status"] == "open")
+        latest = cases[0]
+        summary = (
+            f"The customer has {len(cases)} dispute{'s' if len(cases) != 1 else ''}, "
+            f"{open_count} of them open. The most recent is case {latest['case_id']}: "
+            f"{latest.get('dispute_for') or latest['reason']} Status: {_status_text(latest['status'])}. "
+            "All of them are listed under the reply."
+        )
+    if dispute_open:
+        summary += " A new dispute the customer started is still in progress and waiting for them."
+    return DisputeResult(status="case_list", summary=summary, data={"cases": cases, "dispute_open": dispute_open})
+
+
 def _file_case(
     draft: DisputeDraft,
     txn: dict,
@@ -616,6 +799,8 @@ def _file_case(
         {"transaction_id": draft.transaction_id, "reason": draft.reason, "created": created},
         case_id=case_id,
     )
+    if created:
+        _save_details(draft, txn, registry, db_conn, customer_id, session_id, case_id)
     _clear_draft(db_conn, customer_id, session_id)
     label = registry.types[draft.reason].label
     if created:
@@ -867,9 +1052,9 @@ async def run_dispute_turn(
             settings=settings, agent_metrics=agent_metrics,
             extraction=extraction, allow_confirm=allow_confirm, today=today or date.today(),
         )
-    except Exception:
+    except Exception as e:
         logger.exception("Error in disputes agent")
-        return DisputeResult(status="error", summary=TECHNICAL_ERROR)
+        return DisputeResult(status="error", summary=TECHNICAL_ERROR, data={"error": agent_utils.describe_error(e)})
 
 
 async def _run_turn(
@@ -916,6 +1101,15 @@ async def _run_turn(
             )
             _clear_draft(db_conn, customer_id, session_id)
         return DisputeResult(status="cancelled", summary="The dispute was cancelled. Nothing was submitted.")
+
+    # --- the customer asks about disputes they already raised ----------------
+    # Answered from their own cases only; an open draft is left exactly as it was.
+    # A message naming a case ID ("DSP-D15F82EE") is about that case, even when the model
+    # read it as something else, as long as it gives no new payment details.
+    case_ids = _case_ids_in(user_message)
+    gives_payment = ext.transaction_amount or ext.transaction_date or ext.merchant_hint
+    if ext.intent == "check_status" or (case_ids and not gives_payment and ext.intent in ("provide_info", "unclear")):
+        return _case_list(db_conn, customer_id, dispute_open=not is_new, case_ids=case_ids)
 
     # --- reason ------------------------------------------------------------
     reason_changed = False

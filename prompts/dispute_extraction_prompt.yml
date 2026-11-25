@@ -107,6 +107,12 @@ prompt: |
                       mind", "cancel").
         provide_info  the customer is giving details, naming the payment or the problem, or
                       answering questions.
+        check_status  the customer asks about disputes they ALREADY raised: to see them, list
+                      them, or know their status or case ID ("show my disputes", "what's the
+                      status of my dispute?", "what happened with my Topshop case?", "status of
+                      DSP-D15F82EE"). Not
+                      for raising a new dispute: a message that describes a new problem
+                      with a payment is provide_info.
         unclear       the message cannot be mapped to any of the above.
 
     recognises_charge

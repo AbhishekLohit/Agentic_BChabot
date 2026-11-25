@@ -42,6 +42,9 @@ async def visualization_agent(
     logger: Logger,
 ) -> Graph_State:
     logger.info("Executing visualization agent.")
+    # A list of the customer's disputes is a text answer: no chart.
+    if state.dispute_result is not None and state.dispute_result.status == "case_list":
+        return state
     try:
         db_results = state.database_query_results or []
         clean_results = [r for r in db_results if not r.startswith("[System Notification:")]

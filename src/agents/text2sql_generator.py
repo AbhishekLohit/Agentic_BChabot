@@ -121,6 +121,7 @@ async def text2sql_generator_agent(
             fallback_flag=True,
             fallback_node="text2sql_generator",
             fallback_reason="exception",
+            error_detail=agent_utils.describe_error(e),
             fallback_message="I'm sorry, but I'm currently unable to process your request due to a technical issue. Please try again later."
         )
         state.fallback_response = fallback_response

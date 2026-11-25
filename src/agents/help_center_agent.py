@@ -104,6 +104,7 @@ async def help_center_agent(
             fallback_flag=True,
             fallback_node="help_center",
             fallback_reason="exception",
+            error_detail=agent_utils.describe_error(e),
             fallback_message=(
                 "I'm sorry, but I'm currently unable to look that up due to a "
                 "technical issue. Please try again later."

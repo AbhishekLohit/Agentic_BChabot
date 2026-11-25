@@ -52,6 +52,9 @@ class FallbackResponse(BaseModel):
     fallback_node : str | None
     fallback_reason : str | None
     fallback_message: str | None
+    # The underlying error ("ExceptionType: message") when fallback_reason is "exception"
+    # or "query_error". Shown in the UI's agent trace so the cause can be fixed.
+    error_detail: str | None = None
 
 class ResponseGeneratorResponse(BaseModel):
     generated_response: str
@@ -125,7 +128,7 @@ class DisputeTurnExtraction(BaseModel):
     # Only set when the customer clearly stated it (or it is obvious from context).
     reason: DisputeReason | None = None
     answers: list[SlotAnswer] = Field(default_factory=list)
-    intent: Literal["provide_info", "confirm", "decline", "cancel", "unclear"] = "provide_info"
+    intent: Literal["provide_info", "confirm", "decline", "cancel", "check_status", "unclear"] = "provide_info"
     # Only used after we asked "do you recognise this payment now?".
     recognises_charge: bool | None = None
     # Which payment the dispute is about, as the customer gave it: the amount in pounds as a
@@ -177,7 +180,7 @@ class DisputeResult(BaseModel):
         "needs_transaction", "needs_payment_confirmation", "needs_transaction_choice",
         "not_eligible", "needs_reason",
         "needs_info", "needs_confirmation", "resolved", "suspected_fraud", "filed",
-        "cancelled", "error",
+        "cancelled", "case_list", "error",
     ]
     summary: str
     needs_user_input: bool = False
@@ -210,6 +213,9 @@ class Graph_State(BaseModel):
     dispute_gate_kind: str | None = None
     # The Disputes agent has run in this request; a second pass is ignored (no loops).
     dispute_handled: bool = False
+    # The message asks to see the customer's own disputes ("show my disputes", a case ID).
+    # Answered straight from the database, with no model call (agents/disputes/workflow.py).
+    dispute_list_request: bool = False
     # The gate's reading of the message, handed to the Disputes agent so it is not read twice.
     dispute_extraction: DisputeTurnExtraction | None = None
     dispute_result: DisputeResult | None = None

@@ -74,6 +74,7 @@ async def execute_query(
             fallback_flag=True,
             fallback_node="sql_execution",
             fallback_reason="query_error",
+            error_detail=f"{type(e).__name__}: {e}",
             fallback_message="The generated SQL query failed. Attempting automatic correction."
         )
     finally:

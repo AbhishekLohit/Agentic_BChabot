@@ -595,3 +595,90 @@ def test_a_reply_during_an_open_dispute_tells_the_writer_not_to_start_over(db, r
     )
     run(build(llm, db, registry, settings), "30 pounds")
     assert "dispute_in_progress: yes" in llm.seen[0][1].content
+
+
+# --- Why a request fell back: the note shown in the UI's agent trace -------------------------
+
+def _fallback_step(trace):
+    return next(s for s in trace if s["agent"] == "fallback")
+
+
+def test_the_trace_explains_an_out_of_scope_fallback():
+    from app_models import FallbackResponse
+    trace = _build_agent_trace({
+        "fallback_response": FallbackResponse(fallback_flag=True, fallback_node="supervisor",
+                                              fallback_reason="multiple_invalid", fallback_message="..."),
+        "out_of_scope_queries": ["What dispute?"],
+    })
+    note = _fallback_step(trace)["details"]["note"]
+    assert note["where"].startswith("supervisor") and "prompts/suprivisor_prompt.yml" in note["where"]
+    assert '"What dispute?"' in note["why"] and "out of scope" in note["why"]
+    assert note["fix"]
+
+
+def test_the_trace_shows_the_error_and_a_fix_when_a_step_crashes():
+    from app_models import FallbackResponse
+    trace = _build_agent_trace({
+        "fallback_response": FallbackResponse(
+            fallback_flag=True, fallback_node="context_builder", fallback_reason="exception", fallback_message="...",
+            error_detail="RateLimitError: Error code: 429 - per-key concurrent request limit exceeded"),
+    })
+    step = _fallback_step(trace)
+    assert step["summary"] == "Triggered at 'context_builder' · exception"
+    note = step["details"]["note"]
+    assert "429" in note["error"] and "busy" in note["fix"]
+
+
+def test_the_fallback_agent_keeps_where_it_went_wrong():
+    from agents.fallback import fallback_agent
+    from app_models import FallbackResponse
+    state = SimpleNamespace(banksql_queries=[], out_of_scope_queries=[], fallback_response=FallbackResponse(
+        fallback_flag=True, fallback_node="supervisor", fallback_reason="exception",
+        fallback_message="...", error_detail="ValueError: boom"))
+    out = asyncio.run(fallback_agent(state, logging.getLogger("test")))
+    assert out.fallback_response.fallback_node == "supervisor"        # not overwritten with "fallback_agent"
+    assert out.fallback_response.error_detail == "ValueError: boom"
+
+
+def test_a_greeting_is_not_explained_as_a_failure():
+    from app_models import FallbackResponse
+    trace = _build_agent_trace({"fallback_response": FallbackResponse(
+        fallback_flag=True, fallback_node="guardrail", fallback_reason="greeting", fallback_message="Hi!")})
+    assert "note" not in trace[0]["details"]
+
+
+def test_disputes_are_listed_as_bullets_with_exact_facts():
+    from agents.disputes.workflow import case_bullets
+    text = case_bullets([{"case_id": "DSP-1", "status": "open", "created_at": "2026-11-24T06:46:28", "reason": "goods_not_received",
+                          "reason_label": "Goods or services not received", "merchant": "Topshop", "amount": 156.37,
+                          "merchant_category": "Shopping", "transaction_date": "2026-06-02", "card_number": "4111222233334444",
+                          "what_happened": "My order never arrived.", "merchant_contacted": "Emailed twice", "evidence": None}])
+    lines = [l.strip() for l in text.split(chr(10))]
+    assert lines[0] == "• **DSP-1** · Open · raised 2026-11-24"
+    assert lines[1] == "Reason: Goods or services not received"
+    assert lines[2] == "Payment: £156.37 to Topshop (Shopping) on 2026-06-02, card ending 4444"
+    assert lines[3:] == ["What happened: My order never arrived.", "Merchant contacted: Emailed twice"]   # no empty Evidence line
+
+
+def test_dispute_list_requests_are_recognised_without_a_model():
+    from agents.disputes.workflow import is_case_list_request
+    for ask in ["can you share my dispute", "List the dispute", "What are the different disputes?", "List my dispute list",
+                "show my disputes", "What's the status of my dispute?", "dsp-a30813c7", "status of DSP-D15F82EE",
+                "do I have any open disputes?"]:
+        assert is_case_list_request(ask), ask
+    for other in ["I want to dispute my Topshop payment", "I was charged twice", "How do I dispute a transaction?",
+                  "Show my payments to Acme", "Cancel this dispute please.", "yes", "DSP-123"]:
+        assert not is_case_list_request(other), other
+
+
+def test_a_dispute_list_request_runs_no_model_and_lists_the_cases(db, registry, settings, add_txn):
+    add_txn("T1", days_ago(5), 45.0, merchant="Acme")
+    case_id, _ = db_utils.create_dispute(db, "C1", "S0", "T1", "wrong_amount", {})
+    db_utils.create_dispute(db, "OTHER", "S9", "T9", "wrong_amount", {})       # someone else's: never listed
+    llm = ScriptedChatModel(structured_script=[], messages_script=[])         # any model call would fail the test
+    result = run(build(llm, db, registry, settings), "can you share my dispute")
+    text = final_text(result)
+    assert text.startswith("You have 1 dispute, 1 open:") and case_id in text and "OTHER" not in text
+    trace = _build_agent_trace(result)
+    assert [s["agent"] for s in trace][:2] == ["guardrail", "disputes"]
+    assert trace[0]["status"] == "skipped" and "1 case" in trace[1]["summary"]

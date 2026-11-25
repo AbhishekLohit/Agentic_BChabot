@@ -185,6 +185,92 @@ def _sum_metrics(metrics: dict, *names: str) -> dict | None:
     }
 
 
+# Where each step's code and prompt live, so the trace note can say what to change.
+_STEP_FILES = {
+    "guardrail": "src/agents/guardrails.py (prompt is inside the file)",
+    "dispute_gate": "src/agent_graph.py + prompts/dispute_extraction_prompt.yml",
+    "disputes": "src/agents/disputes/workflow.py + prompts/dispute_extraction_prompt.yml",
+    "context_builder": "src/agents/context_builder.py + prompts/context_builder_prompt.yml",
+    "supervisor": "src/agents/supervisor.py + prompts/suprivisor_prompt.yml",
+    "text2sql_generator": "src/agents/text2sql_generator.py + prompts/text2sql_generator.yml",
+    "sql_execution": "src/agents/sql_execution.py (the SQL comes from prompts/text2sql_generator.yml)",
+    "sql_correction": "src/agents/sql_correction.py + prompts/sql_correction.yml",
+    "help_center": "src/agents/help_center_agent.py + prompts/help_center_prompt.yml",
+    "response_generator": "src/agents/response_generator.py + prompts/response_generator_prompt.yml",
+    "fallback_agent": "src/agents/fallback.py",
+}
+
+
+def _error_fix(error: str) -> str:
+    """A plain suggestion for the most common technical errors."""
+    e = (error or "").lower()
+    if "429" in e or ("rate" in e and "limit" in e) or "concurrent" in e:
+        return ("The model server is busy (too many requests on this API key at once). "
+                "Wait a few seconds and resend; make sure no one else is using the same key.")
+    if "lengthfinishreason" in e or "length limit" in e:
+        return ("The model's answer was cut off at the token limit. Resend; if it keeps happening, "
+                "shorten that step's prompt (the Capstone server caps answers at 1024 tokens).")
+    if "authentication" in e or "401" in e or "api key" in e or "api_key" in e:
+        return "The API key was rejected or is missing. Check the key for LLM_PROVIDER in .env, then restart the app."
+    if "connect" in e or "timeout" in e or "timed out" in e or "ssl" in e or "certificate" in e:
+        return ("Could not reach the model server. Check the network or VPN, the base URL "
+                "and the certificate path in .env.")
+    if "validation" in e or "parse" in e or "json" in e:
+        return "The model's answer was not in the expected format. Resend; if it repeats, check that step's prompt."
+    if "sqlite" in e or "operationalerror" in e or "no such" in e or "syntax error" in e:
+        return ("The database rejected the SQL. Check the query in the Text-to-SQL step, and the schema "
+                "described in prompts/text2sql_generator.yml.")
+    return "See the error above; the server log has the full traceback."
+
+
+def _fallback_note(fallback: Any, response: dict) -> dict | None:
+    """Explain in plain words why the request ended in a fallback: where, why, the error and what to change."""
+    if not fallback:
+        return None
+    node = getattr(fallback, "fallback_node", None) or "unknown"
+    reason = getattr(fallback, "fallback_reason", None) or "unknown"
+    error = getattr(fallback, "error_detail", None)
+    if node == "guardrail" and reason == "greeting":
+        return None  # a greeting reply is normal behaviour, not a failure
+
+    def items(key: str) -> str:
+        return "; ".join(f'"{q}"' for q in (response.get(key) or [])) or "(none)"
+
+    where = node.replace("_", " ")
+    if reason == "exception":
+        why = f"The {where} step raised an error, so the request stopped and the standard apology was sent."
+        fix = _error_fix(error or "")
+    elif reason == "query_error":
+        why = "The generated SQL failed, and the one automatic correction did not fix it."
+        fix = _error_fix(error or "sqlite")
+    elif reason == "needs_separate_questions":
+        why = f"The message holds several questions that need separate SQL queries: {items('banksql_queries')}."
+        fix = "Ask the questions one at a time."
+    elif reason in ("multiple_valid", "mixed_valid_invalid"):
+        why = (f"The supervisor found more than one question it can answer ({items('banksql_queries')})"
+               + (f" plus out-of-scope parts ({items('out_of_scope_queries')})" if reason == "mixed_valid_invalid" else "")
+               + ", and only one is answered per message.")
+        fix = "Send one question per message."
+    elif reason == "multiple_invalid":
+        why = f"The supervisor classed the message as out of scope: {items('out_of_scope_queries')}."
+        fix = ("Rephrase it as a question about your own transactions, card or a dispute. A short reply such as "
+               "\"yes\" or \"what dispute?\" is out of scope when no dispute is open. If this kind of question "
+               "should be supported, add an example of it to prompts/suprivisor_prompt.yml.")
+    elif node == "guardrail":
+        why = f"The guardrail blocked the message as a {reason}."
+        fix = ("If this was a false alarm, review the rules in the guardrail prompt "
+               "(src/agents/guardrails.py) and rephrase the message.")
+    else:
+        why = f"The request ended at the {where} step (reason: {reason})."
+        fix = _error_fix(error or "")
+    return {
+        "where": f"{node} · {_STEP_FILES.get(node, 'see the server log')}",
+        "why": why,
+        "error": error,
+        "fix": fix,
+    }
+
+
 def _build_agent_trace(response: dict) -> list[dict]:
     """Assemble an ordered, UI-friendly trace of what each backend agent did.
 
@@ -202,17 +288,42 @@ def _build_agent_trace(response: dict) -> list[dict]:
 
     trace: list[dict] = []
 
+    note = _fallback_note(fallback, response) if fallback_active else None
+
     # 1) Guardrail
     guardrail_tripped = fallback_node == "guardrail"
+    guardrail_reason = getattr(fallback, "fallback_reason", None) if guardrail_tripped else None
+    if response.get("dispute_list_request"):
+        trace.append({
+            "agent": "guardrail",
+            "title": "Guardrail",
+            "status": "skipped",
+            "summary": "Dispute list request: answered from the database, no model calls",
+            "details": {},
+            "metrics": None,
+        })
+        dispute = response.get("dispute_result")
+        cases = (dispute.data.get("cases") if dispute else None) or []
+        trace.append({
+            "agent": "disputes",
+            "title": "Disputes · list",
+            "status": "fallback" if dispute is not None and dispute.status == "error" else "ok",
+            "summary": f"Read {len(cases)} case{'' if len(cases) == 1 else 's'} for this customer",
+            "details": {"status": getattr(dispute, "status", None), "summary": getattr(dispute, "summary", ""),
+                        "data": {"case_ids": [c["case_id"] for c in cases]}},
+            "metrics": None,
+        })
+        return trace
+
     trace.append({
         "agent": "guardrail",
         "title": "Guardrail",
         "status": "fallback" if guardrail_tripped else "ok",
         "summary": (
-            f"Blocked: {getattr(fallback, 'fallback_reason', 'violation')}"
+            ("Error: see the note below" if guardrail_reason == "exception" else f"Blocked: {guardrail_reason or 'violation'}")
             if guardrail_tripped else "No violations detected"
         ),
-        "details": {},
+        "details": {"note": note} if guardrail_tripped and note else {},
         "metrics": metric("guardrail"),
     })
 
@@ -290,7 +401,15 @@ def _build_agent_trace(response: dict) -> list[dict]:
             "title": "Disputes",
             "status": "fallback" if dispute.status == "error" else "ok",
             "summary": f"Status: {dispute.status}",
-            "details": {"status": dispute.status, "summary": dispute.summary, "data": dispute.data},
+            "details": {
+                "status": dispute.status, "summary": dispute.summary, "data": dispute.data,
+                **({"note": {
+                    "where": f"disputes · {_STEP_FILES['disputes']}",
+                    "why": "The Disputes agent raised an error this turn; the open dispute was kept, so the customer can resend.",
+                    "error": dispute.data.get("error"),
+                    "fix": _error_fix(dispute.data.get("error") or ""),
+                }} if dispute.status == "error" else {}),
+            },
             # the gate already accounts for its own extraction call
             "metrics": _sum_metrics(metrics, *(("dispute_reply",) if gate_open else ("disputes_extraction", "dispute_reply"))),
         })
@@ -383,10 +502,11 @@ def _build_agent_trace(response: dict) -> list[dict]:
             "agent": "fallback",
             "title": "Fallback",
             "status": "fallback",
-            "summary": f"Triggered at '{fallback_node}'",
+            "summary": f"Triggered at '{fallback_node}' · {getattr(fallback, 'fallback_reason', None) or 'unknown'}",
             "details": {
                 "fallback_node": fallback_node,
                 "fallback_reason": getattr(fallback, "fallback_reason", None),
+                "note": note,
             },
             "metrics": None,
         })

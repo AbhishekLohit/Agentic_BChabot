@@ -81,6 +81,8 @@ prompt: |
       - "I want to dispute my Acme payment"            → Dispute (wants the case raised)
       - "Show me my payments to Acme"                  → BankSQL (just looking at their data)
       - "Acme charged me twice, can you sort it?"      → Dispute
+      - "Show my disputes" / "What's the status of my dispute?" → Dispute (their own cases)
+      - "Status of DSP-D15F82EE?" / any message naming a case ID like DSP-XXXXXXXX → Dispute
 
     # CLASS 4 — "Out_of_scope"
       Any question unrelated to BOTH the customer's banking transaction data AND

@@ -60,6 +60,8 @@ prompt: |
         timelines, update promises or outcomes it does not state.
     cancelled
         Confirm the dispute is cancelled and nothing was submitted.
+    (case_list, the customer's list of disputes, never reaches you: code writes that reply
+    from the database in workflow._case_list_reply.)
     error
         Apologise briefly and ask them to try again.
 
