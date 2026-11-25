@@ -32,6 +32,35 @@ def record_metric(agent_metrics: dict, name: str, metric) -> str:
     return key
 
 
+# USD per 1M tokens: (input, cached input read, output). Matched on the model name the
+# provider reports (prefix / substring, case-insensitive; first match wins).
+MODEL_PRICES: list[tuple[str, tuple[float, float, float]]] = [
+    ("claude-opus-5-5", (4.00, 0.20, 20.00)),
+    ("claude-sonnet-5-5", (2.00, 0.10, 10.00)),
+    ("claude-haiku-5-5", (0.10, 0.01, 0.50)),
+    ("claude-sonnet-4-6", (3.00, 0.30, 15.00)),
+    ("claude-haiku-4-5", (1.00, 0.10, 5.00)),
+    ("gpt-4o-mini", (0.15, 0.075, 0.60)),
+    ("llama-3.3-70b", (0.59, 0.59, 0.79)),
+]
+
+
+def model_prices(model_name: str | None) -> tuple[float, float, float]:
+    """(input, cached, output) USD per 1M tokens for a model. Self-hosted models
+    (capstone / Qwen / Ollama) use CAPSTONE_COST_PER_M_IN / _OUT, default 0 (a nominal
+    rate you can set to compare against a paid API). Unknown models cost 0 -- add them
+    to MODEL_PRICES rather than guessing."""
+    name = (model_name or "").lower()
+    for key, prices in MODEL_PRICES:
+        if key in name:
+            return prices
+    if any(k in name for k in ("qwen", "llama3.2", "capstone")):
+        from app_setting import AppSettings
+        s = AppSettings()
+        return (s.CAPSTONE_COST_PER_M_IN, s.CAPSTONE_COST_PER_M_IN, s.CAPSTONE_COST_PER_M_OUT)
+    return (0.0, 0.0, 0.0)
+
+
 def agent_metrics(
         response_message: dict,
         latency: float
@@ -46,15 +75,11 @@ def agent_metrics(
     cached_tokens = token_details.get("cache_read", 0)
     cache_creation_tokens = token_details.get("cache_creation", 0)
 
-    # 🔥 COST CALCULATION
-    # Pricing (Claude Haiku 4.5)
-    INPUT_COST_PER_1K = 0.0008
-    CACHED_INPUT_COST_PER_1K = 0.00008
-    OUTPUT_COST_PER_1K = 0.004
-
-    input_cost_per_token = INPUT_COST_PER_1K / 1000
-    cached_input_cost_per_token = CACHED_INPUT_COST_PER_1K / 1000
-    output_cost_per_token = OUTPUT_COST_PER_1K / 1000
+    # Cost: priced by the model that actually answered (see MODEL_PRICES).
+    in_per_m, cached_per_m, out_per_m = model_prices(model_name)
+    input_cost_per_token = in_per_m / 1_000_000
+    cached_input_cost_per_token = cached_per_m / 1_000_000
+    output_cost_per_token = out_per_m / 1_000_000
 
     # ✅ Cost WITHOUT cache (baseline)
     cost_without_cache = (

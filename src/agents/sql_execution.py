@@ -3,6 +3,25 @@ import re
 from logging import Logger
 from app_models import FallbackResponse, SubGraph_State
 from utils.chart_intent import is_explicit_chart_request
+from langsmith import traceable
+
+
+def _trace_rows(outputs: dict) -> dict:
+    """Keep traces small: column names, row count and the first 5 rows only."""
+    out = outputs.get("output") if isinstance(outputs, dict) and "output" in outputs else outputs
+    columns, rows = out if isinstance(out, tuple) else (None, None)
+    return {"columns": columns, "row_count": len(rows) if rows is not None else None,
+            "rows_preview": [list(r) for r in (rows or [])[:5]]}
+
+
+@traceable(run_type="tool", name="sql_query", process_outputs=_trace_rows)
+def _execute_sql(cursor: sqlite3.Cursor, sql_query: str):
+    """Run the query; (columns, rows) for a result set, (None, None) otherwise.
+    A LangSmith tool span when tracing is on, a plain call when it is off."""
+    cursor.execute(sql_query)
+    if cursor.description is None:
+        return None, None
+    return [col[0] for col in cursor.description], cursor.fetchall()
 
 # Hard ceiling on how many rows a single query may return to the user. Detail
 # transaction lists are capped to the most recent MAX_RESULT_ROWS rows.
@@ -94,10 +113,8 @@ async def execute_query(
 
     cursor = db_conn.cursor()
     try:
-        cursor.execute(sql_query)
-        if cursor.description is not None:
-            columns = [col[0] for col in cursor.description]
-            raw_rows = cursor.fetchall()
+        columns, raw_rows = _execute_sql(cursor, sql_query)
+        if columns is not None:
             result_limit = MAX_CHART_RESULT_ROWS if chart_summary else MAX_RESULT_ROWS
             state.database_results_truncated = len(raw_rows) > result_limit
             if state.database_results_truncated:

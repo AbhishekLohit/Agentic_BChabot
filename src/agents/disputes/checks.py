@@ -11,6 +11,13 @@ from datetime import date, timedelta
 from difflib import SequenceMatcher
 from typing import Any
 
+from langsmith import traceable
+
+
+def _without_conn(inputs: dict) -> dict:
+    """Trace inputs without the sqlite connection object."""
+    return {k: v for k, v in inputs.items() if k != "conn"}
+
 
 def _fetch_all(conn: sqlite3.Connection, sql: str, params: tuple = ()) -> list[dict]:
     """Rows as plain dicts, whatever row_factory the connection uses."""
@@ -58,6 +65,7 @@ def merchant_score(said: str, actual: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
 
+@traceable(run_type="tool", name="dispute_find_transactions", process_inputs=_without_conn)
 def find_transactions(
     conn: sqlite3.Connection,
     customer_id: str,
@@ -122,6 +130,7 @@ _NOT_CARD_PAYMENT = {
 }
 
 
+@traceable(run_type="tool", name="dispute_check_eligibility", process_inputs=_without_conn)
 def check_eligibility(
     txn: dict | None,
     today: date,

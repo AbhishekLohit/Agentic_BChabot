@@ -23,6 +23,9 @@ class AppSettings(BaseSettings):
     CAPSTONE_CA_CERT: str | None = None  # full path to your group's .crt file
     CAPSTONE_MODEL: str = "Qwen/Qwen3-8B"
     CAPSTONE_DISABLE_THINKING: bool = True
+    # Nominal USD per 1M tokens for the self-hosted Qwen model (cost reporting only; 0 = free).
+    CAPSTONE_COST_PER_M_IN: float = 0.0
+    CAPSTONE_COST_PER_M_OUT: float = 0.0
     # IIT KGP capstone embedding API (EMBEDDING_PROVIDER=capstone). Set these in .env.
     CAPSTONE_EMBED_API_KEY: str | None = None
     CAPSTONE_EMBED_BASE_URL: str = "https://103.42.50.41:1035/v1"

@@ -2,6 +2,7 @@ import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone, timedelta
+from langsmith import traceable
 
 
 def setup_chat_tables(conn: sqlite3.Connection) -> None:
@@ -176,6 +177,8 @@ def add_dispute_event(
     conn.commit()
 
 
+@traceable(run_type="tool", name="dispute_create_case",
+           process_inputs=lambda i: {k: v for k, v in i.items() if k != "conn"})
 def create_dispute(
     conn: sqlite3.Connection,
     customer_id: str,
