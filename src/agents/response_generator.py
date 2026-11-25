@@ -88,7 +88,13 @@ async def response_generator_agent(
             final_message.append(state.help_center_response.generated_response)
 
         if state.database_query_results is not None:
-            sql_query_result = state.database_query_results
+            # Money in the data has float noise (e.g. 1971.5449999999998); give the model clean
+            # 2-decimal figures to copy, so it neither misreads nor re-computes them.
+            sql_query_result = [
+                {k: (round(v, 2) if isinstance(v, float) else v) for k, v in row.items()}
+                if isinstance(row, dict) else row
+                for row in state.database_query_results
+            ]
             truncation_notice = (
                 f"\n[System Notification: Only {len(sql_query_result)} result rows are displayed; "
                 "additional results were omitted.]"

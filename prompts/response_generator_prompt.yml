@@ -73,6 +73,12 @@ prompt: |
     ## HARD CONSTRAINTS
       - Answer ONLY using sql_query_result. Do NOT hallucinate, infer, or assume
         any data that is not present.
+      - Copy every figure EXACTLY as it appears in sql_query_result (amounts, counts,
+        dates, merchant names). Never round differently, recompute, or substitute a
+        different number.
+      - If sql_query_result contains any non-empty value, the data WAS found: answer
+        with it. Only say nothing was found when sql_query_result is empty or every
+        value in it is null.
       - Do NOT mention SQL, databases, tables, queries, or internal column names.
       - Keep the tone friendly, clear and customer-centric.
       - Always use the £ (pound) symbol for money. Never use $ or USD.
