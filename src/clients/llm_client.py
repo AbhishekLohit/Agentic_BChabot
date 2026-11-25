@@ -1,3 +1,4 @@
+import json
 import os
 from dotenv import load_dotenv
 from app_setting import AppSettings
@@ -42,6 +43,78 @@ def _with_plain_text_messages(chat_model_class: type) -> type:
 
     PlainTextChatModel.__name__ = chat_model_class.__name__
     return PlainTextChatModel
+
+
+def _json_reply_instructions(schema: type) -> str:
+    """Plain-language field list for a Pydantic model. Raw JSON Schema text made Qwen echo
+    the schema back instead of answering, so the fields are described, not pasted."""
+    full = schema.model_json_schema()
+    defs = full.get("$defs", {})
+
+    def describe(prop: dict) -> str:
+        if "$ref" in prop:
+            sub = defs.get(prop["$ref"].split("/")[-1], {})
+            inner = ", ".join(f'"{k}": {describe(v)}' for k, v in sub.get("properties", {}).items())
+            return "{" + inner + "}"
+        if "enum" in prop:
+            return " or ".join(json.dumps(v) for v in prop["enum"])
+        if "anyOf" in prop:
+            return " or ".join(describe(p) for p in prop["anyOf"])
+        if prop.get("type") == "array":
+            return "[" + describe(prop.get("items", {})) + ", ...]"
+        return {"string": "text", "number": "number", "integer": "whole number",
+                "boolean": "true/false", "null": "null"}.get(prop.get("type"), "value")
+
+    required = set(full.get("required", []))
+    lines = [f'- "{name}": {describe(prop)}' + ("" if name in required else " (optional)")
+             for name, prop in full.get("properties", {}).items()]
+    return ("Reply with ONLY one JSON object (no prose, no code fences) with these fields:\n"
+            + "\n".join(lines))
+
+
+def _with_json_mode_structured_output(chat_model_class: type) -> type:
+    """Subclass for the self-hosted Qwen3-8B (vLLM) endpoints: structured output uses JSON
+    mode instead of schema-guided decoding.
+
+    With guided decoding (`method="json_schema"`, LangChain's default), Qwen sometimes
+    loops on whitespace between JSON fields until max_tokens: the JSON never closes and
+    the call fails with LengthFinishReasonError. On a dispute extraction it failed 3 of 6
+    identical calls (one failed reply was 3,250 whitespace characters out of 3,551).
+    JSON mode only requires a valid JSON object, so the loop cannot happen; the schema is
+    sent in the request instead and the reply is still validated against the same
+    Pydantic model. Measured: 12/12 correct. (Function calling never loops but dropped
+    fields, 0/6.) An explicit `method=` argument is left untouched."""
+
+
+    from langchain_core.runnables import RunnableLambda
+    from pydantic import BaseModel
+
+    class JsonModeChatModel(chat_model_class):
+        def with_structured_output(self, schema=None, *, method=None, include_raw=False, **kwargs):
+            if method is not None or not (isinstance(schema, type) and issubclass(schema, BaseModel)):
+                return super().with_structured_output(schema, method=method, include_raw=include_raw, **kwargs)
+            # Always parse with include_raw=True so a bad reply can be retried, then return
+            # the shape the caller asked for.
+            inner = super().with_structured_output(schema, method="json_mode", include_raw=True, **kwargs)
+            note = _json_reply_instructions(schema)
+            retry_note = ("Your previous reply was not a valid answer object. " + note
+                          + "\nFill in the fields with your answer; do NOT repeat this field description.")
+
+            async def run(messages):
+                messages = list(messages) if isinstance(messages, (list, tuple)) else [messages]
+                out = await inner.ainvoke(messages + [{"role": "user", "content": note}])
+                if out.get("parsed") is None:  # e.g. the model echoed the schema: retry once
+                    out = await inner.ainvoke(messages + [{"role": "user", "content": retry_note}])
+                if include_raw:
+                    return out
+                if out.get("parsed") is None:
+                    raise out.get("parsing_error") or ValueError("model returned no parsable JSON object")
+                return out["parsed"]
+
+            return RunnableLambda(run)
+
+    JsonModeChatModel.__name__ = chat_model_class.__name__
+    return JsonModeChatModel
 
 def get_configured_llm(
     provider: str | None = None,
@@ -95,7 +168,7 @@ def get_configured_llm(
         if not os.path.isfile(ca_cert):
             raise FileNotFoundError(f"QWEN_CA_CERT file does not exist: {ca_cert}")
 
-        return ChatOpenAI(
+        return _with_json_mode_structured_output(ChatOpenAI)(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -193,7 +266,7 @@ def get_configured_llm(
             if settings.CAPSTONE_DISABLE_THINKING
             else None
         )
-        return _with_plain_text_messages(ChatOpenAI)(
+        return _with_json_mode_structured_output(_with_plain_text_messages(ChatOpenAI))(
             model=model,
             temperature=temperature,
             max_tokens=min(max_tokens, 1024),  # server maximum per call
