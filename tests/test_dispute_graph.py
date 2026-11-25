@@ -81,7 +81,7 @@ class StubSql:
     ordinary data questions, and `calls` shows what it was asked."""
 
     def __init__(self, answer_rows=None):
-        self.answer_rows = answer_rows if answer_rows is not None else ["{'current_balance': 100.0}"]
+        self.answer_rows = answer_rows if answer_rows is not None else [{"current_balance": 100.0}]
         self.calls: list[str] = []
         self.app = RunnableLambda(self._run)
 
@@ -220,7 +220,7 @@ def test_the_reply_falls_back_to_plain_wording_if_the_writer_fails(db, registry,
 
 def test_a_dispute_and_a_data_question_in_one_message_are_both_answered(db, registry, settings, add_txn):
     add_txn("T1", days_ago(5), 45.0, merchant="Acme")
-    sql = StubSql(answer_rows=["{'current_balance': 100.0}"])
+    sql = StubSql(answer_rows=[{"current_balance": 100.0}])
     llm = ScriptedChatModel(
         structured_script=[
             SAFE,
@@ -338,7 +338,7 @@ def test_a_reply_with_an_unrelated_question_gets_both_answered(db, registry, set
     add_txn("T1", days_ago(5), 45.0, merchant="Acme")
     save_draft(db, transaction_id="T1", reason="wrong_amount", pending_slot_ids=["expected_amount", "amount_basis"],
                answers={"description": "Overcharged"})
-    sql = StubSql(answer_rows=["{'current_balance': 100.0}"])
+    sql = StubSql(answer_rows=[{"current_balance": 100.0}])
     llm = ScriptedChatModel(
         structured_script=[
             SAFE,
@@ -474,7 +474,7 @@ def test_a_guardrail_violation_never_reaches_the_gate_or_touches_the_draft(db, r
 
 
 def test_a_normal_question_with_no_dispute_open_is_untouched(db, registry, settings):
-    sql = StubSql(answer_rows=["{'current_balance': 100.0}"])
+    sql = StubSql(answer_rows=[{"current_balance": 100.0}])
     llm = ScriptedChatModel(
         structured_script=[SAFE, ctx("What is my current balance?"), sup(("What is my current balance?", "BankSQL"))],
         messages_script=[ai("Your balance is £100.00.")],
