@@ -219,7 +219,8 @@ def split_sentences(text: str) -> list[str]:
     raw = [p.strip() for p in re.split(r"(?<=[.!?])\s+|\n+", (text or "").strip()) if p and p.strip()]
     pieces: list[str] = []
     for p in raw:  # re-join pieces split after an abbreviation such as "Rs."
-        if pieces and pieces[-1].lower().endswith(ABBREVIATIONS):
+        # whole last word only: "hours." / "users." must not match the abbreviation "rs."
+        if pieces and pieces[-1].split() and pieces[-1].split()[-1].lower() in ABBREVIATIONS:
             pieces[-1] += " " + p
         else:
             pieces.append(p)
@@ -259,14 +260,37 @@ def _keep_valid_citations(sentence: str, n_contexts: int) -> tuple[str, int, int
     return re.sub(r"\s+([.,;:])", r"\1", re.sub(r"\s{2,}", " ", text)).strip(), counts["valid"], counts["invalid"]
 
 
-def enforce_citations(answer: str, n_contexts: int, policy: Optional[str] = None) -> tuple[str, dict]:
+SUPPORT_THRESHOLD = 0.6  # share of a sentence's content words that one excerpt must contain
+
+
+def supporting_excerpt(sentence: str, contexts: list[dict], threshold: float = SUPPORT_THRESHOLD) -> Optional[int]:
+    """The number [n] of the excerpt that lexically supports an UNCITED sentence, or None.
+
+    The model often writes a sentence copied or closely paraphrased from an excerpt but
+    forgets the [n]. Strict mode used to delete it, which removed correct steps from
+    answers. A sentence is kept (and cited) only when at least `threshold` of its content
+    words appear in one excerpt, so an unsupported sentence is still removed."""
+    words = set(tokenize(CITE.sub("", sentence)))
+    if len(words) < 3 or not contexts:
+        return None
+    best, best_n = 0.0, None
+    for c in contexts:
+        overlap = len(words & set(tokenize(c.get("text", "")))) / len(words)
+        if overlap > best:
+            best, best_n = overlap, c.get("n")
+    return best_n if best >= threshold else None
+
+
+def enforce_citations(answer: str, n_contexts: int, policy: Optional[str] = None,
+                      contexts: Optional[list[dict]] = None) -> tuple[str, dict]:
     """Post-check the generated answer against the numbered excerpts it was given.
-    Returns (final_answer, report)."""
+    Returns (final_answer, report). With `contexts`, an uncited sentence that an excerpt
+    supports is cited instead of dropped (report["auto_cited"])."""
     policy = (policy or _settings().HELP_CITATION_POLICY).lower().strip()
     if policy not in CITATION_POLICIES:
         raise ValueError(f"Unknown citation policy {policy!r}; use one of {CITATION_POLICIES}")
     report = {"policy": policy, "invalid_citations": 0, "dropped_sentences": [], "refused": False,
-              "abstained": False}
+              "abstained": False, "auto_cited": []}
     if policy == "off":
         return answer, report
     if is_abstention(answer):  # a refusal needs no citations; strip any it carries
@@ -276,6 +300,12 @@ def enforce_citations(answer: str, n_contexts: int, policy: Optional[str] = None
     for sentence in split_sentences(answer):
         fixed, n_valid, n_invalid = _keep_valid_citations(sentence, n_contexts)
         report["invalid_citations"] += n_invalid
+        if not n_valid and contexts:
+            n = supporting_excerpt(sentence, contexts)
+            if n is not None:
+                fixed = re.sub(r"([.!?])?\s*$", lambda m: f" [{n}]{m.group(1) or ''}", fixed, count=1)
+                report["auto_cited"].append(sentence)
+                n_valid = 1
         if n_valid:
             any_valid = True
         elif policy == "strict":

@@ -263,7 +263,7 @@ async def answer_one(item: dict, vs, generator, judge, prompt_text: str, opts: O
             raise ValueError(f"generator returned no parsable answer: {str(out.get('raw'))[:200]}")
         raw_answer = out["parsed"].generated_response
     row["generation_seconds"] = round(time.time() - t0, 2)
-    answer, report = enforce_citations(raw_answer, len(contexts), opts["citation_policy"])
+    answer, report = enforce_citations(raw_answer, len(contexts), opts["citation_policy"], contexts=contexts)
     row["raw_answer"], row["answer"] = raw_answer, answer
     row["citation_check"] = {"policy": report["policy"], "invalid_citations": report["invalid_citations"],
                              "dropped_sentences": len(report["dropped_sentences"]), "refused": report["refused"]}

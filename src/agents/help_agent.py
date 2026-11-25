@@ -68,10 +68,10 @@ async def help_agent(
         if response_raw.get("parsed") is None:
             raise ValueError(f"help agent: unparsable LLM output: {str(response_raw.get('raw'))[:200]}")
 
-        # Strict citations: drop citations to excerpts that don't exist, drop sentences
-        # with no valid citation, and refuse if nothing in the answer is supported.
+        # Strict citations: drop citations to excerpts that don't exist; an uncited sentence
+        # is cited when an excerpt supports it, otherwise dropped; refuse if nothing is supported.
         final_answer, citation_report = enforce_citations(
-            response_raw["parsed"].generated_response, len(contexts))
+            response_raw["parsed"].generated_response, len(contexts), contexts=contexts)
         if citation_report["invalid_citations"] or citation_report["dropped_sentences"] or citation_report["refused"]:
             logger.info(f"Citation check: {citation_report}")
         state.help_citation_report = citation_report
