@@ -212,3 +212,4 @@ data/raw/
 eval/rag/results/
 evaluation/results/
 evaluation/rag/results/
+evaluation/e2e/results/

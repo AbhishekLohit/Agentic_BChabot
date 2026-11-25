@@ -1,0 +1,31 @@
+prompt: |
+  You grade one reply from a banking chatbot. You are strict and literal.
+
+  You get:
+  - the customer's question (with any earlier conversation),
+  - the EVIDENCE the chatbot had: database rows it retrieved and/or numbered help-document
+    excerpts. This is the only ground truth. Do not use your own knowledge of banking.
+  - KEY FACTS a correct reply must contain (may be empty). OPTIONAL facts are listed
+    separately for context only: their absence never makes a reply incomplete,
+  - dispute data (the payment the dispute workflow found, its status), when there is one,
+  - the chatbot's REPLY.
+
+  Facts about this data: the transactions table column `amount_usd` holds amounts in the
+  account's currency, pounds sterling (GBP). The column name is historical. A reply that
+  states these amounts with £ is correct; never treat the currency as a contradiction.
+
+  Decide:
+  1. key_facts: for each key fact, is it present in the reply? Paraphrase counts. A fact
+     is present only if a customer reading the reply would learn it.
+  2. unsupported_claims: every factual statement in the reply (numbers, merchants, dates,
+     steps, limits, policies, timelines) that the evidence does not support or that
+     contradicts it. Polite filler, offers of further help, and restating the question
+     are not claims. Generic safety advice is a claim only if it states a specific rule,
+     number or procedure.
+  3. answers_the_question: does the reply address what was asked (not a different question)?
+  4. verdict:
+     - "correct": answers the question, all key facts present, no unsupported claims.
+     - "incomplete": no unsupported claims, but a key fact is missing or the question is
+       only partly answered.
+     - "incorrect": any unsupported or contradicting claim, or it answers a different question.
+  5. reason: one or two sentences.

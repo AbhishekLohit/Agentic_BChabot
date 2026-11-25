@@ -48,6 +48,7 @@ async def help_agent(
         # all come from settings (HELP_RETRIEVAL_MODE, HELP_TOP_K).
         contexts = retrieve_help_context(vector_store, query)
         state.help_source = "help_documents"
+        state.help_contexts = contexts
 
         if not contexts:
             state.help_center_response = ResponseGeneratorResponse(

@@ -214,6 +214,9 @@ class Graph_State(BaseModel):
     help_queries: list[str] | None = None
     help_source: str | None = None
     help_citation_report: dict[str, Any] | None = None
+    # The numbered excerpts the help agent answered from (n, source, chunk, score, text).
+    # Kept so an evaluation can tell a retrieval miss from a hallucination.
+    help_contexts: list[dict[str, Any]] | None = None
     fallback_response: FallbackResponse | None
     response_generation_response: ResponseGeneratorResponse | None
     visualization_response: VisualizationResponse | None = None
