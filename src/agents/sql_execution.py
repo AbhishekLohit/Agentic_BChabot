@@ -1,5 +1,7 @@
 import sqlite3
 import re
+import threading
+from contextlib import contextmanager
 from logging import Logger
 from app_models import FallbackResponse, SubGraph_State
 from utils.chart_intent import is_explicit_chart_request
@@ -14,11 +16,65 @@ def _trace_rows(outputs: dict) -> dict:
             "rows_preview": [list(r) for r in (rows or [])[:5]]}
 
 
+# Read-only guard for model-written SQL. The connection is shared with the chat,
+# cache and dispute tables, so a generated query may only read these tables.
+READABLE_TABLES = frozenset({"transactions"})
+_ALLOWED_ACTIONS = frozenset({
+    sqlite3.SQLITE_SELECT,
+    sqlite3.SQLITE_READ,
+    sqlite3.SQLITE_FUNCTION,
+    getattr(sqlite3, "SQLITE_RECURSIVE", 33),  # WITH RECURSIVE
+})
+_BLOCKED_FUNCTIONS = frozenset({"load_extension"})
+# Prefixed to guarded SQL so sqlite3's statement cache never hands back a copy
+# of the same text that app code prepared earlier without the guard (the
+# authorizer only runs when a statement is prepared).
+_GUARD_MARK = "/* read-only */ "
+
+
+def _schema_objects(db_conn) -> set[str]:
+    rows = db_conn.execute(
+        "SELECT name FROM sqlite_master UNION SELECT name FROM sqlite_temp_master"
+    ).fetchall()
+    return {str(name).lower() for (name,) in rows}
+
+
+@contextmanager
+def _read_only(db_conn):
+    """While the query is prepared, deny anything but reads of READABLE_TABLES.
+    Reads of a CTE name (WITH RECURSIVE reports one) are allowed; reads of any
+    other table, view or sqlite_* table are denied. Other threads using the
+    shared connection are never affected. A denied statement raises
+    sqlite3.DatabaseError ("not authorized"), which takes the normal failed-SQL
+    path (sql_correction, then fallback)."""
+    owner = threading.get_ident()
+    blocked_names = _schema_objects(db_conn) - READABLE_TABLES
+
+    def authorizer(action, arg1, arg2, _db, _trigger):
+        if threading.get_ident() != owner:
+            return sqlite3.SQLITE_OK
+        if action not in _ALLOWED_ACTIONS:
+            return sqlite3.SQLITE_DENY
+        if action == sqlite3.SQLITE_READ:
+            name = (arg1 or "").lower()
+            if name in blocked_names or name.startswith("sqlite_"):
+                return sqlite3.SQLITE_DENY
+        if action == sqlite3.SQLITE_FUNCTION and (arg2 or "").lower() in _BLOCKED_FUNCTIONS:
+            return sqlite3.SQLITE_DENY
+        return sqlite3.SQLITE_OK
+
+    db_conn.set_authorizer(authorizer)
+    try:
+        yield
+    finally:
+        db_conn.set_authorizer(None)
+
+
 @traceable(run_type="tool", name="sql_query", process_outputs=_trace_rows)
 def _execute_sql(cursor: sqlite3.Cursor, sql_query: str):
     """Run the query; (columns, rows) for a result set, (None, None) otherwise.
     A LangSmith tool span when tracing is on, a plain call when it is off."""
-    cursor.execute(sql_query)
+    cursor.execute(_GUARD_MARK + sql_query)
     if cursor.description is None:
         return None, None
     return [col[0] for col in cursor.description], cursor.fetchall()
@@ -113,7 +169,10 @@ async def execute_query(
 
     cursor = db_conn.cursor()
     try:
-        columns, raw_rows = _execute_sql(cursor, sql_query)
+        # The authorizer runs while the statement is prepared, so fetching the
+        # rows inside _execute_sql is covered too.
+        with _read_only(db_conn):
+            columns, raw_rows = _execute_sql(cursor, sql_query)
         if columns is not None:
             result_limit = MAX_CHART_RESULT_ROWS if chart_summary else MAX_RESULT_ROWS
             state.database_results_truncated = len(raw_rows) > result_limit
@@ -130,7 +189,7 @@ async def execute_query(
             logger.info(f"SQL executed successfully. Results count: {len(results)}\n")
             
         else:
-            db_conn.commit()
+            # Nothing to commit: the read-only guard blocks every write.
             logger.info(f"SQL execution completed with no output description (e.g. non-SELECT query or empty execution).\n")
     except sqlite3.Error as e:
         logger.warning(f"SQL Error encountered — routing to correction: {e}")
