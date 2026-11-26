@@ -31,9 +31,14 @@ async def summarize_chat_history(
     older = history_without_current[:-4]
 
     # Build list of {user, assistant} pairs from older exchanges
+    # Long replies (transaction lists) are cut so up to 10 turns fit Qwen's 8K window.
+    def _cut(text: str, limit: int = 1500) -> str:
+        text = text or ""
+        return text if len(text) <= limit else text[:limit] + " ..."
+
     pairs = []
     for i in range(0, len(older) - 1, 2):
-        pairs.append({"user": older[i].content, "assistant": older[i + 1].content})
+        pairs.append({"user": _cut(older[i].content), "assistant": _cut(older[i + 1].content)})
 
     if not pairs:
         return history_without_current

@@ -4,13 +4,17 @@ prompt: |
     ENTITIES: merchant names, categories, transaction types (income, payment, direct debit, standing order), balance, timeframes.
     SCOPE WORDS: "overall", "all time", "lifetime" → no timeframe needed.
 
-    INPUTS:
-    - today_date: current date in YYYY-MM-DD format (provided in the user message)
-    - latest_user_question: the user's current message
-    - chat_history_list: list of user-assistant pairs, OLDEST first, NEWEST last
+    INPUTS (in the user message):
+    - Today's date: YYYY-MM-DD
+    - Chat history: the EARLIER turns only, as "User:" / "Assistant:" lines, OLDEST first,
+      NEWEST last. It does NOT contain the latest question. "(none ...)" means no history.
+    - Latest user question: the message to rewrite.
 
-    YOUR JOB: Return a standalone contextual query (or multiple if needed) by resolving
-    missing context from history. Output only JSON: {"contextual_queries": ["..."]}
+    YOUR JOB: Read the latest question in the light of the chat history and return it as
+    one or more standalone queries that make sense with NO history. Use the history even
+    when the latest question looks complete, to catch follow-ups ("and in October?").
+    Output only JSON: {"contextual_queries": ["..."], "clarification_question": null}
+    Ask for clarification (Rule 6) only as a last resort.
 
     ---
 
@@ -44,6 +48,9 @@ prompt: |
       question separately using Rule 4.
 
     4. RESOLVE MISSING CONTEXT
+      Fill in only what is missing. If the latest question already names everything it asks
+      about and starts a new topic, return it unchanged; do not add merchants or categories
+      from earlier turns.
       For any missing entity or timeframe, scan history from NEWEST to OLDEST pair.
       Use the first value found. Stop — do not look further back.
       If multiple values exist in one pair (e.g. "bills and travel"), inherit all of them.
@@ -65,12 +72,43 @@ prompt: |
          Embed the resolved date range explicitly in the output query string.
       b. Scope word in latest question → no timeframe needed
       c. Neither → inherit from history (newest pair first)
-      d. Not found anywhere → omit it, do not invent one
+      d. Not found anywhere → leave the timeframe out. NEVER add today's year, month or any
+         date the customer did not give ("how much have I spent at Amazon" stays all-time).
 
       Pronouns (it, this, that, them) → resolve to the subject of the last user message in history.
+      Pronouns that point at a LIST in the last assistant reply (them, those, these, these
+      merchants/categories, each of them) → replace the pronoun with the listed names, written
+      out in full. Never leave "them", "these" or "those" in the output query.
+
+      Short follow-ups ("and max too", "what about Tesco?", "same for travel", "only the top 3",
+      "and last year?") → repeat the previous user question with what it measured (total,
+      average, count, top N, per category, per month...), changing only the part the
+      follow-up gives. "too", "also", "as well" ADD to it; "what about", "instead", "for X"
+      REPLACE that part. A follow-up that gives only a timeframe ("and last year",
+      "and in October?", "what about 2024") REPLACES the timeframe: output the whole previous
+      question with the new timeframe. Never output the fragment on its own.
 
     5. SPLIT ONLY IF genuinely different topics each needing independent analysis.
       Same topic with multiple entities or timeframes → do NOT split, combine into one query.
+
+    6. ASK FOR CLARIFICATION — LAST RESORT ONLY
+      Return {"contextual_queries": [], "clarification_question": "<one short question>"} ONLY when:
+        - the latest question refers to something (it, them, that, there, that merchant,
+          the other one, the same) and the history has nothing it could mean. Do NOT just
+          drop the word: "how much did I spend there" without history must be asked; or
+        - two different readings are equally likely and would give different answers; or
+        - it is a fragment with no recoverable request ("and the other?", "what about it" with no history).
+      NEVER ask when:
+        - only the timeframe is missing (Rule 4d: omit it);
+        - any reasonable reading exists (pick the most likely one);
+        - it is a greeting, feedback, a complaint or a how-to question.
+      The question names the options when it can ("Do you mean your spend at Tesco or at Amazon?").
+      Otherwise clarification_question is null.
+
+    7. ANSWER TO A CLARIFICATION
+      If the last Assistant line starts with "I want to make sure I answer the right question.",
+      the latest message answers it: combine the answer with the User question before it into
+      one standalone query. Do NOT ask again.
 
     ---
 
@@ -119,7 +157,39 @@ prompt: |
       Latest: "Starbucks and Amazon"
       → {"contextual_queries": ["My spend at Starbucks and Amazon in 2024"]}
 
+    Pronoun pointing at a list in the assistant's reply:
+      History: [{user: "my top 3 merchants in 2025", assistant: "• Tesco £900 • Amazon £700 • Uber £300"}]
+      Latest: "my avg spend in them in 2024"
+      → {"contextual_queries": ["My average spend at Tesco, Amazon and Uber in 2024"]}
     Pronoun with multiple inherited entities:
       History: [{user: "my spend at Starbucks and Amazon in 2024", assistant: "£800"}]
       Latest: "what about that in 2025?"
       → {"contextual_queries": ["What about my spend at Starbucks and Amazon in 2025?"]}
+
+    Short follow-up — keep what was measured, add the new part:
+      History: [{user: "my average spend per category in 2025", assistant: "Bills £55, Travel £49"}]
+      Latest: "and max spend too"
+      → {"contextual_queries": ["My average and maximum spend per category in 2025"]}
+    New topic — complete question, return unchanged:
+      History: [{user: "my spend at Tesco in 2024", assistant: "£900"}]
+      Latest: "How many direct debits do I have?"
+      → {"contextual_queries": ["How many direct debits do I have?"]}
+
+    No timeframe given — do not add one:
+      History: []
+      Latest: "how much have I spent at Amazon"
+      → {"contextual_queries": ["How much have I spent at Amazon?"]}
+
+    Clarification — nothing in the history it could mean:
+      History: []
+      Latest: "what about the other one?"
+      → {"contextual_queries": [], "clarification_question": "Which merchant, category or payment do you mean?"}
+    Answer to a clarification:
+      History: [{user: "how much did I spend there", assistant: "I want to make sure I answer the right question. Which merchant do you mean?"}]
+      Latest: "Tesco"
+      → {"contextual_queries": ["How much did I spend at Tesco?"]}
+
+    Short follow-up - only a new timeframe:
+      History: [{user: "Show my top 5 merchants", assistant: "Rent £13,200, Tesco £1,900, ..."}]
+      Latest: "and last year"
+      → {"contextual_queries": ["Show my top 5 merchants last year"]}

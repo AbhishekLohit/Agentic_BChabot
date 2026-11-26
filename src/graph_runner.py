@@ -105,12 +105,17 @@ def _build_agent_trace(response: dict) -> list[dict]:
     cb = response.get("context_builder_response")
     if cb is not None:
         queries = getattr(cb, "contextual_queries", []) or []
+        clarification = getattr(cb, "clarification_question", None)
         trace.append({
             "agent": "context_builder",
             "title": "Context Builder",
-            "status": "ok",
-            "summary": f"Resolved {len(queries)} self-contained quer{'y' if len(queries) == 1 else 'ies'}",
-            "details": {"contextual_queries": list(queries)},
+            "status": "fallback" if clarification else "ok",
+            "summary": (
+                "Asked the customer to clarify" if clarification
+                else f"Resolved {len(queries)} self-contained quer{'y' if len(queries) == 1 else 'ies'}"
+            ),
+            "details": {"contextual_queries": list(queries),
+                        **({"clarification_question": clarification} if clarification else {})},
             "metrics": metric("context_builder"),
         })
 

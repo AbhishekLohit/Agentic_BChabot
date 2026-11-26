@@ -57,6 +57,34 @@ def _resolve_path(path: str) -> str:
     return os.path.join(project_root, path)
 
 
+def _model_choices(settings: AppSettings) -> dict:
+    """UI model choice -> (provider, model). model None = that provider's configured model."""
+    return {
+        "haiku": ("anthropic", settings.ANTHROPIC_HAIKU_MODEL),
+        "qwen": ("capstone", None),
+    }
+
+
+def _default_choice(settings: AppSettings, model_choices: dict) -> str | None:
+    """The UI choice selected by default: UI_DEFAULT_MODEL if it could be set up,
+    else the choice that is the server's own provider/model, else None."""
+    preferred = (settings.UI_DEFAULT_MODEL or "").strip().lower()
+    if preferred in model_choices:
+        return preferred
+    return next(
+        (c for c, (p, m) in _model_choices(settings).items()
+         if c in model_choices and p == settings.LLM_PROVIDER.lower() and m is None),
+        None,
+    )
+
+
+def _llm_for(request, input_request, default_llm):
+    """The chat model for this request: the customer's UI choice if it is available,
+    otherwise the server default (app.state.llm)."""
+    choice = (getattr(input_request, "model", None) or "").strip().lower()
+    return getattr(request.app.state, "model_choices", {}).get(choice, default_llm)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
@@ -71,6 +99,23 @@ async def lifespan(app: FastAPI):
     logger = setup_logging()
     llm = get_configured_llm()
     prompts = get_all_prompts(app_settings)
+
+    # Models the customer can choose between in the UI. Each is built once here; one that
+    # cannot be built (e.g. no ANTHROPIC_API_KEY) is simply not offered.
+    model_choices = {}
+    for choice, (provider, model) in _model_choices(app_settings).items():
+        try:
+            if provider == app_settings.LLM_PROVIDER.lower() and model is None:
+                model_choices[choice] = llm
+            else:
+                model_choices[choice] = get_configured_llm(
+                    provider=provider,
+                    model=model if model else None,
+                )
+        except Exception as e:
+            logger.warning("Model choice %r unavailable: %s", choice, e)
+    default_choice = _default_choice(app_settings, model_choices)
+    logger.info("Model choices available: %s (default: %s)", list(model_choices), default_choice)
 
     # Help-document RAG index (data/help_documents -> Chroma), used by the RAG help agent.
     # Embeddings come from EMBEDDING_PROVIDER (local MiniLM, capstone bge-small or OpenAI).
@@ -129,6 +174,8 @@ async def lifespan(app: FastAPI):
 
     # Initialize api state
     app.state.llm = llm
+    app.state.model_choices = model_choices
+    app.state.default_model_choice = default_choice
     app.state.prompts = prompts
     app.state.logger = logger
     app.state.redis_client = redis_client
@@ -198,6 +245,7 @@ async def _prepare_request(request, input_request, openai_llm, prompts, logger, 
     rolling-window seeding + summarisation) and build the graph + initial state.
     Returns (app_settings, chat_history, graph_state, agent_graph)."""
     app_settings: AppSettings = request.app.state.app_settings
+    openai_llm = _llm_for(request, input_request, openai_llm)
     chat_history = get_chat_history(
         redis_client,
         input_request.customer_id,
@@ -224,9 +272,10 @@ async def _prepare_request(request, input_request, openai_llm, prompts, logger, 
                 f"{app_settings.HISTORY_LOOKBACK_HOURS}h into the new conversation."
             )
 
-    # Summarize if >= 5 prior user turns to prevent unbounded context growth
+    # Summarise once there are HISTORY_SUMMARY_AFTER_TURNS prior user turns, so the
+    # history cannot grow without bound.
     prior_user_turns = sum(1 for m in chat_history if m.role == "user") - 1
-    if prior_user_turns >= 5:
+    if prior_user_turns >= app_settings.HISTORY_SUMMARY_AFTER_TURNS:
         current_msg = chat_history[-1]
         compressed = await summarize_chat_history(
             chat_history[:-1],
@@ -367,6 +416,7 @@ async def process_debug(
     returns the full graph state (routing, help_source, citations, SQL, metrics).
     Nothing is saved to Redis or the chat database."""
     app_settings: AppSettings = request.app.state.app_settings
+    openai_llm = _llm_for(request, input_request, openai_llm)
     logger.info(f"[DEBUG] Chat history received: {input_request.chat_history}")
     graph_state = build_graph_state(input_request.user_query, input_request.customer_id,
                                     input_request.session_id, list(input_request.chat_history))
@@ -630,6 +680,13 @@ class SettingsUpdateRequest(BaseModel):
     llm_provider: str
     temperature: float | None = 0.2
     max_tokens: int | None = 1500
+
+@app.get("/models")
+async def list_models(request: Request):
+    """Chat models the UI can offer (only those that could be set up) and the default."""
+    available = list(getattr(request.app.state, "model_choices", {}))
+    return {"models": available, "default": getattr(request.app.state, "default_model_choice", None)}
+
 
 @app.post("/update-settings")
 async def update_settings(req: SettingsUpdateRequest):

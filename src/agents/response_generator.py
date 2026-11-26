@@ -1,5 +1,6 @@
 from typing import Any
 from logging import Logger
+import re
 from agents.disputes.workflow import plain_reply as dispute_plain_reply
 from app_models import FallbackResponse, Graph_State,ResponseGeneratorResponse
 import time
@@ -7,6 +8,9 @@ from langchain_core.prompts import BasePromptTemplate
 
 from utils import agent_utils
 from utils.chart_intent import is_explicit_pie_request
+
+# "top 5", "top five", "top-3" ...
+_TOP_N = re.compile(r"\btop[\s-]+(\d+|two|three|four|five|six|seven|eight|nine|ten)\b", re.IGNORECASE)
 
 async def _dispute_reply(state: Graph_State, llm: Any, prompt: Any, logger: Logger) -> str:
     """Put the Disputes agent's result into words. The agent has already decided what
@@ -89,9 +93,10 @@ async def response_generator_agent(
 
         if state.database_query_results is not None:
             # Money in the data has float noise (e.g. 1971.5449999999998); give the model clean
-            # 2-decimal figures to copy, so it neither misreads nor re-computes them.
+            # 2-decimal figures to copy, so it neither misreads nor re-computes them. They are
+            # passed as text ("51,600.00"): a bare float such as 51600.0 was read as £516.00.
             sql_query_result = [
-                {k: (round(v, 2) if isinstance(v, float) else v) for k, v in row.items()}
+                {k: (f"{v:,.2f}" if isinstance(v, float) else v) for k, v in row.items()}
                 if isinstance(row, dict) else row
                 for row in state.database_query_results
             ]
@@ -110,6 +115,18 @@ async def response_generator_agent(
                 user_query = " ".join(state.context_builder_response.contextual_queries)
             else:
                 user_query = ""
+            # "Top N" with one row per item: Qwen3-8B answered "what was my average spend in my
+            # top 5 merchants?" with the first row only. A prompt rule for it changed how
+            # overview questions are answered, so the hint is added only for these questions.
+            top_n_notice = (
+                f"\n[System Notification: The customer asked about their top items. Start with one "
+                f"short sentence with NO number in it (e.g. \"Here is your average spend at your "
+                f"top merchants last year:\"), then one bullet per row "
+                f"(\"• <name>: <figure>\") for all {len(sql_query_result)} rows; never answer "
+                "with only the first row.]"
+                if _TOP_N.search(user_query) and len(sql_query_result) > 1
+                else ""
+            )
             # final_prompt = prompt.format(
             #                         sql_query_result=sql_query_result,
             #                         user_question= user_query
@@ -118,7 +135,7 @@ async def response_generator_agent(
                 {"role": "system", "content": [{"type": "text", "text": prompt.template, "cache_control": {"type": "ephemeral","ttl": "1h"}}]},
                 {"role": "user", "content": f"""
                                     sql_query_result: {sql_query_result}
-                                    {truncation_notice}
+                                    {truncation_notice}{top_n_notice}
                                     user_question: {user_query}"""}
             ]
 

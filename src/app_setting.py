@@ -15,6 +15,10 @@ class AppSettings(BaseSettings):
     GEMINI_MODEL: str = "gemini-3.8-flash"
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
     ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+    # Model the customer can pick as "Haiku" in the chat UI (needs ANTHROPIC_API_KEY).
+    ANTHROPIC_HAIKU_MODEL: str = "claude-haiku-5-5"
+    # Chat-UI model choice selected by default ("haiku" / "qwen"), if it could be set up.
+    UI_DEFAULT_MODEL: str = "haiku"
     OLLAMA_MODEL: str = "llama3.2:3b"  # local model; must be pulled with `ollama pull`
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     # IIT KGP capstone Qwen3-8B API (LLM_PROVIDER=capstone). Set these in .env.
@@ -77,6 +81,9 @@ class AppSettings(BaseSettings):
     # Only the most recent HISTORY_LOOKBACK_MAX_MESSAGES within that window are used.
     HISTORY_LOOKBACK_HOURS: int = 24
     HISTORY_LOOKBACK_MAX_MESSAGES: int = 5
+    # Once a conversation has this many earlier user turns, the older ones are summarised
+    # (the last 2 exchanges are always kept word for word).
+    HISTORY_SUMMARY_AFTER_TURNS: int = 10
 
     # Disputes. The dispute window is measured from real today's date.
     DISPUTE_WINDOW_DAYS: int = 120        # a card payment older than this cannot be disputed

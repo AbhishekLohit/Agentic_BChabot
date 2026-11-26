@@ -8,6 +8,8 @@ A FastAPI + LangGraph backend for a **banking-transactions chatbot** (Barclays-s
 
 The default LLM provider is **Anthropic** (`claude-sonnet-4-6`), set by `LLM_PROVIDER` in [src/app_setting.py](src/app_setting.py). The provider is hot-swappable at runtime via `POST /update-settings` — supported values are `"openai"`, `"qwen"`, `"anthropic"`, `"gemini"`, `"groq"`, `"ollama"` (local, no key) and `"capstone"` (the IIT KGP Qwen3-8B API, `CAPSTONE_*` settings). Qwen uses the OpenAI-compatible client with `QWEN_API_KEY`, `QWEN_API_BASE_URL`, `QWEN_MODEL`, and `QWEN_CA_CERT`. The project is being tuned for **Qwen3-8B** (8K context window), which is why prompts and `HELP_TOP_K` are kept small.
 
+The customer can also pick the chat model **per request** in the UI (header dropdown): `qwen` (capstone) or `haiku` (`ANTHROPIC_HAIKU_MODEL`, default `claude-haiku-5-5`). `lifespan` builds each choice once into `app.state.model_choices` (a choice that can't be built, e.g. no key, is not offered); `_llm_for` in `app.py` picks one from the optional `model` field on the request and falls back to `app.state.llm`. Claude 5-family models reject `temperature`, so the anthropic branch of `get_configured_llm` omits it for them.
+
 Embeddings are chosen separately by `EMBEDDING_PROVIDER` (`get_embeddings` in `clients/llm_client.py`): `local` (MiniLM, offline, the default), `capstone` (bge-small-en-v1.5 API, needs `CAPSTONE_EMBED_API_KEY` and `data/certs/vm02-ca.crt`) or `openai`. The committed help index was built with **capstone bge-small**, so query-time embeddings must use the same provider or retrieval is meaningless.
 
 ## Common commands
@@ -18,8 +20,11 @@ All commands are run from the repo root. The server must be run with `src/` on t
 # Install dependencies (Python 3.11+)
 pip install -r requirements.txt
 
-# Run the FastAPI app on 0.0.0.0:8000 (set DEV_MODE=true for reload on src/ and prompts/).
-# Redis is optional: if it is unreachable the app starts with chat-history persistence disabled.
+# Run the FastAPI app (open http://localhost:8000; set DEV_MODE=true for reload on src/ and prompts/).
+# Use the project venv: venv\Scripts\python.exe (the system Python lacks langchain_chroma).
+# Redis is optional, but it is pinged ONCE at startup (0.5 s timeout): if it was down then,
+# the whole process runs without chat history (follow-ups lose context). Restart after Redis is up.
+# Prompts are also read only at startup.
 python src/app.py
 
 # (Re)build transactions.db from the enhanced Excel.
@@ -63,7 +68,7 @@ python -m pytest tests/test_dispute_graph.py -k "<name substring>" -q
 
 ### Request flow
 
-`POST /process` and `POST /process-stream` share `_prepare_request()` in [src/app.py](src/app.py), which loads chat history (Redis, seeded from the last 24h of SQLite messages for a fresh conversation, summarised once there are ≥5 prior user turns), builds a `Graph_State`, and compiles the graphs per request. There are **two** graphs:
+`POST /process` and `POST /process-stream` share `_prepare_request()` in [src/app.py](src/app.py), which loads chat history (Redis, seeded from the last 24h of SQLite messages for a fresh conversation, summarised once there are `HISTORY_SUMMARY_AFTER_TURNS` (10) prior user turns, keeping the last 2 exchanges verbatim), builds a `Graph_State`, and compiles the graphs per request. There are **two** graphs:
 
 - **Outer graph** ([src/agent_graph.py](src/agent_graph.py)) — `guardrail → {dispute_gate | fallback}`; `dispute_gate → {context_builder | dispute_agent | fallback}`; `context_builder → {suprivisor | fallback | END}`; `suprivisor → {dispute_agent | sql_generation subgraph | help_center | fallback | END}`; `dispute_agent → {context_builder | sql_generation | help_center | join}`; then `(help_center if the message also had a help query) → join → visualization_agent → response_generator → END`. Routing is in `_guardrail_router`, `_dispute_gate_router`, `_context_builder_router`, `_supervisor_router`, `_after_dispute_router` and `_after_sql_router`.
 - **Inner subgraph** ([src/agent_subraph.py](src/agent_subraph.py)) — `sql_generation → sql_execution → {END | sql_correction → sql_execution | fallback}`. `sql_correction` runs at most once: `_sql_execution_router` checks `state.sql_query_correction` to avoid an infinite loop.
@@ -97,7 +102,7 @@ Each agent is a stand-alone async function in `src/agents/` that takes `(state, 
 | Agent | File | Role |
 |---|---|---|
 | `guardrail` | [src/agents/guardrails.py](src/agents/guardrails.py) | First node. LLM-based input check (SYSTEM / SQL / PII violation, or GREETING). Prompt is hardcoded in the function — no YAML. Initializes `agent_metrics = {}`. |
-| `context_builder` | [src/agents/context_builder.py](src/agents/context_builder.py) | Splits the query + chat history into one or more self-contained `contextual_queries`. |
+| `context_builder` | [src/agents/context_builder.py](src/agents/context_builder.py) | Splits the query + chat history into one or more self-contained `contextual_queries`. History is sent WITHOUT the current message, as `User:`/`Assistant:` lines (each cut to 1,500 chars, ~8,000 total, oldest dropped first). If a rewrite still contains them/these/those, it asks the model once more. As a last resort it returns `clarification_question` instead: that becomes `fallback_response(fallback_node="context_builder", reason="clarification")`, prefixed with `CLARIFICATION_LEAD` so the next turn knows not to ask twice. |
 | `dispute_gate` / `dispute_agent` | [src/agent_graph.py](src/agent_graph.py), [src/agents/disputes/workflow.py](src/agents/disputes/workflow.py) | See "Disputes". Graph nodes, not stand-alone agent functions. |
 | `supervisor` | [src/agents/supervisor.py](src/agents/supervisor.py) | Classifies each sub-query into `banksql_queries`, `help_center_queries`, `dispute_queries` or `out_of_scope_queries`. |
 | `text2sql_generator` | [src/agents/text2sql_generator.py](src/agents/text2sql_generator.py) | NL → SQL, with a Redis + SQLite (`query_cache`) cache keyed on customer + query. |
@@ -105,7 +110,7 @@ Each agent is a stand-alone async function in `src/agents/` that takes `(state, 
 | `sql_correction` | [src/agents/sql_correction.py](src/agents/sql_correction.py) | Repairs a failed SQL query (runs at most once). |
 | `help_center` (node) → `help_agent` | [src/agents/help_agent.py](src/agents/help_agent.py) | RAG answer from `data/help_documents` via [src/utils/help_rag.py](src/utils/help_rag.py). Retrieval mode is `HELP_RETRIEVAL_MODE` (`dense` / `bm25` / `hybrid` RRF / `hybrid_rerank` with flashrank); excerpts are numbered `[n]` and **citations are enforced in code** after generation (`HELP_CITATION_POLICY`: `strict` keeps an uncited sentence only if one excerpt contains at least 60% of its content words, adding that citation (`supporting_excerpt`); every other uncited sentence is dropped). `help_rag` is shared with the eval scripts, so change retrieval there, not in the agent. |
 | `visualization_agent` | [src/agents/visualization_agent.py](src/agents/visualization_agent.py) | Decides whether to chart; builds Plotly JSON from SQL results. Skipped on fallback / no data. |
-| `response_generator` | [src/agents/response_generator.py](src/agents/response_generator.py) | Rephrases SQL results (and passes through help answers) into the final reply. |
+| `response_generator` | [src/agents/response_generator.py](src/agents/response_generator.py) | Rephrases SQL results (and passes through help answers) into the final reply. Floats are sent as `"51,600.00"` text (a bare `51600.0` was read as £516.00). A "top N" question with several rows gets a one-line notice to list every row (Qwen otherwise answered with the first row only). |
 | `fallback` | [src/agents/fallback.py](src/agents/fallback.py) | Turns `state.fallback_response` into a user-visible message (no LLM, no prompt). |
 | `history_summarizer` | [src/agents/history_summarizer.py](src/agents/history_summarizer.py) | Not a graph node; called from `_prepare_request` to compress long chat history. |
 
@@ -115,7 +120,8 @@ Each agent is a stand-alone async function in `src/agents/` that takes `(state, 
 |---|---|---|
 | `GET` | `/` | Serves `src/index.html` (the chat UI). |
 | `POST` | `/login` | Validates `user_id` + `password` against env vars `DASHBOARD_USER_IDS` / `DASHBOARD_PASSWORD`. |
-| `POST` | `/process-stream` | SSE variant used by the UI: emits `step`, `token`, then a `final` event (`response`, `visualization`, `agent_trace`). |
+| `GET` | `/models` | Model choices the UI may offer (`qwen` / `haiku`, only those that were set up) and the default. |
+| `POST` | `/process-stream` | SSE variant used by the UI: emits `step`, `token`, then a `final` event (`response`, `visualization`, `agent_trace`). Like `/process` and `/process-debug`, takes an optional `model` field. |
 | `POST` | `/process` | Non-streaming equivalent. Returns `{response, visualization, agent_trace}`. |
 | `POST` | `/process-debug` | Same pipeline, but returns the full graph state (routing, `help_source`, citation report, SQL, metrics). For debugging and evaluation. |
 | `POST` | `/process-voice` | Multipart audio upload → OpenAI Whisper transcription → normal pipeline. Returns 503 without `OPENAI_API_KEY` (text chat is unaffected). |
@@ -155,4 +161,6 @@ Prompts live as YAML in `prompts/*.yml` with a single `prompt:` key. [src/utils/
 - The `data/embeddings_data/` FAISS indices are leftovers from the food-ordering version; `get_vectordb_data` in `file_utils.py` is not called. `chroma_store/help_documents/` is **live** (see above).
 - Qwen3-8B can leak `<think>` text into answers; `CAPSTONE_DISABLE_THINKING` turns thinking off for the capstone provider.
 - For the `capstone` and `qwen` providers, `with_structured_output()` defaults to **JSON mode** (`_with_json_mode_structured_output` in `clients/llm_client.py`). Schema-guided decoding made Qwen loop on whitespace until the 1,024-token cap (LengthFinishReasonError). The schema is sent as a plain field list and an unparsable reply is retried once. Don't switch these providers back to `json_schema` without re-running the e2e evaluation.
+- **Prompt edits on Qwen3-8B see-saw.** Adding an example to fix one case has repeatedly broken another (e.g. a "top N" example turned "spend habits" summaries into full dumps; a category example got copied verbatim into answers). Replay a broad set of cases ×3 after any prompt change. For one narrow failure, prefer a targeted code-level hint or retry (as in `response_generator` / `context_builder`) over a new prompt rule.
+- **The SQL cache is persistent.** `query_cache` lives in SQLite, so a wrong cached SQL for a question survives restarts and keeps being served. Delete its row to force regeneration.
 - `dashboard.py` is a minimal Streamlit app that renders `src/index.html` inside a full-screen iframe — it is just a UI shell and does not contain application logic.

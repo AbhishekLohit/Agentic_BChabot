@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from dotenv import load_dotenv
 from app_setting import AppSettings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -213,11 +214,13 @@ def get_configured_llm(
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY not found. Please set it in your environment or AppSettings.")
         from langchain_anthropic import ChatAnthropic
+        # Claude 5-family models reject `temperature` (400 "deprecated for this model").
+        sampling = {} if re.match(r"claude-(haiku|sonnet|opus|fable)-5", model) else {"temperature": temperature}
         return ChatAnthropic(
             model=model,
-            temperature=temperature,
             max_tokens=max_tokens,
-            api_key=api_key
+            api_key=api_key,
+            **sampling,
         )
 
     elif provider == "ollama":
@@ -245,12 +248,9 @@ def get_configured_llm(
             raise ValueError(
                 "CAPSTONE_BASE_URL not set. Use your group's URL, e.g. https://103.42.50.41:1034/v1"
             )
-        ca_cert = settings.CAPSTONE_CA_CERT
-        if ca_cert and not os.path.isabs(ca_cert):
-            # Relative paths (e.g. certs/vm04-ca.crt) are resolved from the project root,
-            # so it works whether the app is started from the root or from src/.
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            ca_cert = os.path.join(project_root, ca_cert)
+        # A path (relative ones resolved from the project root, so it works whether the app
+        # is started from the root or from src/) or the PEM text itself (see _project_file).
+        ca_cert = _project_file(settings.CAPSTONE_CA_CERT)
         if not ca_cert or not os.path.isfile(ca_cert):
             raise ValueError(
                 f"CAPSTONE_CA_CERT file not found: {ca_cert!r}. Set it to the full path of your .crt file."
@@ -301,7 +301,20 @@ def get_openai_embeddings(model: str = "text-embedding-3-small") -> OpenAIEmbedd
 
 
 def _project_file(path: str | None) -> str | None:
-    """Resolve a path from .env; relative paths are taken from the project root."""
+    """Resolve a path from .env; relative paths are taken from the project root.
+    A value that IS a PEM certificate (e.g. pasted into a Railway variable, where the
+    git-ignored data/certs/ files do not exist) is written to a temp file and that path
+    is returned. Literal "\\n" sequences are turned back into newlines."""
+    if path and "-----BEGIN" in path:
+        import hashlib
+        import tempfile
+        pem = path.replace("\\n", "\n").strip() + "\n"
+        target = os.path.join(tempfile.gettempdir(),
+                              f"fintell-ca-{hashlib.sha256(pem.encode()).hexdigest()[:12]}.crt")
+        if not os.path.isfile(target):
+            with open(target, "w", encoding="utf-8") as f:
+                f.write(pem)
+        return target
     if path and not os.path.isabs(path):
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         path = os.path.join(project_root, path)

@@ -502,6 +502,24 @@
             gap: 8px;
         }
 
+        /* Chat model picker (Qwen / Haiku) */
+        .model-select {
+            height: 36px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.12);
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0 8px;
+            cursor: pointer;
+            transition: background 0.25s;
+        }
+        .model-select:hover { background: rgba(255,255,255,0.24); }
+        .model-select:focus-visible { outline: 2px solid var(--brand-cyan); outline-offset: 2px; }
+        .model-select option { color: var(--ink); background: #ffffff; }
+
         /* Kebab (⋮) menu */
         .kebab-wrap { position: relative; }
         .kebab-menu {
@@ -964,34 +982,6 @@
             background-color: #ffffff;
         }
 
-        .login-credit {
-            text-align: center;
-            margin-top: 22px;
-            font-size: 0.74rem;
-            color: #9ca3af;
-            font-weight: 500;
-            letter-spacing: 0.3px;
-            font-family: var(--font-italic);
-            font-style: italic;
-        }
-
-        .login-credit strong { color: #0074a6; font-weight: 600; }
-
-        /* ===== APP CREDIT (main panel) ===== */
-        .app-credit {
-            text-align: center;
-            padding: 5px 0 7px;
-            font-size: 0.66rem;
-            color: #9ca3af;
-            background: #ffffff;
-            letter-spacing: 0.4px;
-            flex-shrink: 0;
-            font-family: var(--font-italic);
-            font-style: italic;
-        }
-
-        .app-credit strong { color: #2b9fc9; font-weight: 600; }
-
         .login-submit {
             width: 100%;
             border: none;
@@ -1053,8 +1043,6 @@
                 box-shadow: none;
             }
             .trace-screen { border-radius: 0; }
-            /* On small screens the panel is hidden until toggled */
-            .trace-panel:not(.mobile-open) { display: none; }
         }
 
         /* ===== CHART BUBBLE ===== */
@@ -1206,13 +1194,6 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-        }
-        .trace-panel.collapsed {
-            width: 0;
-            padding: 0;
-            opacity: 0;
-            box-shadow: none;
-            pointer-events: none;
         }
         .trace-header {
             flex-shrink: 0;
@@ -1378,17 +1359,444 @@
         }
         @keyframes trace-spin { to { transform: rotate(360deg); } }
 
-        /* Floating toggle to re-open the panel when collapsed */
-        .trace-reopen-btn {
-            display: none;
-            position: fixed; top: 24px; right: 24px; z-index: 50;
-            align-items: center; gap: 8px;
-            background: var(--brand-gradient); color: #fff; border: none; cursor: pointer;
-            padding: 11px 16px; border-radius: 30px; font-size: 0.8rem; font-weight: 600;
-            font-family: inherit; box-shadow: 0 10px 30px rgba(0,65,93,0.35);
+
+        /* =====================================================================
+           VISUAL REFRESH LAYER
+           Overrides the base rules above; same DOM and IDs, so no JS changes.
+           ===================================================================== */
+        :root {
+            --accent-gradient: linear-gradient(135deg, #0074a6 0%, #1f9fd4 55%, #39c2f0 100%);
+            --header-gradient: linear-gradient(135deg, #002e42 0%, #00415d 45%, #0074a6 100%);
+            --claude: #d97757;
+            --qwen: #7c5cff;
+            --radius-lg: 22px;
+            --radius-md: 14px;
+            --shadow-sm: 0 1px 2px rgba(0,46,66,0.06), 0 2px 8px rgba(0,46,66,0.05);
+            --shadow-md: 0 6px 20px rgba(0,46,66,0.10), 0 2px 6px rgba(0,46,66,0.06);
+            --shadow-glow: 0 10px 30px rgba(31,159,212,0.35);
         }
-        .trace-reopen-btn.show { display: inline-flex; }
-        .trace-reopen-btn:hover { transform: translateY(-1px); }
+
+        /* --- Ambient background: static light pools (no blur filters or animation,
+               so opening the trace panel doesn't repaint an expensive layer) --- */
+        body {
+            background:
+                radial-gradient(700px 500px at 8% 0%, rgba(31,159,212,0.30), transparent 65%),
+                radial-gradient(700px 500px at 100% 100%, rgba(59,91,219,0.25), transparent 65%),
+                linear-gradient(135deg, #002e42 0%, #00415d 55%, #003c56 100%);
+        }
+
+        /* --- Device frames: soft metallic bezel --- */
+        .phone-frame, .trace-panel {
+            background: linear-gradient(160deg, #1b2330 0%, #0a0e14 40%, #121a24 100%);
+            box-shadow:
+                0 30px 60px rgba(0,0,0,0.45),
+                0 0 0 1px rgba(255,255,255,0.08) inset;
+        }
+
+        /* Chat phone and Trace Dashboard are a matched pair: same width, height and bezel. */
+        .dashboard-shell { gap: 32px; }
+        .phone-frame, .trace-panel { width: 410px; max-height: 824px; }
+        /* Trace Dashboard: always open, static (no width transition). */
+        .trace-panel { transition: none; contain: layout paint; }
+        .trace-header { padding: 16px 16px 14px; }
+        .trace-header-title h3 { font-size: 1.05rem; }
+        .trace-header-title p { font-size: 0.7rem; }
+        .phone-screen, .trace-screen { background: #f6fbfe; }
+
+        /* --- Chat header --- */
+        .chat-header, .trace-header {
+            background:
+                radial-gradient(140px 80px at 90% 0%, rgba(57,194,240,0.35), transparent 70%),
+                var(--header-gradient);
+            box-shadow: 0 8px 24px rgba(0,46,66,0.28);
+            position: relative;
+            z-index: 2;
+        }
+        .chat-header { padding: 16px 16px 14px; }
+        .chat-header-avatar {
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.18), 0 6px 16px rgba(0,0,0,0.25);
+        }
+        .chat-header-info h3 { font-size: 1.12rem; letter-spacing: -0.2px; }
+        .chat-header-info h3 .brand-tell { color: #5fd0ff; }
+        .chat-header-info .online-status .dot {
+            box-shadow: 0 0 0 0 rgba(16,185,129,0.6);
+            animation: pulse-dot 2s ease-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+            70%  { box-shadow: 0 0 0 7px rgba(16,185,129,0); }
+            100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        }
+        .header-action-btn, .trace-collapse-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.14);
+        }
+        .header-action-btn:hover, .trace-collapse-btn:hover { background: rgba(255,255,255,0.26); }
+
+        /* Model bar under the header: label on the left, a light pill picker on the right
+           with a brand dot (Claude orange / Qwen violet). */
+        .model-bar {
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 8px 16px;
+            background: #ffffff;
+            border-bottom: 1px solid #e6f1f7;
+            position: relative; z-index: 1;
+        }
+        .model-bar:has(.model-select[hidden]) { display: none; }
+        .model-bar-label {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+            color: #6b8794;
+        }
+        .model-bar-label svg { color: #1f9fd4; }
+        .model-select {
+            appearance: none; -webkit-appearance: none;
+            height: 30px; border-radius: 999px;
+            padding: 0 30px 0 26px;
+            border: 1px solid #f0d5ca;
+            color: #00293b;
+            background-color: #fff8f5;
+            background-image:
+                radial-gradient(circle, var(--claude) 0 4px, transparent 4.5px),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300415d' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat, no-repeat;
+            background-size: 12px 12px, 12px 12px;
+            background-position: 9px center, right 11px center;
+            font-size: 0.78rem; font-weight: 700;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+        .model-select[data-model="qwen"] {
+            border-color: #ddd4ff;
+            background-color: #f8f6ff;
+            background-image:
+                radial-gradient(circle, var(--qwen) 0 4px, transparent 4.5px),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300415d' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        }
+        .model-select:hover { border-color: #e0a58c; }
+        .model-select[data-model="qwen"]:hover { border-color: #b9a8ff; }
+        .model-select:focus-visible { outline: 2px solid #39c2f0; outline-offset: 2px; }
+
+        .kebab-menu { border-radius: 16px; box-shadow: 0 20px 50px rgba(0,46,66,0.25); border-color: #e3f1f8; }
+
+        /* --- Message board --- */
+        .chat-board {
+            gap: 8px;
+            padding: 22px 16px 16px;
+            background:
+                radial-gradient(circle at 1px 1px, rgba(0,116,166,0.07) 1px, transparent 0) 0 0 / 18px 18px,
+                linear-gradient(180deg, #f2f9fd 0%, #f8fcfe 100%);
+        }
+        .message { font-size: 0.89rem; padding: 12px 16px; }
+        .message.user {
+            background: var(--accent-gradient);
+            border-radius: 20px 20px 6px 20px;
+            box-shadow: 0 8px 22px rgba(0,116,166,0.28);
+            max-width: 78%;
+        }
+        .message.assistant {
+            position: relative;
+            margin-left: 34px;
+            max-width: calc(90% - 34px);
+            background: rgba(255,255,255,0.96);
+            border: 1px solid #e1eff7;
+            border-radius: 20px 20px 20px 6px;
+            box-shadow: var(--shadow-md);
+        }
+        /* small bot avatar beside each assistant bubble (the FinTell "F" mark) */
+        .message.assistant::before {
+            content: ''; position: absolute; left: -34px; bottom: 0;
+            width: 26px; height: 26px; border-radius: 50%;
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect x='32' y='26' width='56' height='20' rx='3' fill='%23ffffff'/%3E%3Crect x='32' y='26' width='22' height='72' rx='3' fill='%23ffffff'/%3E%3Crect x='58' y='60' width='40' height='18' rx='3' fill='%2339c2f0'/%3E%3C/svg%3E") center / 18px no-repeat,
+                var(--header-gradient);
+            box-shadow: 0 3px 8px rgba(0,46,66,0.25);
+        }
+        .msg-timestamp { font-size: 0.66rem; color: #93a8b4; }
+        .msg-timestamp.left {
+            margin-left: 34px;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+
+        /* Typing indicator as a bubble */
+        .typing-indicator {
+            margin-left: 34px;
+            padding: 13px 16px;
+            background: #ffffff;
+            border: 1px solid #e1eff7;
+            border-radius: 20px 20px 20px 6px;
+            box-shadow: var(--shadow-sm);
+        }
+        .typing-indicator { align-items: center; max-width: calc(90% - 34px); }
+        .typing-indicator span {
+            flex-shrink: 0;
+            width: 7px; height: 7px; background: linear-gradient(135deg, #0074a6, #39c2f0);
+        }
+        @keyframes typing-bounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+            30% { transform: translateY(-4px); opacity: 1; }
+        }
+        /* Live status ("Preparing a chart…") sits inside the typing bubble, after the dots */
+        .stream-status {
+            align-self: center;
+            margin-left: 6px; padding: 0; min-height: 0;
+            font-family: var(--font-sans); font-style: normal;
+            font-size: 0.78rem; font-weight: 600; line-height: 1.4;
+            color: #0074a6;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .stream-status:empty { display: none; }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+
+        .system-note {
+            background: #fff4f4; border: 1px solid #fde0e0; border-radius: 10px;
+            padding: 6px 10px; font-style: normal; color: #c2410c;
+        }
+
+        /* Chart card */
+        .chart-bubble {
+            margin-left: 34px; width: calc(96% - 34px);
+            border: 1px solid #e1eff7; border-left: none;
+            border-radius: 20px 20px 20px 6px;
+            box-shadow: var(--shadow-md);
+            position: relative; overflow: hidden;
+        }
+        .chart-bubble::after {
+            content: ''; position: absolute; left: 0; top: 0; right: 0; height: 4px;
+            background: var(--accent-gradient);
+        }
+
+        /* --- Suggestion chips: one scrollable row with faded edges --- */
+        .suggestions-row {
+            flex-wrap: nowrap; overflow-x: auto; gap: 8px;
+            padding: 10px 16px 6px;
+            background: #f8fcfe;
+            scrollbar-width: none;
+            -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+                    mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+        }
+        .suggestions-row::-webkit-scrollbar { display: none; }
+        .suggestion-chip {
+            flex-shrink: 0; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 6px;
+            border: 1px solid #d3e9f4; background: #ffffff;
+            color: #00415d; border-radius: 999px;
+            padding: 7px 13px; font-size: 0.76rem; font-weight: 600;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.18s, box-shadow 0.18s, background 0.18s, color 0.18s;
+        }
+        .suggestion-chip .chip-ico { font-size: 0.85rem; line-height: 1; }
+        .suggestion-chip:hover {
+            background: var(--accent-gradient); color: #ffffff; border-color: transparent;
+            transform: translateY(-2px); box-shadow: var(--shadow-glow);
+        }
+
+        /* --- Composer --- */
+        .chat-input-area {
+            padding: 10px 14px 12px;
+            background: #f8fcfe;
+            border-top: none;
+        }
+        .input-wrapper {
+            background: #ffffff;
+            border: 1px solid #dcecf5;
+            border-radius: 999px;
+            box-shadow: var(--shadow-md);
+            padding: 3px 14px;
+        }
+        .input-wrapper:focus-within {
+            border-color: #39c2f0;
+            box-shadow: 0 0 0 4px rgba(57,194,240,0.18), var(--shadow-md);
+        }
+        .send-btn {
+            background: var(--accent-gradient);
+            box-shadow: var(--shadow-glow);
+            position: relative;
+        }
+        .send-btn::after {
+            content: ''; position: absolute; inset: -4px; border-radius: 50%;
+            border: 2px solid rgba(57,194,240,0.45); opacity: 0; transform: scale(0.85);
+            transition: opacity 0.25s, transform 0.25s;
+        }
+        .send-btn:hover::after { opacity: 1; transform: scale(1); }
+        .send-btn:hover svg { transform: translateX(2px) rotate(-8deg); }
+        .send-btn svg { transition: transform 0.25s; }
+
+        /* --- Login --- */
+        .login-overlay {
+            background:
+                radial-gradient(700px 420px at 12% 8%, rgba(57,194,240,0.35), transparent 60%),
+                radial-gradient(640px 420px at 92% 95%, rgba(59,91,219,0.35), transparent 60%),
+                linear-gradient(135deg, #001f2e 0%, #00415d 55%, #003049 100%);
+        }
+        .login-panel {
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(255,255,255,0.6);
+            border-radius: 30px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.35), 0 0 0 8px rgba(255,255,255,0.06);
+            backdrop-filter: blur(24px) saturate(140%);
+            animation: login-rise 0.5s cubic-bezier(.2,.8,.2,1);
+        }
+        @keyframes login-rise {
+            from { opacity: 0; transform: translateY(18px) scale(0.98); }
+            to   { opacity: 1; transform: none; }
+        }
+        .login-accent { height: 6px; background: var(--accent-gradient); }
+        .login-panel h1 { color: #00293b; font-size: 1.65rem; letter-spacing: -0.4px; }
+        .login-account {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px;
+            border: 1.5px solid #bfe4f5; border-radius: 16px;
+            background: linear-gradient(135deg, #f0f9fd 0%, #ffffff 100%);
+            box-shadow: var(--shadow-sm);
+        }
+        .login-account-avatar {
+            width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent-gradient); color: #ffffff;
+            font-weight: 700; font-size: 1.05rem;
+            box-shadow: 0 0 0 3px #ffffff, 0 6px 14px rgba(0,116,166,0.35);
+        }
+        .login-account-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .login-field .login-account-name {
+            border: none; background: transparent; padding: 0; box-shadow: none;
+            font-size: 1rem; font-weight: 700; color: #00293b; cursor: default;
+        }
+        .login-field .login-account-name:focus { box-shadow: none; background: transparent; }
+        .login-account-sub { font-size: 0.74rem; color: #6b8794; }
+        .login-account-check { color: #10b981; flex-shrink: 0; }
+        .login-field input[type="password"] { background: #f6fafc; border-color: #dcecf5; }
+        .login-field input[type="password"]:focus { border-color: #39c2f0; box-shadow: 0 0 0 4px rgba(57,194,240,0.18); }
+        .login-submit {
+            background: var(--accent-gradient);
+            box-shadow: var(--shadow-glow);
+            letter-spacing: 0.3px;
+            position: relative; overflow: hidden;
+        }
+        .login-submit::after { /* sheen sweep on hover */
+            content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent);
+            transform: skewX(-20deg); transition: left 0.6s;
+        }
+        .login-submit:hover::after { left: 120%; }
+
+        /* --- Agent trace panel --- */
+        .trace-legend { background: #f6fbfe; }
+        .trace-body { background: #f6fbfe; }
+        .trace-node { background: var(--accent-gradient); box-shadow: 0 0 0 3px #f6fbfe, 0 4px 10px rgba(0,116,166,0.35); }
+        .trace-step::before { background: linear-gradient(180deg, #bfe4f5, #e1eff7); }
+        .trace-card {
+            border-radius: 16px; border-color: #e1eff7;
+            box-shadow: var(--shadow-sm);
+            border-left: 3px solid #1f9fd4;
+        }
+        .trace-step.status-skipped .trace-card { border-left-color: #cbd5e1; opacity: 0.85; }
+        .trace-step.status-fallback .trace-card { border-left-color: #ef4444; }
+        .trace-card:hover { box-shadow: var(--shadow-md); }
+        .metric-chip { border-radius: 999px; background: #ffffff; }
+
+        /* LIVE pill in the dashboard header: dim at rest, pulses while a request runs */
+        .trace-live {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 999px;
+            font-size: 0.64rem; font-weight: 800; letter-spacing: 1.2px;
+            color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.16);
+        }
+        .trace-live-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.45); }
+        .trace-live.is-on { color: #ffffff; background: rgba(16,185,129,0.22); border-color: rgba(16,185,129,0.5); }
+        .trace-live.is-on .trace-live-dot { background: #10b981; animation: pulse-dot 1.4s ease-out infinite; }
+
+        /* KPI tiles */
+        .trace-kpis {
+            flex-shrink: 0;
+            display: grid; grid-template-columns: 0.95fr 1fr 0.9fr 1.2fr; gap: 6px;
+            padding: 12px 12px 10px;
+            background: #f6fbfe;
+            border-bottom: 1px solid #e6f1f7;
+        }
+        .kpi {
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; gap: 4px;
+            padding: 10px 8px 8px; min-width: 0;
+            background: #ffffff; border: 1px solid #e1eff7; border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+        .kpi::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+            background: var(--kpi-color, #1f9fd4);
+        }
+        .kpi-time   { --kpi-color: #0074a6; }
+        .kpi-tokens { --kpi-color: #1f9fd4; }
+        .kpi-agents { --kpi-color: #14b8a6; }
+        .kpi-outcome { --kpi-color: #94a3b8; }
+        .kpi-outcome.is-ok  { --kpi-color: #10b981; }
+        .kpi-outcome.is-bad { --kpi-color: #ef4444; }
+        .kpi-label {
+            font-size: 0.58rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+            color: #6b8794; white-space: nowrap;
+        }
+        .kpi-label { font-size: 0.54rem; letter-spacing: 0.6px; }
+        .kpi-value {
+            font-size: 0.92rem; font-weight: 800; color: #00293b; letter-spacing: -0.3px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-variant-numeric: tabular-nums;
+        }
+        .kpi-outcome.is-ok .kpi-value  { color: #059669; }
+        .kpi-outcome.is-bad .kpi-value { color: #dc2626; }
+        .trace-kpis.is-running .kpi-value {
+            color: transparent;
+            background: linear-gradient(90deg, #e6f1f7 0%, #cfe7f3 50%, #e6f1f7 100%) 0 0 / 200% 100%;
+            border-radius: 6px;
+            animation: shimmer 1.2s linear infinite;
+        }
+
+        /* Empty-state pipeline preview */
+        .pipeline-preview {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+            gap: 6px; max-width: 320px; margin-bottom: 6px;
+        }
+        .pp-chip {
+            padding: 6px 11px; border-radius: 999px;
+            font-size: 0.72rem; font-weight: 700; color: #00415d;
+            background: #ffffff; border: 1px dashed #bfe4f5;
+            box-shadow: var(--shadow-sm);
+        }
+        .pp-chip.pp-branch { border-style: solid; border-color: #9fd6ee; background: #f0f9fd; }
+        .pp-arrow { color: #9fc3d3; font-weight: 700; font-size: 0.8rem; }
+
+        /* Tidy trace details: SQL never runs under the Copy button; slimmer timeline */
+        .trace-sql { padding-top: 34px; border-radius: 12px; }
+        .trace-copy-btn { top: 8px; right: 8px; }
+        .trace-body { padding: 16px 14px 22px; }
+        .trace-legend { padding: 9px 16px; }
+
+        /* Thin, quiet scrollbars inside both screens */
+        .chat-board, .trace-body, .history-view { scrollbar-width: thin; scrollbar-color: #cfe3ee transparent; }
+        .chat-board::-webkit-scrollbar, .trace-body::-webkit-scrollbar { width: 4px; }
+        .chat-board::-webkit-scrollbar-thumb, .trace-body::-webkit-scrollbar-thumb { background: #cfe3ee; border-radius: 4px; }
+
+        @media (max-width: 1000px) {
+            .phone-frame, .trace-panel { width: 380px; }
+            .dashboard-shell { gap: 20px; }
+            .trace-kpis { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 880px) {
+            /* Dashboard stacks under the chat, full width, always visible */
+            .phone-frame { width: 100%; max-width: 480px; max-height: none; }
+            .trace-panel { width: 100%; max-width: 480px; max-height: none; height: auto; }
+            .trace-screen { min-height: 520px; }
+            .trace-kpis { grid-template-columns: repeat(4, 1fr); }
+        }
+
+        /* --- Accessibility: calm everything down when asked --- */
+        @media (prefers-reduced-motion: reduce) {
+            .chat-header-info .online-status .dot,
+            .stream-status, .login-panel,
+            .trace-live.is-on .trace-live-dot, .trace-kpis.is-running .kpi-value { animation: none; }
+            .send-btn::after, .login-submit::after { transition: none; }
+        }
     </style>
 </head>
 <body>
@@ -1411,15 +1819,16 @@
         <h1>Welcome back</h1>
         <p>Sign in to your smart money assistant.</p>
         <div class="login-field">
-            <label for="loginUserId">User</label>
-            <select id="loginUserId" autocomplete="username">
-                <option value="Cust_0410">Pankaj Raythatha</option>
-                <option value="Cust_0410">Satish Kumar</option>
-                <option value="Cust_0410">Sanket Ladda</option>
-                <option value="Cust_0410">Sue Richards</option>
-                <option value="Cust_0410">Guarav Sahni</option>
-                <option value="Cust_0410">Abhishek Lohit</option>
-            </select>
+            <label for="loginUserName">Signing in as</label>
+            <div class="login-account">
+                <span class="login-account-avatar" aria-hidden="true">A</span>
+                <div class="login-account-text">
+                    <input id="loginUserName" class="login-account-name" type="text" value="Alex" readonly autocomplete="username" aria-readonly="true">
+                    <span class="login-account-sub">Personal account</span>
+                </div>
+                <svg class="login-account-check" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <input type="hidden" id="loginUserId" value="Cust_0410" data-display-name="Alex">
         </div>
         <div class="login-field">
             <label for="loginPassword">Password</label>
@@ -1557,10 +1966,6 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2"/></svg>
                             <span>Clear older chats</span>
                         </button>
-                        <button class="kebab-item" role="menuitem" id="traceMenuBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                            <span>Agent Trace</span>
-                        </button>
                         <div class="kebab-divider"></div>
                         <button class="kebab-item danger" role="menuitem" id="navLogout">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -1570,6 +1975,15 @@
                 </div>
             </div>
         </header>
+
+        <!-- Model bar: which model answers (hidden when only one model is available) -->
+        <div class="model-bar">
+            <span class="model-bar-label">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg>
+                AI model
+            </span>
+            <select class="model-select" id="modelSelect" title="Chat model" aria-label="Chat model" hidden></select>
+        </div>
 
         <!-- Chat Messages Board -->
         <main id="chatBoard" class="chat-board">
@@ -1584,10 +1998,10 @@
 
         <!-- Suggested Questions -->
         <div class="suggestions-row" id="suggestionsRow">
-            <button class="suggestion-chip" onclick="useChip(this)">What did I spend last month?</button>
-            <button class="suggestion-chip" onclick="useChip(this)">Show my top 5 merchants</button>
-            <button class="suggestion-chip" onclick="useChip(this)">How much did I spend on groceries?</button>
-            <button class="suggestion-chip" onclick="useChip(this)">What's my current balance?</button>
+            <button class="suggestion-chip" data-q="What did I spend last month?" onclick="useChip(this)"><span class="chip-ico" aria-hidden="true">📅</span>What did I spend last month?</button>
+            <button class="suggestion-chip" data-q="Show my top 5 merchants" onclick="useChip(this)"><span class="chip-ico" aria-hidden="true">🏆</span>Show my top 5 merchants</button>
+            <button class="suggestion-chip" data-q="How much did I spend on groceries?" onclick="useChip(this)"><span class="chip-ico" aria-hidden="true">🛒</span>How much did I spend on groceries?</button>
+            <button class="suggestion-chip" data-q="What's my current balance?" onclick="useChip(this)"><span class="chip-ico" aria-hidden="true">💷</span>What's my current balance?</button>
         </div>
 
         <!-- Chat Input -->
@@ -1606,48 +2020,53 @@
                 </svg>
             </button>
         </footer>
-        <div class="app-credit">Developed by <strong>abhishek.lohit</strong></div>
     </div>
       </div><!-- /phone-screen -->
     </div><!-- /phone-frame -->
 
-    <!-- AGENT TRACE PANEL -->
-    <aside class="trace-panel collapsed" id="tracePanel">
+    <!-- TRACE DASHBOARD (always open) -->
+    <aside class="trace-panel" id="tracePanel" aria-label="Trace Dashboard">
       <div class="trace-screen">
         <div class="trace-header">
             <div class="trace-header-title">
                 <span class="th-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
                 </span>
                 <div>
-                    <h3>Backend · Agent Trace</h3>
-                    <p>What happens behind each query</p>
+                    <h3>Trace Dashboard</h3>
+                    <p>Live view of every agent behind each reply</p>
                 </div>
             </div>
-            <button class="trace-collapse-btn" id="traceCollapseBtn" title="Collapse panel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
+            <span class="trace-live" id="traceLive"><span class="trace-live-dot"></span>LIVE</span>
+        </div>
+        <div class="trace-kpis" id="traceKpis">
+            <div class="kpi kpi-time">
+                <span class="kpi-label">Total time</span>
+                <span class="kpi-value" data-kpi="time">—</span>
+            </div>
+            <div class="kpi kpi-tokens">
+                <span class="kpi-label">Tokens</span>
+                <span class="kpi-value" data-kpi="tokens">—</span>
+            </div>
+            <div class="kpi kpi-agents">
+                <span class="kpi-label">Agents run</span>
+                <span class="kpi-value" data-kpi="agents">—</span>
+            </div>
+            <div class="kpi kpi-outcome">
+                <span class="kpi-label">Outcome</span>
+                <span class="kpi-value" data-kpi="outcome">—</span>
+            </div>
         </div>
         <div class="trace-legend">
             <span class="legend-item"><span class="legend-dot ok"></span> Executed</span>
             <span class="legend-item"><span class="legend-dot skipped"></span> Skipped</span>
             <span class="legend-item"><span class="legend-dot fallback"></span> Fallback</span>
         </div>
-        <div class="trace-body" id="traceBody">
-            <div class="trace-empty">
-                <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                <p><strong>No query traced yet.</strong><br>Send a message and watch each backend agent's work appear here, step by step.</p>
-            </div>
-        </div>
+        <!-- Filled by JS (TRACE_EMPTY_HTML until the first query) -->
+        <div class="trace-body" id="traceBody"></div>
       </div>
     </aside>
 </div>
-
-<!-- Floating re-open button (shown when the trace panel is collapsed) -->
-<button class="trace-reopen-btn" id="traceReopenBtn" title="Show agent trace">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-    Agent Trace
-</button>
 
 <script>
     const chatBoard = document.getElementById("chatBoard");
@@ -1672,6 +2091,31 @@
 
     let currentUserId = localStorage.getItem("fintell_user_id") || "";
 
+    // Chat model picker: shows only the models the server could set up (GET /models).
+    const modelSelect = document.getElementById("modelSelect");
+    const MODEL_LABELS = { haiku: "Claude Haiku 5.5", qwen: "Qwen3-8B" };
+    // v2: Claude became the default; an older saved pick must not override it.
+    const MODEL_STORAGE_KEY = "fintell_model_v2";
+    function selectedModel() { return modelSelect.hidden ? null : (modelSelect.value || null); }
+    function syncModelSelectStyle() { modelSelect.dataset.model = modelSelect.value || ""; }
+    (async () => {
+        try {
+            const r = await fetch("/models");
+            if (!r.ok) return;
+            const { models, default: def } = await r.json();
+            if (!models || models.length === 0) return;
+            let saved = null;
+            try { saved = localStorage.getItem(MODEL_STORAGE_KEY); } catch (_) {}
+            models.forEach(m => modelSelect.add(new Option(MODEL_LABELS[m] || m, m)));
+            modelSelect.value = models.includes(saved) ? saved : (models.includes(def) ? def : models[0]);
+            modelSelect.hidden = models.length < 2;   // nothing to choose with one model
+            syncModelSelectStyle();
+        } catch (_) { /* picker stays hidden; the server default is used */ }
+    })();
+    modelSelect.addEventListener("change", () => {
+        try { localStorage.setItem(MODEL_STORAGE_KEY, modelSelect.value); } catch (_) {}
+        syncModelSelectStyle();
+    });
     const SESSION_IDLE_MS = 30 * 60 * 1000; // 30 minutes — matches backend REDIS_TTL
 
     function generateSessionId() { return 'sess_' + Date.now(); }
@@ -1740,7 +2184,9 @@
     }
 
     if (currentUserId) {
-        setLoggedInUser(currentUserId);
+        // The demo login has a single user; a name stored by an older build is replaced.
+        setLoggedInUser(currentUserId, false,
+            currentUserId === loginUserId.value ? loginUserId.dataset.displayName : "");
     } else {
         clearLoggedInUser();
     }
@@ -1749,7 +2195,7 @@
         event.preventDefault();
         loginError.textContent = "";
         const userId = loginUserId.value.trim();
-        const displayName = loginUserId.selectedOptions[0] ? loginUserId.selectedOptions[0].text.trim() : "";
+        const displayName = loginUserId.dataset.displayName || "";
         const password = loginPassword.value;
 
         try {
@@ -1846,8 +2292,8 @@
         chatBoard.innerHTML += `
             <div id="${typingId}" class="typing-indicator">
                 <span></span><span></span><span></span>
+                <div id="${typingId}_status" class="stream-status"></div>
             </div>
-            <div id="${typingId}_status" class="stream-status"></div>
         `;
         chatBoard.scrollTop = chatBoard.scrollHeight;
 
@@ -1883,7 +2329,8 @@
                 body: JSON.stringify({
                     customer_id: currentUserId,
                     session_id: currentSessionId,
-                    user_query: queryText
+                    user_query: queryText,
+                    model: selectedModel()
                 })
             });
 
@@ -2049,7 +2496,7 @@
 
     // ===== SUGGESTION CHIPS =====
     function useChip(btn) {
-        userInput.value = btn.textContent;
+        userInput.value = btn.dataset.q || btn.textContent.trim();
         sendMessage();
     }
 
@@ -2189,52 +2636,66 @@
     // ===== AGENT TRACE PANEL =====
     const tracePanel      = document.getElementById("tracePanel");
     const traceBody       = document.getElementById("traceBody");
-    const traceCollapseBtn = document.getElementById("traceCollapseBtn");
-    const traceReopenBtn  = document.getElementById("traceReopenBtn");
+    const traceKpis       = document.getElementById("traceKpis");
+    const traceLive       = document.getElementById("traceLive");
 
+    // Empty state doubles as onboarding: a preview of the pipeline the dashboard will light up.
     const TRACE_EMPTY_HTML = `
         <div class="trace-empty">
-            <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            <p><strong>No query traced yet.</strong><br>Send a message and watch each backend agent's work appear here, step by step.</p>
+            <div class="pipeline-preview" aria-hidden="true">
+                <span class="pp-chip">Guardrail</span><span class="pp-arrow">→</span>
+                <span class="pp-chip">Context</span><span class="pp-arrow">→</span>
+                <span class="pp-chip">Supervisor</span><span class="pp-arrow">→</span>
+                <span class="pp-chip pp-branch">SQL · Help · Dispute</span><span class="pp-arrow">→</span>
+                <span class="pp-chip">Response</span>
+            </div>
+            <p><strong>No query traced yet.</strong><br>Send a message to watch each agent light up here, step by step.</p>
         </div>`;
+    traceBody.innerHTML = TRACE_EMPTY_HTML;
 
-    function isNarrow() { return window.matchMedia("(max-width: 880px)").matches; }
-
-    function openTracePanel() {
-        if (isNarrow()) {
-            tracePanel.classList.add("mobile-open");
-        } else {
-            tracePanel.classList.remove("collapsed");
+    // ----- KPI tiles -----
+    function setKpi(name, value, state) {
+        const v = traceKpis.querySelector(`[data-kpi="${name}"]`);
+        if (v) v.textContent = value;
+        if (name === "outcome") {
+            const tile = traceKpis.querySelector(".kpi-outcome");
+            tile.classList.remove("is-ok", "is-bad");
+            if (state) tile.classList.add(state);
         }
-        traceReopenBtn.classList.remove("show");
     }
-    function closeTracePanel() {
-        if (isNarrow()) {
-            tracePanel.classList.remove("mobile-open");
-        } else {
-            tracePanel.classList.add("collapsed");
+    function renderTraceKpis(trace) {
+        traceKpis.classList.remove("is-running");
+        traceLive.classList.remove("is-on");
+        if (!Array.isArray(trace) || trace.length === 0) {
+            ["time", "tokens", "agents", "outcome"].forEach(k => setKpi(k, "—"));
+            return;
         }
-        // No floating re-open pill — the panel is reopened from the kebab "Agent Trace" item.
+        let latency = 0, tokens = 0;
+        trace.forEach(s => {
+            const m = s && s.metrics;
+            if (m) { latency += Number(m.latency) || 0; tokens += Number(m.total_tokens) || 0; }
+        });
+        const ran = trace.filter(s => (s.status || "ok") === "ok").length;
+        const fellBack = trace.some(s => s.status === "fallback");
+        setKpi("time", latency.toFixed(2) + "s");
+        setKpi("tokens", tokens.toLocaleString());
+        setKpi("agents", ran + " / " + trace.length);
+        setKpi("outcome", fellBack ? "Fallback" : "Answered", fellBack ? "is-bad" : "is-ok");
     }
-    function toggleTracePanel() {
-        const isOpen = isNarrow()
-            ? tracePanel.classList.contains("mobile-open")
-            : !tracePanel.classList.contains("collapsed");
-        isOpen ? closeTracePanel() : openTracePanel();
-    }
-    traceCollapseBtn.addEventListener("click", closeTracePanel);
-    traceReopenBtn.addEventListener("click", openTracePanel);
-    // Opened on demand from the kebab "Agent Trace" item
-    document.getElementById("traceMenuBtn").addEventListener("click", toggleTracePanel);
-    // Panel starts collapsed and is revealed only via the kebab menu.
 
     function setTraceRunning(queryText) {
         traceBody.innerHTML =
             `<div class="trace-running"><span class="spinner"></span>Running agents…</div>`;
-        // Note: the panel is NOT auto-opened — the user reveals it via the kebab menu.
+        ["time", "tokens", "agents", "outcome"].forEach(k => setKpi(k, "…"));
+        traceKpis.classList.add("is-running");
+        traceLive.classList.add("is-on");
     }
 
     function setTraceError(msg) {
+        traceKpis.classList.remove("is-running");
+        traceLive.classList.remove("is-on");
+        ["time", "tokens", "agents"].forEach(k => setKpi(k, "—"));
+        setKpi("outcome", "Error", "is-bad");
         traceBody.innerHTML = "";
         const wrap = document.createElement("div");
         wrap.className = "trace-empty";
@@ -2274,7 +2735,7 @@
     function buildMetricsRow(metrics) {
         const row = el("div", "trace-metrics");
         const items = [];
-        if (metrics.latency != null) items.push(["⏱", metrics.latency + "s"]);
+        if (metrics.latency != null) items.push(["⏱", (Number(metrics.latency) || 0).toFixed(2) + "s"]);
         if (metrics.total_tokens != null) items.push(["⛁", metrics.total_tokens + " tok"]);
         if (metrics.cached_tokens != null) items.push(["⚡", metrics.cached_tokens + " cached"]);
         if (metrics.model_used) items.push(["", metrics.model_used]);
@@ -2392,6 +2853,7 @@
     }
 
     function renderAgentTrace(trace) {
+        renderTraceKpis(trace);
         traceBody.innerHTML = "";
         if (!Array.isArray(trace) || trace.length === 0) {
             traceBody.innerHTML = TRACE_EMPTY_HTML;

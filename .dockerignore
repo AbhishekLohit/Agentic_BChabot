@@ -1,0 +1,28 @@
+# Secrets and local-only files: set these as Railway variables instead.
+.env
+.env.*
+!.env.example
+data/certs/
+
+# Local environments and caches
+venv/
+.venv/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.git/
+.claude/
+src/logs/
+
+# Not needed to serve the app
+evaluation/
+eval/
+tests/
+docs/
+help_store/
+help_chunks.xlsx
+data/data_processing/
+data/embeddings_data/
+orders.db
+*.bak
+transactions.db.*

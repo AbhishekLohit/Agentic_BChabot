@@ -23,6 +23,8 @@ class UIUserRequest(BaseModel):
     customer_id: str
     session_id: str
     user_query: str
+    # Chat model picked in the UI: "qwen" or "haiku". None = the server default.
+    model: str | None = None
 
 
 
@@ -32,6 +34,7 @@ class UIUserRequestDebug(BaseModel):
     session_id: str
     user_query: str
     chat_history: list["ChatMessage"] = []
+    model: str | None = None  # "qwen" / "haiku"; None = the server default
 
 
 class GuardRailResponse(BaseModel):
@@ -43,6 +46,9 @@ class ContextBuilderResponse(BaseModel):
     # self-contained queries. Same-topic questions (e.g. multiple timeframes) stay
     # as a single entry; genuinely independent questions become separate entries.
     contextual_queries : list[str]
+    # Set (with contextual_queries empty) only when the message cannot be understood
+    # even with the chat history; the question is shown to the customer as the reply.
+    clarification_question : str | None = None
 
 class ClassifiedSubQuery(BaseModel):
     sub_query: str

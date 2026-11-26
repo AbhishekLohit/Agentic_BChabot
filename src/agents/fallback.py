@@ -42,9 +42,12 @@ async def fallback_agent(
 )-> Graph_State:
     logger.info("Executing fallback agent.")
     
-    # If a specific fallback response was already set by a previous node (like guardrail) and it's not an exception, preserve it.
-    if state.fallback_response and state.fallback_response.fallback_node == "guardrail" and state.fallback_response.fallback_reason != "exception":
-        logger.info("Preserving existing guardrail fallback response.")
+    # A message already written by an earlier node (a guardrail refusal or greeting, or the
+    # context builder's clarification question) is shown as it is. Exceptions are not.
+    if (state.fallback_response
+            and state.fallback_response.fallback_node in ("guardrail", "context_builder")
+            and state.fallback_response.fallback_reason != "exception"):
+        logger.info(f"Preserving existing {state.fallback_response.fallback_node} fallback response.")
         return state
 
     # Render the final prompt string using .format()
